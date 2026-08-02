@@ -1,0 +1,31 @@
+{
+  "appeal_title": "Contestar esta ação",
+  "appeal_intro": "Explique por que você acha que esta ação de moderação foi um engano. Um moderador analisará seu recurso.",
+  "reason_placeholder": "Por que esta ação deveria ser reconsiderada?",
+  "submit_appeal": "Enviar recurso",
+  "submitted_toast": "Recurso enviado. Um moderador vai analisá-lo.",
+  "submit_failed": "Não foi possível enviar o recurso.",
+  "tab_appeals": "Recursos",
+  "filter": {
+    "pending": "Pendentes",
+    "upheld": "Mantidos",
+    "overturned": "Revertidos",
+    "all": "Todos"
+  },
+  "status": {
+    "pending": "Pendente",
+    "upheld": "Mantido",
+    "overturned": "Revertido"
+  },
+  "empty": "Nenhum recurso aqui.",
+  "original_reason": "Motivo original",
+  "decision_note": "Decisão",
+  "decision_note_placeholder": "Adicione uma nota explicando sua decisão (opcional)",
+  "action_overturn": "Reverter e suspender",
+  "action_uphold": "Manter",
+  "decide_failed": "Não foi possível registrar a decisão.",
+  "toast": {
+    "upheld": "Recurso mantido.",
+    "overturned": "Recurso aceito — ação suspensa."
+  }
+}

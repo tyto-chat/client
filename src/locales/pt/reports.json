@@ -1,0 +1,52 @@
+{
+  "report_title": "Denunciar conteúdo",
+  "report_intro": "Conte o que está errado. Os moderadores da comunidade analisarão esta denúncia.",
+  "report_message": "Denunciar mensagem",
+  "report_user": "Denunciar este usuário",
+  "report_action": "Denunciar",
+  "category": {
+    "illegal_content": "Conteúdo ilegal",
+    "harassment": "Assédio ou bullying",
+    "spam": "Spam",
+    "rule_violation": "Violação das regras da comunidade",
+    "other": "Outra coisa"
+  },
+  "comment_label": "Detalhes",
+  "comment_placeholder": "Adicione contexto que ajude os moderadores (opcional, exceto para \"Outra coisa\").",
+  "submit_report": "Enviar denúncia",
+  "submitted_toast": "Denúncia enviada. Obrigado.",
+  "submit_failed": "Não foi possível enviar a denúncia.",
+  "tab_reports": "Denúncias",
+  "admin_intro": "Todas as denúncias de conteúdo em todas as comunidades, incluindo mensagens diretas.",
+  "filter": {
+    "open": "Abertas",
+    "escalated": "Escaladas",
+    "resolved": "Resolvidas",
+    "dismissed": "Descartadas",
+    "all": "Todas"
+  },
+  "status": {
+    "open": "Aberta",
+    "escalated": "Escalada",
+    "resolved": "Resolvida",
+    "dismissed": "Descartada"
+  },
+  "empty": "Nenhuma denúncia aqui.",
+  "reported_user": "Usuário denunciado",
+  "reported_by": "denunciado por",
+  "reporter_note": "Nota do denunciante",
+  "resolution_note": "Resolução",
+  "resolution_note_placeholder": "Adicione uma nota interna de resolução (opcional)",
+  "view_message": "Ver mensagem",
+  "view_deleted_message": "Ver mensagem (excluída)",
+  "action_resolve": "Resolver",
+  "action_dismiss": "Descartar",
+  "action_escalate": "Escalar para o admin",
+  "action_failed": "Não foi possível atualizar a denúncia.",
+  "escalated_admin_only": "Denúncias escaladas só podem ser fechadas por um administrador do servidor.",
+  "toast": {
+    "resolved": "Denúncia resolvida.",
+    "escalated": "Denúncia escalada.",
+    "dismissed": "Denúncia descartada."
+  }
+}

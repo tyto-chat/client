@@ -1,0 +1,31 @@
+{
+  "appeal_title": "Contester cette action",
+  "appeal_intro": "Explique pourquoi tu penses que cette action de modération est une erreur. Un modérateur examinera ton recours.",
+  "reason_placeholder": "Pourquoi cette action devrait-elle être reconsidérée ?",
+  "submit_appeal": "Envoyer le recours",
+  "submitted_toast": "Recours envoyé. Un modérateur l'examinera.",
+  "submit_failed": "Impossible d'envoyer le recours.",
+  "tab_appeals": "Recours",
+  "filter": {
+    "pending": "En attente",
+    "upheld": "Maintenus",
+    "overturned": "Annulés",
+    "all": "Tous"
+  },
+  "status": {
+    "pending": "En attente",
+    "upheld": "Maintenu",
+    "overturned": "Annulé"
+  },
+  "empty": "Aucun recours ici.",
+  "original_reason": "Motif d'origine",
+  "decision_note": "Décision",
+  "decision_note_placeholder": "Ajoute une note expliquant ta décision (facultatif)",
+  "action_overturn": "Annuler et lever",
+  "action_uphold": "Maintenir",
+  "decide_failed": "Impossible d'enregistrer la décision.",
+  "toast": {
+    "upheld": "Recours maintenu.",
+    "overturned": "Recours accepté — action levée."
+  }
+}

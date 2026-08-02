@@ -1,0 +1,52 @@
+{
+  "report_title": "Zgłoś treść",
+  "report_intro": "Napisz, co jest nie tak. Moderatorzy społeczności rozpatrzą to zgłoszenie.",
+  "report_message": "Zgłoś wiadomość",
+  "report_user": "Zgłoś tego użytkownika",
+  "report_action": "Zgłoś",
+  "category": {
+    "illegal_content": "Nielegalne treści",
+    "harassment": "Nękanie lub zastraszanie",
+    "spam": "Spam",
+    "rule_violation": "Naruszenie zasad społeczności",
+    "other": "Coś innego"
+  },
+  "comment_label": "Szczegóły",
+  "comment_placeholder": "Dodaj kontekst, który pomoże moderatorom (wymagane tylko dla „Coś innego”).",
+  "submit_report": "Wyślij zgłoszenie",
+  "submitted_toast": "Zgłoszenie wysłane. Dziękujemy.",
+  "submit_failed": "Nie udało się wysłać zgłoszenia.",
+  "tab_reports": "Zgłoszenia",
+  "admin_intro": "Wszystkie zgłoszenia treści ze wszystkich społeczności, w tym z wiadomości prywatnych.",
+  "filter": {
+    "open": "Otwarte",
+    "escalated": "Eskalowane",
+    "resolved": "Rozwiązane",
+    "dismissed": "Odrzucone",
+    "all": "Wszystkie"
+  },
+  "status": {
+    "open": "Otwarte",
+    "escalated": "Eskalowane",
+    "resolved": "Rozwiązane",
+    "dismissed": "Odrzucone"
+  },
+  "empty": "Brak zgłoszeń.",
+  "reported_user": "Zgłoszony użytkownik",
+  "reported_by": "zgłoszone przez",
+  "reporter_note": "Notatka zgłaszającego",
+  "resolution_note": "Rozstrzygnięcie",
+  "resolution_note_placeholder": "Dodaj wewnętrzną notatkę o rozstrzygnięciu (opcjonalnie)",
+  "view_message": "Zobacz wiadomość",
+  "view_deleted_message": "Zobacz wiadomość (usunięta)",
+  "action_resolve": "Rozwiąż",
+  "action_dismiss": "Odrzuć",
+  "action_escalate": "Eskaluj do administratora",
+  "action_failed": "Nie udało się zaktualizować zgłoszenia.",
+  "escalated_admin_only": "Eskalowane zgłoszenia może zamknąć tylko administrator serwera.",
+  "toast": {
+    "resolved": "Zgłoszenie rozwiązane.",
+    "escalated": "Zgłoszenie eskalowane.",
+    "dismissed": "Zgłoszenie odrzucone."
+  }
+}

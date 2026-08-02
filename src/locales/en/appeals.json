@@ -1,0 +1,31 @@
+{
+  "appeal_title": "Appeal this action",
+  "appeal_intro": "Explain why you think this moderation action was a mistake. A moderator will review your appeal.",
+  "reason_placeholder": "Why should this action be reconsidered?",
+  "submit_appeal": "Submit appeal",
+  "submitted_toast": "Appeal submitted. A moderator will review it.",
+  "submit_failed": "Could not submit the appeal.",
+  "tab_appeals": "Appeals",
+  "filter": {
+    "pending": "Pending",
+    "upheld": "Upheld",
+    "overturned": "Overturned",
+    "all": "All"
+  },
+  "status": {
+    "pending": "Pending",
+    "upheld": "Upheld",
+    "overturned": "Overturned"
+  },
+  "empty": "No appeals here.",
+  "original_reason": "Original reason",
+  "decision_note": "Decision",
+  "decision_note_placeholder": "Add a note explaining your decision (optional)",
+  "action_overturn": "Overturn & lift",
+  "action_uphold": "Uphold",
+  "decide_failed": "Could not record the decision.",
+  "toast": {
+    "upheld": "Appeal upheld.",
+    "overturned": "Appeal granted — action lifted."
+  }
+}

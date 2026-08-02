@@ -1,0 +1,31 @@
+{
+  "appeal_title": "Gegen diese Maßnahme Einspruch einlegen",
+  "appeal_intro": "Erkläre, warum du diese Moderationsmaßnahme für einen Fehler hältst. Ein Moderator prüft deinen Einspruch.",
+  "reason_placeholder": "Warum sollte diese Maßnahme überdacht werden?",
+  "submit_appeal": "Einspruch senden",
+  "submitted_toast": "Einspruch gesendet. Ein Moderator wird ihn prüfen.",
+  "submit_failed": "Der Einspruch konnte nicht gesendet werden.",
+  "tab_appeals": "Einsprüche",
+  "filter": {
+    "pending": "Ausstehend",
+    "upheld": "Aufrechterhalten",
+    "overturned": "Aufgehoben",
+    "all": "Alle"
+  },
+  "status": {
+    "pending": "Ausstehend",
+    "upheld": "Aufrechterhalten",
+    "overturned": "Aufgehoben"
+  },
+  "empty": "Keine Einsprüche vorhanden.",
+  "original_reason": "Ursprünglicher Grund",
+  "decision_note": "Entscheidung",
+  "decision_note_placeholder": "Notiz zur Begründung deiner Entscheidung hinzufügen (optional)",
+  "action_overturn": "Aufheben & zurücknehmen",
+  "action_uphold": "Aufrechterhalten",
+  "decide_failed": "Die Entscheidung konnte nicht gespeichert werden.",
+  "toast": {
+    "upheld": "Einspruch aufrechterhalten.",
+    "overturned": "Einspruch stattgegeben — Maßnahme aufgehoben."
+  }
+}

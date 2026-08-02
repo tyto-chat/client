@@ -1,0 +1,10 @@
+.git
+.ddev
+node_modules/
+dist/
+tests/
+playwright-report/
+.env.local
+.env.*.local
+*.md
+.github

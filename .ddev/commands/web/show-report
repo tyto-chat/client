@@ -1,0 +1,13 @@
+#!/bin/bash
+## Description: Serve the Playwright HTML report on port 9323
+## Usage: show-report
+
+HOSTNAME=$(echo "$DDEV_PRIMARY_URL" | sed 's|/$||' | sed 's|https\?://||' | sed 's|:[0-9]*$||')
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo " Playwright report: https://${HOSTNAME}:9323"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+exec npx playwright show-report --host 0.0.0.0 --port 9323

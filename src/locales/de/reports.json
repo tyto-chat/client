@@ -1,0 +1,52 @@
+{
+  "report_title": "Inhalt melden",
+  "report_intro": "Sag uns, was nicht stimmt. Die Moderatoren der Community prüfen diese Meldung.",
+  "report_message": "Nachricht melden",
+  "report_user": "Diesen Nutzer melden",
+  "report_action": "Melden",
+  "category": {
+    "illegal_content": "Illegale Inhalte",
+    "harassment": "Belästigung oder Mobbing",
+    "spam": "Spam",
+    "rule_violation": "Verstoß gegen die Community-Regeln",
+    "other": "Etwas anderes"
+  },
+  "comment_label": "Details",
+  "comment_placeholder": "Füge Kontext hinzu, der den Moderatoren hilft (nur bei „Etwas anderes“ erforderlich).",
+  "submit_report": "Meldung senden",
+  "submitted_toast": "Meldung gesendet. Danke.",
+  "submit_failed": "Die Meldung konnte nicht gesendet werden.",
+  "tab_reports": "Meldungen",
+  "admin_intro": "Alle Inhaltsmeldungen aus allen Communities, einschließlich Direktnachrichten.",
+  "filter": {
+    "open": "Offen",
+    "escalated": "Eskaliert",
+    "resolved": "Gelöst",
+    "dismissed": "Abgelehnt",
+    "all": "Alle"
+  },
+  "status": {
+    "open": "Offen",
+    "escalated": "Eskaliert",
+    "resolved": "Gelöst",
+    "dismissed": "Abgelehnt"
+  },
+  "empty": "Keine Meldungen vorhanden.",
+  "reported_user": "Gemeldeter Nutzer",
+  "reported_by": "gemeldet von",
+  "reporter_note": "Notiz des Melders",
+  "resolution_note": "Lösung",
+  "resolution_note_placeholder": "Interne Notiz zur Lösung hinzufügen (optional)",
+  "view_message": "Nachricht ansehen",
+  "view_deleted_message": "Nachricht ansehen (gelöscht)",
+  "action_resolve": "Lösen",
+  "action_dismiss": "Ablehnen",
+  "action_escalate": "An Admin eskalieren",
+  "action_failed": "Die Meldung konnte nicht aktualisiert werden.",
+  "escalated_admin_only": "Eskalierte Meldungen können nur von einem Server-Administrator geschlossen werden.",
+  "toast": {
+    "resolved": "Meldung gelöst.",
+    "escalated": "Meldung eskaliert.",
+    "dismissed": "Meldung abgelehnt."
+  }
+}

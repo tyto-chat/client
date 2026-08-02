@@ -1,0 +1,52 @@
+{
+  "report_title": "Signaler du contenu",
+  "report_intro": "Dis-nous ce qui ne va pas. Les modérateurs de la communauté examineront ce signalement.",
+  "report_message": "Signaler le message",
+  "report_user": "Signaler cet utilisateur",
+  "report_action": "Signaler",
+  "category": {
+    "illegal_content": "Contenu illégal",
+    "harassment": "Harcèlement ou intimidation",
+    "spam": "Spam",
+    "rule_violation": "Violation des règles de la communauté",
+    "other": "Autre chose"
+  },
+  "comment_label": "Détails",
+  "comment_placeholder": "Ajoute un contexte utile aux modérateurs (obligatoire uniquement pour « Autre chose »).",
+  "submit_report": "Envoyer le signalement",
+  "submitted_toast": "Signalement envoyé. Merci.",
+  "submit_failed": "Impossible d'envoyer le signalement.",
+  "tab_reports": "Signalements",
+  "admin_intro": "Tous les signalements de contenu de toutes les communautés, messages privés compris.",
+  "filter": {
+    "open": "Ouverts",
+    "escalated": "Remontés",
+    "resolved": "Résolus",
+    "dismissed": "Rejetés",
+    "all": "Tous"
+  },
+  "status": {
+    "open": "Ouvert",
+    "escalated": "Remonté",
+    "resolved": "Résolu",
+    "dismissed": "Rejeté"
+  },
+  "empty": "Aucun signalement ici.",
+  "reported_user": "Utilisateur signalé",
+  "reported_by": "signalé par",
+  "reporter_note": "Note du signaleur",
+  "resolution_note": "Résolution",
+  "resolution_note_placeholder": "Ajoute une note de résolution interne (facultatif)",
+  "view_message": "Voir le message",
+  "view_deleted_message": "Voir le message (supprimé)",
+  "action_resolve": "Résoudre",
+  "action_dismiss": "Rejeter",
+  "action_escalate": "Remonter à l'administrateur",
+  "action_failed": "Impossible de mettre à jour le signalement.",
+  "escalated_admin_only": "Les signalements remontés ne peuvent être clôturés que par un administrateur du serveur.",
+  "toast": {
+    "resolved": "Signalement résolu.",
+    "escalated": "Signalement remonté.",
+    "dismissed": "Signalement rejeté."
+  }
+}

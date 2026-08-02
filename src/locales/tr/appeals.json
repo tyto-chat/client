@@ -1,0 +1,31 @@
+{
+  "appeal_title": "Bu eyleme itiraz et",
+  "appeal_intro": "Bu moderasyon eyleminin neden bir hata olduğunu düşündüğünü açıkla. Bir moderatör itirazını inceleyecek.",
+  "reason_placeholder": "Bu eylem neden yeniden değerlendirilmeli?",
+  "submit_appeal": "İtirazı gönder",
+  "submitted_toast": "İtiraz gönderildi. Bir moderatör inceleyecek.",
+  "submit_failed": "İtiraz gönderilemedi.",
+  "tab_appeals": "İtirazlar",
+  "filter": {
+    "pending": "Bekleyen",
+    "upheld": "Onaylanan",
+    "overturned": "Bozulan",
+    "all": "Tümü"
+  },
+  "status": {
+    "pending": "Bekliyor",
+    "upheld": "Onaylandı",
+    "overturned": "Bozuldu"
+  },
+  "empty": "Burada itiraz yok.",
+  "original_reason": "Asıl neden",
+  "decision_note": "Karar",
+  "decision_note_placeholder": "Kararını açıklayan bir not ekle (isteğe bağlı)",
+  "action_overturn": "Boz ve kaldır",
+  "action_uphold": "Onayla",
+  "decide_failed": "Karar kaydedilemedi.",
+  "toast": {
+    "upheld": "İtiraz reddedildi.",
+    "overturned": "İtiraz kabul edildi — eylem kaldırıldı."
+  }
+}

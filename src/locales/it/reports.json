@@ -1,0 +1,52 @@
+{
+  "report_title": "Segnala contenuto",
+  "report_intro": "Dicci cosa non va. I moderatori della community esamineranno questa segnalazione.",
+  "report_message": "Segnala messaggio",
+  "report_user": "Segnala questo utente",
+  "report_action": "Segnala",
+  "category": {
+    "illegal_content": "Contenuto illegale",
+    "harassment": "Molestie o bullismo",
+    "spam": "Spam",
+    "rule_violation": "Violazione delle regole della community",
+    "other": "Qualcos'altro"
+  },
+  "comment_label": "Dettagli",
+  "comment_placeholder": "Aggiungi contesto utile ai moderatori (obbligatorio solo per «Qualcos'altro»).",
+  "submit_report": "Invia segnalazione",
+  "submitted_toast": "Segnalazione inviata. Grazie.",
+  "submit_failed": "Impossibile inviare la segnalazione.",
+  "tab_reports": "Segnalazioni",
+  "admin_intro": "Tutte le segnalazioni di contenuto di tutte le community, inclusi i messaggi diretti.",
+  "filter": {
+    "open": "Aperte",
+    "escalated": "Inoltrate",
+    "resolved": "Risolte",
+    "dismissed": "Respinte",
+    "all": "Tutte"
+  },
+  "status": {
+    "open": "Aperta",
+    "escalated": "Inoltrata",
+    "resolved": "Risolta",
+    "dismissed": "Respinta"
+  },
+  "empty": "Nessuna segnalazione qui.",
+  "reported_user": "Utente segnalato",
+  "reported_by": "segnalato da",
+  "reporter_note": "Nota del segnalatore",
+  "resolution_note": "Risoluzione",
+  "resolution_note_placeholder": "Aggiungi una nota interna di risoluzione (facoltativa)",
+  "view_message": "Vedi messaggio",
+  "view_deleted_message": "Vedi messaggio (eliminato)",
+  "action_resolve": "Risolvi",
+  "action_dismiss": "Respingi",
+  "action_escalate": "Inoltra all'amministratore",
+  "action_failed": "Impossibile aggiornare la segnalazione.",
+  "escalated_admin_only": "Le segnalazioni inoltrate possono essere chiuse solo da un amministratore del server.",
+  "toast": {
+    "resolved": "Segnalazione risolta.",
+    "escalated": "Segnalazione inoltrata.",
+    "dismissed": "Segnalazione respinta."
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "appeal_title": "Bezwaar maken tegen deze actie",
+  "appeal_intro": "Leg uit waarom je denkt dat deze moderatieactie een vergissing was. Een moderator beoordeelt je bezwaar.",
+  "reason_placeholder": "Waarom zou deze actie heroverwogen moeten worden?",
+  "submit_appeal": "Bezwaar indienen",
+  "submitted_toast": "Bezwaar ingediend. Een moderator beoordeelt het.",
+  "submit_failed": "Kon het bezwaar niet indienen.",
+  "tab_appeals": "Bezwaren",
+  "filter": {
+    "pending": "In behandeling",
+    "upheld": "Gehandhaafd",
+    "overturned": "Teruggedraaid",
+    "all": "Alle"
+  },
+  "status": {
+    "pending": "In behandeling",
+    "upheld": "Gehandhaafd",
+    "overturned": "Teruggedraaid"
+  },
+  "empty": "Geen bezwaren hier.",
+  "original_reason": "Oorspronkelijke reden",
+  "decision_note": "Besluit",
+  "decision_note_placeholder": "Voeg een notitie toe die je besluit toelicht (optioneel)",
+  "action_overturn": "Terugdraaien en opheffen",
+  "action_uphold": "Handhaven",
+  "decide_failed": "Kon het besluit niet vastleggen.",
+  "toast": {
+    "upheld": "Bezwaar afgewezen.",
+    "overturned": "Bezwaar toegewezen — actie opgeheven."
+  }
+}

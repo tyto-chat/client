@@ -1,0 +1,31 @@
+{
+  "appeal_title": "Presenta ricorso contro questa azione",
+  "appeal_intro": "Spiega perché ritieni che questa azione di moderazione sia stata un errore. Un moderatore esaminerà il tuo ricorso.",
+  "reason_placeholder": "Perché questa azione dovrebbe essere riconsiderata?",
+  "submit_appeal": "Invia ricorso",
+  "submitted_toast": "Ricorso inviato. Un moderatore lo esaminerà.",
+  "submit_failed": "Impossibile inviare il ricorso.",
+  "tab_appeals": "Ricorsi",
+  "filter": {
+    "pending": "In attesa",
+    "upheld": "Confermati",
+    "overturned": "Accolti",
+    "all": "Tutti"
+  },
+  "status": {
+    "pending": "In attesa",
+    "upheld": "Confermato",
+    "overturned": "Accolto"
+  },
+  "empty": "Nessun ricorso qui.",
+  "original_reason": "Motivo originale",
+  "decision_note": "Decisione",
+  "decision_note_placeholder": "Aggiungi una nota che spieghi la tua decisione (facoltativa)",
+  "action_overturn": "Accogli e revoca",
+  "action_uphold": "Conferma",
+  "decide_failed": "Impossibile registrare la decisione.",
+  "toast": {
+    "upheld": "Ricorso confermato.",
+    "overturned": "Ricorso accolto — azione revocata."
+  }
+}

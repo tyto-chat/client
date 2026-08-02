@@ -1,0 +1,38 @@
+import { useId } from "react";
+
+export function TytoMark({ size = 40 }: { size?: number }) {
+  const gid = useId();
+  return (
+    <span
+      aria-hidden="true"
+      className="grid place-items-center rounded-[27%] shadow-soft-sm"
+      style={{ width: size, height: size, background: "linear-gradient(135deg, #22d3ee, #a855f7)" }}
+    >
+      <svg
+        viewBox="115 120 800 800"
+        role="img"
+        aria-hidden="true"
+        style={{ width: "90%", height: "90%" }}
+      >
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#22d3ee" />
+            <stop offset="1" stopColor="#a855f7" />
+          </linearGradient>
+        </defs>
+        <path
+          fill="#fff"
+          d="M817.57,399.62c0-222.31-204.78-253.9-306.07,0-82.57-248.39-306.07-222.31-306.07,0,0,153.12,91.4,286.25,185.53,354.3,15.41,11.14,23.03,30.44,18.07,48.8-5.57,20.61-17.9,42.5-24.85,53.85-2.29,3.74.31,8.57,4.7,8.68,63,1.58,167.43-62.08,218.62-93.71,101.59-62.78,210.08-204.23,210.08-371.92Z"
+        />
+        <path
+          fill={`url(#${gid})`}
+          d="M317.61,367.16l78.67,21.05c16.47,4.41,30.68,14.87,39.78,29.29l75.45,119.56v50.43l-89.41-131.51s-69.4-1.08-96.16-43.29c-15.21-23.99-8.32-45.54-8.32-45.54Z"
+        />
+        <path
+          fill={`url(#${gid})`}
+          d="M705.39,367.16l-78.67,21.05c-16.47,4.41-30.68,14.87-39.78,29.29l-75.45,119.56v50.43s89.41-131.51,89.41-131.51c0,0,69.4-1.08,96.16-43.29,15.21-23.99,8.32-45.54,8.32-45.54Z"
+        />
+      </svg>
+    </span>
+  );
+}

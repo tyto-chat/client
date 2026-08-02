@@ -1,0 +1,8 @@
+name: tyto-client
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tyto-client:dev

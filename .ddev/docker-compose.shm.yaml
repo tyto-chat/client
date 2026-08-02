@@ -1,0 +1,7 @@
+# Chromium keeps renderer shared memory in /dev/shm, and Docker's default is
+# 64MB. Four Playwright workers exhaust that, at which point renderers are killed
+# mid-test — surfacing as "Target page, context or browser has been closed" and a
+# cascade of timeouts as the run collapses.
+services:
+  web:
+    shm_size: 2gb

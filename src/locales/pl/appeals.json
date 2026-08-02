@@ -1,0 +1,31 @@
+{
+  "appeal_title": "Odwołaj się od tego działania",
+  "appeal_intro": "Wyjaśnij, dlaczego uważasz, że to działanie moderacyjne było błędem. Moderator rozpatrzy Twoje odwołanie.",
+  "reason_placeholder": "Dlaczego to działanie powinno zostać ponownie rozważone?",
+  "submit_appeal": "Wyślij odwołanie",
+  "submitted_toast": "Odwołanie wysłane. Moderator je rozpatrzy.",
+  "submit_failed": "Nie udało się wysłać odwołania.",
+  "tab_appeals": "Odwołania",
+  "filter": {
+    "pending": "Oczekujące",
+    "upheld": "Podtrzymane",
+    "overturned": "Uchylone",
+    "all": "Wszystkie"
+  },
+  "status": {
+    "pending": "Oczekujące",
+    "upheld": "Podtrzymane",
+    "overturned": "Uchylone"
+  },
+  "empty": "Brak odwołań.",
+  "original_reason": "Pierwotny powód",
+  "decision_note": "Decyzja",
+  "decision_note_placeholder": "Dodaj notatkę wyjaśniającą decyzję (opcjonalnie)",
+  "action_overturn": "Uchyl i cofnij",
+  "action_uphold": "Podtrzymaj",
+  "decide_failed": "Nie udało się zapisać decyzji.",
+  "toast": {
+    "upheld": "Odwołanie podtrzymane.",
+    "overturned": "Odwołanie uwzględnione — działanie cofnięte."
+  }
+}

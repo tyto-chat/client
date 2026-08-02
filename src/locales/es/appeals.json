@@ -1,0 +1,31 @@
+{
+  "appeal_title": "Apelar esta acción",
+  "appeal_intro": "Explica por qué crees que esta acción de moderación fue un error. Un moderador revisará tu apelación.",
+  "reason_placeholder": "¿Por qué debería reconsiderarse esta acción?",
+  "submit_appeal": "Enviar apelación",
+  "submitted_toast": "Apelación enviada. Un moderador la revisará.",
+  "submit_failed": "No se pudo enviar la apelación.",
+  "tab_appeals": "Apelaciones",
+  "filter": {
+    "pending": "Pendientes",
+    "upheld": "Mantenidas",
+    "overturned": "Revocadas",
+    "all": "Todas"
+  },
+  "status": {
+    "pending": "Pendiente",
+    "upheld": "Mantenida",
+    "overturned": "Revocada"
+  },
+  "empty": "No hay apelaciones aquí.",
+  "original_reason": "Motivo original",
+  "decision_note": "Decisión",
+  "decision_note_placeholder": "Añade una nota explicando tu decisión (opcional)",
+  "action_overturn": "Revocar y levantar",
+  "action_uphold": "Mantener",
+  "decide_failed": "No se pudo registrar la decisión.",
+  "toast": {
+    "upheld": "Apelación mantenida.",
+    "overturned": "Apelación aceptada — acción levantada."
+  }
+}

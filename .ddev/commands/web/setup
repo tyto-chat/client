@@ -1,0 +1,39 @@
+#!/bin/bash
+## Description: Install dependencies, configure .env.local, and install Playwright browser
+## Usage: setup
+
+set -e
+
+# Detect the non-standard HTTPS port suffix (empty on standard-port machines)
+PORT=$(echo "$DDEV_PRIMARY_URL" | sed 's|/$||' | grep -oE ':[0-9]+$' || true)
+[ "$PORT" = ":443" ] || [ "$PORT" = ":80" ] && PORT=""
+API_HOSTNAME=$(echo "${DDEV_PRIMARY_URL}" | sed 's|/$||' | sed 's|https\?://||' | sed 's|:[0-9]*$||' | sed "s/${DDEV_SITENAME}/core/")
+
+# Write VITE env vars to .env.local if not already configured
+# (needed by the app itself, independent of E2E setup)
+if ! grep -qs '^VITE_SERVER_INFO_URL=' .env.local 2>/dev/null; then
+    echo "VITE_SERVER_INFO_URL=https://${API_HOSTNAME}${PORT}/api/server-info" >> .env.local
+    echo "Added VITE_SERVER_INFO_URL to .env.local"
+fi
+
+# Write E2E vars to .env.local if not already configured
+if ! grep -qs '^E2E_API_URL=' .env.local 2>/dev/null; then
+    API_TEST_HOSTNAME=$(echo "${DDEV_PRIMARY_URL}" | sed 's|/$||' | sed 's|https\?://||' | sed 's|:[0-9]*$||' | sed "s/${DDEV_SITENAME}/core-test/")
+    CLIENT_HOSTNAME="${DDEV_HOSTNAME}"
+    cat >> .env.local <<EOF
+E2E_BASE_URL=https://${CLIENT_HOSTNAME}${PORT}
+E2E_API_URL=https://${API_TEST_HOSTNAME}${PORT}
+EOF
+    echo "Added E2E variables to .env.local"
+fi
+
+npm install
+# Browser binary only — system deps are in the web image (web-build/Dockerfile).
+npx playwright install chromium
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo " Setup complete!"
+echo "  Unit tests:  ddev npm test"
+echo "  E2E tests:   ddev e2e"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

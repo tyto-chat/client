@@ -1,0 +1,93 @@
+#!/bin/bash
+## Description: Reset core test DB and run Playwright E2E tests
+## Usage: e2e [group]
+##
+## Without a group: runs the full suite (all spec files, chromium project).
+## With a group:    runs only that group's tests after setting up its prerequisites.
+##
+## Available groups:
+##   auth         Login, logout, session guard
+##   anonymous    Anonymous browsing and UI visibility
+##   profile      User profile and preferences
+##   locale       Accept-Language negotiation
+##   messaging    Send/edit/delete messages, reactions, mentions, attachments
+##   realtime     Mercure SSE real-time updates
+##   channels     Channel and section management (admin)
+##   moderation   Warn, timeout, ban, moderator assignment
+##   community    Community admin controls and permissions
+##   groups       User group management
+##   roles        Role-based UI visibility
+##   notifications Notification badges and read state
+##   navigation   Sidebar and routing
+##   conversation Direct messages (DMs) lifecycle
+##   pagination   Channel timeline paging across message-page boundaries
+##
+## Examples:
+##   ddev e2e                   Full suite
+##   ddev e2e moderation        Only moderation tests
+##   ddev e2e messaging         Only messaging tests
+##
+## To run a single test within a group:
+##   ddev npm run test:e2e -- --project=moderation --grep "admin warns"
+
+set -e
+
+GROUP=${1:-}
+
+CORE_INFO=$(ddev describe core -j 2>/dev/null)
+
+# Check that the core project is running (parse status — a plain grep on the
+# JSON matches unrelated strings anywhere in the payload)
+CORE_STATUS=$(echo "$CORE_INFO" | python3 -c "import sys,json; print(json.load(sys.stdin)['raw'].get('status',''))" 2>/dev/null || true)
+if [ "$CORE_STATUS" != "running" ]; then
+    echo "Error: 'core' ddev project is not running (status: ${CORE_STATUS:-unknown}). Start it first: ddev start core"
+    exit 1
+fi
+
+CORE_DIR=$(echo "$CORE_INFO" | python3 -c "import sys,json; print(json.load(sys.stdin)['raw']['approot'])")
+
+echo "→ Resetting core test database..."
+(cd "$CORE_DIR" && ddev reset-test-db)
+
+# ── Serve a build, not the dev server ────────────────────────────────────────
+# Against the dev server every browser context re-fetches ~340 unbundled
+# modules, costing 3-5s per context. Tests create a context each, so a large
+# run spent most of its time there and brushed the 20s per-test timeout —
+# under parallel load it tipped over and cascaded. A build collapses that to a
+# handful of requests. nginx proxies client.ddev.site to :5173, so the swap is
+# invisible to the tests.
+restore_dev_server() {
+    # "[v]ite" so the pattern cannot match pkill's own shell (which would make
+    # it kill itself and exit 143).
+    ddev exec 'pkill -f "[v]ite preview" >/dev/null 2>&1; true' >/dev/null 2>&1 || true
+    ddev exec supervisorctl start webextradaemons:vite >/dev/null 2>&1 || true
+}
+trap restore_dev_server EXIT INT TERM
+
+echo "→ Building the client (mode=e2e)..."
+ddev exec npm run build -- --mode e2e
+
+echo "→ Swapping the dev server for a preview of the build..."
+ddev exec supervisorctl stop webextradaemons:vite >/dev/null
+ddev exec 'pkill -f "[v]ite preview" >/dev/null 2>&1; true' >/dev/null 2>&1 || true
+ddev exec 'nohup npx vite preview --mode e2e >/tmp/vite-preview.log 2>&1 &'
+
+# Wait for the preview server to accept connections before Playwright starts.
+for _ in $(seq 60); do
+    if ddev exec 'curl -sf -o /dev/null http://localhost:5173/' >/dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
+if ! ddev exec 'curl -sf -o /dev/null http://localhost:5173/' >/dev/null 2>&1; then
+    echo "Error: preview server never came up. Log:"
+    ddev exec cat /tmp/vite-preview.log || true
+    exit 1
+fi
+
+echo "→ Running E2E tests..."
+if [ -n "$GROUP" ]; then
+    ddev npx playwright test --project="$GROUP"
+else
+    ddev npm run test:e2e
+fi

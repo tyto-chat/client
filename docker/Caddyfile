@@ -1,0 +1,44 @@
+{
+	{$CADDY_GLOBAL_OPTIONS}
+}
+
+{$CADDY_SITE_ADDRESS:localhost} {
+	log
+	root * /srv
+	encode zstd gzip
+
+	# /embed/* must stay frameable (third-party embed iframes) — never add
+	# frame-ancestors/X-Frame-Options covering this path. `rewrite` runs
+	# before `try_files`/`file_server` in Caddy's canonical directive
+	# order regardless of write-order, so this reliably beats the SPA
+	# fallback below without the ordering ambiguity a `handle` block
+	# mixed with bare directives would introduce.
+	@embed path /embed/*
+	rewrite @embed /embed.html
+
+	# Headers safe on every path (including the frameable /embed/*).
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	# Anti-clickjacking + CSP for the app — NOT /embed/* (which is frameable
+	# by design). To harden per deployment (e.g. lock connect-src to your exact
+	# API / Mercure / LiveKit origins), edit this default in place — compose does
+	# NOT forward a CSP_POLICY env var, and wiring one as ${CSP_POLICY:-} would
+	# let an empty value blank the policy entirely. The default keeps script-src
+	# tight (no unsafe-eval/inline; wasm-unsafe-eval for MediaPipe/onnxruntime),
+	# allows frame-src for YouTube embeds, and only relaxes connect/img/media
+	# to https/wss (img/media need the API origin — attachments are cross-host).
+	@app not path /embed/*
+	header @app {
+		X-Frame-Options "DENY"
+		Content-Security-Policy "{$CSP_POLICY:default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' blob: https:; worker-src 'self' blob:; connect-src 'self' https: wss:; frame-src https://www.youtube.com; frame-ancestors 'none'; form-action 'self'}"
+	}
+
+	# SPA fallback: serve real files, else index.html (client-side routing).
+	try_files {path} /index.html
+	file_server
+}

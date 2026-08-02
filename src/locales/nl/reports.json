@@ -1,0 +1,52 @@
+{
+  "report_title": "Inhoud melden",
+  "report_intro": "Vertel wat er mis is. Communitymoderators beoordelen deze melding.",
+  "report_message": "Bericht melden",
+  "report_user": "Deze gebruiker melden",
+  "report_action": "Melden",
+  "category": {
+    "illegal_content": "Illegale inhoud",
+    "harassment": "Intimidatie of pesten",
+    "spam": "Spam",
+    "rule_violation": "Schending van communityregels",
+    "other": "Iets anders"
+  },
+  "comment_label": "Details",
+  "comment_placeholder": "Voeg context toe die moderators helpt (optioneel, behalve bij \"Iets anders\").",
+  "submit_report": "Melding versturen",
+  "submitted_toast": "Melding verstuurd. Bedankt.",
+  "submit_failed": "Kon de melding niet versturen.",
+  "tab_reports": "Meldingen",
+  "admin_intro": "Elke inhoudsmelding uit alle community's, inclusief privéberichten.",
+  "filter": {
+    "open": "Open",
+    "escalated": "Geëscaleerd",
+    "resolved": "Opgelost",
+    "dismissed": "Afgewezen",
+    "all": "Alle"
+  },
+  "status": {
+    "open": "Open",
+    "escalated": "Geëscaleerd",
+    "resolved": "Opgelost",
+    "dismissed": "Afgewezen"
+  },
+  "empty": "Geen meldingen hier.",
+  "reported_user": "Gemelde gebruiker",
+  "reported_by": "gemeld door",
+  "reporter_note": "Notitie van melder",
+  "resolution_note": "Afhandeling",
+  "resolution_note_placeholder": "Voeg een interne afhandelingsnotitie toe (optioneel)",
+  "view_message": "Bericht bekijken",
+  "view_deleted_message": "Bericht bekijken (verwijderd)",
+  "action_resolve": "Oplossen",
+  "action_dismiss": "Afwijzen",
+  "action_escalate": "Escaleren naar admin",
+  "action_failed": "Kon de melding niet bijwerken.",
+  "escalated_admin_only": "Geëscaleerde meldingen kunnen alleen door een serverbeheerder worden gesloten.",
+  "toast": {
+    "resolved": "Melding opgelost.",
+    "escalated": "Melding geëscaleerd.",
+    "dismissed": "Melding afgewezen."
+  }
+}

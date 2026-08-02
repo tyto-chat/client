@@ -1,0 +1,52 @@
+{
+  "report_title": "İçeriği şikâyet et",
+  "report_intro": "Neyin yanlış olduğunu anlat. Topluluk moderatörleri bu şikâyeti inceleyecek.",
+  "report_message": "Mesajı şikâyet et",
+  "report_user": "Bu kullanıcıyı şikâyet et",
+  "report_action": "Şikâyet et",
+  "category": {
+    "illegal_content": "Yasa dışı içerik",
+    "harassment": "Taciz veya zorbalık",
+    "spam": "Spam",
+    "rule_violation": "Topluluk kuralları ihlali",
+    "other": "Başka bir şey"
+  },
+  "comment_label": "Ayrıntılar",
+  "comment_placeholder": "Moderatörlere yardımcı olacak bağlam ekle (\"Başka bir şey\" dışında isteğe bağlı).",
+  "submit_report": "Şikâyeti gönder",
+  "submitted_toast": "Şikâyet gönderildi. Teşekkürler.",
+  "submit_failed": "Şikâyet gönderilemedi.",
+  "tab_reports": "Şikâyetler",
+  "admin_intro": "Özel mesajlar dahil tüm topluluklardaki her içerik şikâyeti.",
+  "filter": {
+    "open": "Açık",
+    "escalated": "Yükseltilen",
+    "resolved": "Çözülen",
+    "dismissed": "Reddedilen",
+    "all": "Tümü"
+  },
+  "status": {
+    "open": "Açık",
+    "escalated": "Yükseltildi",
+    "resolved": "Çözüldü",
+    "dismissed": "Reddedildi"
+  },
+  "empty": "Burada şikâyet yok.",
+  "reported_user": "Şikâyet edilen kullanıcı",
+  "reported_by": "şikâyet eden",
+  "reporter_note": "Şikâyetçi notu",
+  "resolution_note": "Çözüm",
+  "resolution_note_placeholder": "Dahili bir çözüm notu ekle (isteğe bağlı)",
+  "view_message": "Mesajı görüntüle",
+  "view_deleted_message": "Mesajı görüntüle (silinmiş)",
+  "action_resolve": "Çöz",
+  "action_dismiss": "Reddet",
+  "action_escalate": "Yöneticiye yükselt",
+  "action_failed": "Şikâyet güncellenemedi.",
+  "escalated_admin_only": "Yükseltilen şikâyetleri yalnızca bir sunucu yöneticisi kapatabilir.",
+  "toast": {
+    "resolved": "Şikâyet çözüldü.",
+    "escalated": "Şikâyet yükseltildi.",
+    "dismissed": "Şikâyet reddedildi."
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "report_title": "Report content",
+  "report_intro": "Tell us what's wrong. Community moderators will review this report.",
+  "report_message": "Report message",
+  "report_user": "Report this user",
+  "report_action": "Report",
+  "category": {
+    "illegal_content": "Illegal content",
+    "harassment": "Harassment or bullying",
+    "spam": "Spam",
+    "rule_violation": "Community rules violation",
+    "other": "Something else"
+  },
+  "comment_label": "Details",
+  "comment_placeholder": "Add any context that will help moderators (optional unless \"Something else\").",
+  "submit_report": "Submit report",
+  "submitted_toast": "Report submitted. Thank you.",
+  "submit_failed": "Could not submit the report.",
+  "tab_reports": "Reports",
+  "admin_intro": "Every content report across all communities, including direct messages.",
+  "filter": {
+    "open": "Open",
+    "escalated": "Escalated",
+    "resolved": "Resolved",
+    "dismissed": "Dismissed",
+    "all": "All"
+  },
+  "status": {
+    "open": "Open",
+    "escalated": "Escalated",
+    "resolved": "Resolved",
+    "dismissed": "Dismissed"
+  },
+  "empty": "No reports here.",
+  "reported_user": "Reported user",
+  "reported_by": "reported by",
+  "reporter_note": "Reporter note",
+  "resolution_note": "Resolution",
+  "resolution_note_placeholder": "Add an internal resolution note (optional)",
+  "view_message": "View message",
+  "view_deleted_message": "View message (deleted)",
+  "action_resolve": "Resolve",
+  "action_dismiss": "Dismiss",
+  "action_escalate": "Escalate to admin",
+  "action_failed": "Could not update the report.",
+  "escalated_admin_only": "Escalated reports can only be closed by a server administrator.",
+  "toast": {
+    "resolved": "Report resolved.",
+    "escalated": "Report escalated.",
+    "dismissed": "Report dismissed."
+  }
+}
