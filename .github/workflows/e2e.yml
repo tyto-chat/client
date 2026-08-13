@@ -100,8 +100,12 @@ jobs:
           LIVEKIT_INTERNAL_URL=https://livekit.example.com
           CORS_ALLOW_ORIGIN='^http://localhost(:[0-9]+)?$'
           DATABASE_URL="mysql://db:db@127.0.0.1:3306/db?serverVersion=mariadb-11.8.0&charset=utf8mb4"
+          APP_MEDIA_SIGNING_KEY=ci_media_signing_key_minimum_32_chars_long!
           EOF
           mkdir -p var/media var/share var/exports
+          echo "=== .env.test.local as written ==="
+          cat .env.test.local
+          APP_ENV=test php bin/console debug:dotenv APP_MEDIA_SIGNING_KEY || true
 
       - name: Prepare core test database
         working-directory: core
