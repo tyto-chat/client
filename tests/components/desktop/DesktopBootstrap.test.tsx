@@ -158,4 +158,31 @@ describe("DesktopBootstrap", () => {
       email: "b@c.d",
     });
   });
+
+  it("shows the incompatible-version screen when the server only offers unsupported versions", async () => {
+    server.use(http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v99"] })));
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "i1",
+      serverUrl: ORIGIN,
+      email: "a@b.c",
+      userId: null,
+      displayName: null,
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "i1");
+    await saveDesktopConfig(bridge, cfg);
+    await bridge.secrets.set(secretKey(pid, "i1", "refreshToken"), "r1");
+
+    render(
+      <DesktopBootstrap>
+        <div data-testid="app" />
+      </DesktopBootstrap>,
+    );
+    expect(await screen.findByTestId("desktop-retry")).toBeInTheDocument();
+    expect(screen.getByText("This server isn't compatible")).toBeInTheDocument();
+    expect(screen.queryByTestId("app")).not.toBeInTheDocument();
+  });
 });

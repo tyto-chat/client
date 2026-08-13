@@ -25,6 +25,7 @@ type BootState =
   | { kind: "first-run" }
   | { kind: "relogin"; identity: DesktopIdentity }
   | { kind: "unreachable"; identity: DesktopIdentity; error: unknown }
+  | { kind: "incompatible"; identity: DesktopIdentity; direction: string }
   | { kind: "ready" };
 
 export async function persistWizardResult(
@@ -122,6 +123,8 @@ export function DesktopBootstrap({ children }: { children: ReactNode }) {
       await finishConnected(profileId, identity.id, outcome.token);
     } else if (outcome.status === "needs-login") {
       setState({ kind: "relogin", identity });
+    } else if (outcome.status === "version-mismatch") {
+      setState({ kind: "incompatible", identity, direction: outcome.direction });
     } else {
       setState({ kind: "unreachable", identity, error: outcome.error });
     }
@@ -203,6 +206,31 @@ export function DesktopBootstrap({ children }: { children: ReactNode }) {
           initialEmail={state.identity.email}
           lockServer
         />
+      </FullScreenWizard>
+    );
+  }
+
+  if (state.kind === "incompatible") {
+    const incompatible = state;
+    return (
+      <FullScreenWizard>
+        <div className="space-y-4">
+          <h3 className="text-center text-[19px] font-semibold tracking-tight text-fg">
+            {t("server_incompatible_title")}
+          </h3>
+          <ErrorBanner message={t("server_incompatible")} />
+          <button
+            type="button"
+            onClick={() => {
+              setState({ kind: "loading" });
+              void tryConnect(profileIdRef.current ?? "", incompatible.identity);
+            }}
+            className="w-full rounded-md bg-accent-gradient py-2.5 font-semibold text-on-accent shadow-soft-sm transition hover:opacity-90"
+            data-testid="desktop-retry"
+          >
+            {t("retry")}
+          </button>
+        </div>
       </FullScreenWizard>
     );
   }

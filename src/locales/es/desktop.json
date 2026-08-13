@@ -28,5 +28,7 @@
   "welcome_back": "Bienvenido de nuevo",
   "welcome_back_sub": "Inicia sesión para continuar.",
   "signing_in_as": "Iniciando sesión como {{email}}",
-  "try_again": "Inténtalo de nuevo"
+  "try_again": "Inténtalo de nuevo",
+  "server_incompatible_title": "Este servidor no es compatible",
+  "server_incompatible": "Este servidor ejecuta una versión incompatible de tyto. Actualiza la aplicación de escritorio o el servidor."
 }

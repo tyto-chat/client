@@ -28,5 +28,7 @@
   "welcome_back": "Witaj ponownie",
   "welcome_back_sub": "Zaloguj się, aby kontynuować.",
   "signing_in_as": "Logowanie jako {{email}}",
-  "try_again": "Spróbuj ponownie"
+  "try_again": "Spróbuj ponownie",
+  "server_incompatible_title": "Ten serwer jest niezgodny",
+  "server_incompatible": "Ten serwer używa niezgodnej wersji tyto. Zaktualizuj aplikację desktopową lub serwer."
 }

@@ -28,5 +28,7 @@
   "welcome_back": "Welkom terug",
   "welcome_back_sub": "Log in om verder te gaan.",
   "signing_in_as": "Inloggen als {{email}}",
-  "try_again": "Opnieuw proberen"
+  "try_again": "Opnieuw proberen",
+  "server_incompatible_title": "Deze server is niet compatibel",
+  "server_incompatible": "Deze server gebruikt een incompatibele versie van tyto. Werk de desktopapp of de server bij."
 }

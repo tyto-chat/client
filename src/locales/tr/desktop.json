@@ -28,5 +28,7 @@
   "welcome_back": "Tekrar hoş geldin",
   "welcome_back_sub": "Devam etmek için giriş yap.",
   "signing_in_as": "{{email}} olarak giriş yapılıyor",
-  "try_again": "Tekrar dene"
+  "try_again": "Tekrar dene",
+  "server_incompatible_title": "Bu sunucu uyumlu değil",
+  "server_incompatible": "Bu sunucu tyto'nun uyumsuz bir sürümünü çalıştırıyor. Masaüstü uygulamasını veya sunucuyu güncelle."
 }
