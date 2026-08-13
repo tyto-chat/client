@@ -289,4 +289,24 @@ describe("AgentRegistry.stopAll", () => {
 
     for (const spy of closeSpies) expect(spy).toHaveBeenCalled();
   });
+
+  it("clears the refresh executor and the agent map so a decommissioned identity can't serve a later refresh", async () => {
+    stubServerInfo(ORIGIN_A, "Alpha");
+    stubRefresh(ORIGIN_A);
+    const identityA = makeIdentity("ia", ORIGIN_A);
+
+    const { registry } = await bootWithFakeBridge([identityA], "ia");
+    await vi.waitFor(() => expect(registry.getSnapshot().agents[0]?.status).toBe("healthy"));
+
+    const agent = registry.getAgent("ia")!;
+    const refreshSpy = vi.spyOn(agent, "refreshNow");
+
+    registry.stopAll();
+    expect(registry.getAgent("ia")).toBeUndefined();
+    expect(registry.getSnapshot().agents).toHaveLength(0);
+
+    setAccessToken("stale");
+    await refreshAccessToken().catch(() => undefined);
+    expect(refreshSpy).not.toHaveBeenCalled();
+  });
 });

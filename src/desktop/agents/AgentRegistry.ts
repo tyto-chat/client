@@ -82,6 +82,9 @@ export class AgentRegistry {
     for (const agent of this.agents.values()) {
       agent.stop();
     }
+    this.agents.clear();
+    setRefreshExecutor(null);
+    this.rebuildSnapshot();
   }
 
   private spawnAgent(identity: DesktopIdentity): IdentityAgent {

@@ -94,7 +94,19 @@ function FullScreenWizard({ children }: { children: ReactNode }) {
   );
 }
 
-export function DesktopBootstrap({ children }: { children: ReactNode }) {
+export interface DesktopSession {
+  profileId: string;
+  identityId: string;
+  identities: DesktopIdentity[];
+}
+
+export function DesktopBootstrap({
+  children,
+  onSession,
+}: {
+  children: ReactNode;
+  onSession?: (session: DesktopSession) => void;
+}) {
   const { t } = useTranslation("desktop");
   const bridgeRef = useRef<PlatformBridge>(getPlatformBridge());
   const configRef = useRef<DesktopConfig | null>(null);
@@ -105,14 +117,17 @@ export function DesktopBootstrap({ children }: { children: ReactNode }) {
   async function finishConnected(profileId: string, identityId: string, token: string) {
     const bridge = bridgeRef.current;
     const current = configRef.current;
+    let identities: DesktopIdentity[] = [];
     if (current) {
       const next = setLastActiveIdentity(current, profileId, identityId);
       configRef.current = next;
       await saveDesktopConfig(bridge, next);
+      identities = next.profiles.find((p) => p.id === profileId)?.identities ?? [];
     }
     setAccessToken(token);
     localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
     finishAuthRestore();
+    onSession?.({ profileId, identityId, identities });
     setState({ kind: "ready" });
   }
 
