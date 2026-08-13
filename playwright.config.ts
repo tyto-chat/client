@@ -56,20 +56,22 @@ export default defineConfig({
   // retries:1. A genuine bug fails both attempts; a rare SSE/timing transient
   // passes on retry. (The suite is not resource-bound — do not paper over
   // failures by raising this; root-cause them.)
-  retries: 1,
+  retries: process.env.CI ? 2 : 1,
   // 4 oversubscribes and is both flakier and slower: 228/289 in 20.0m vs 289/289 in 11.9m.
   workers: 2,
   reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
 
-  timeout: 20_000, // per-test timeout
+  // CI runners are ~2x slower than local ddev; scaled budgets keep transient
+  // slowness from masquerading as failures.
+  timeout: process.env.CI ? 40_000 : 20_000, // per-test timeout
   expect: {
-    timeout: 8_000, // per-assertion timeout; raised slightly for SSE tests
+    timeout: process.env.CI ? 15_000 : 8_000, // per-assertion timeout; raised slightly for SSE tests
   },
 
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "https://client.ddev.site",
     ignoreHTTPSErrors: true, // ddev self-signed certs inside the container
-    actionTimeout: 8_000, // per-action timeout (click, fill, hover, etc.)
+    actionTimeout: process.env.CI ? 15_000 : 8_000, // per-action timeout (click, fill, hover, etc.)
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },

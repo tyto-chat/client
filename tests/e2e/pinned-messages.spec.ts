@@ -97,7 +97,9 @@ test.describe.serial("Pinned messages — flow", () => {
     const pinBtn = page.getByTestId(testIds.msgActionPin).last();
     await expect(pinBtn).toBeVisible({ timeout: 8_000 });
     await expect(pinBtn).toHaveAttribute("title", "Unpin");
-    await pinBtn.hover();
+    // Re-hover the row right before acting: the hover bar hides again if the
+    // pointer settles elsewhere between the visibility check and the click.
+    await lastContent.hover();
     await pinBtn.click();
 
     // The message from test 2 was the only pin, so unpinning it empties the

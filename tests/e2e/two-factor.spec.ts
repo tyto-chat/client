@@ -174,8 +174,8 @@ test.describe.serial("Two-factor authentication", () => {
   test("global admin can force-disable a locked-out user's 2FA", async ({ adminPage: page }) => {
     await page.goto("/admin/users");
 
-    await page.getByPlaceholder("name or email").fill(victim.name);
-    const row = page.getByRole("row").filter({ hasText: victim.name });
+    await page.getByPlaceholder("name or email").fill(victim.email);
+    const row = page.getByRole("row").filter({ hasText: victim.email });
     await expect(row).toBeVisible({ timeout: 10_000 });
     await row.click();
 
