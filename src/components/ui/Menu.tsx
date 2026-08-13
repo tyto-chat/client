@@ -150,3 +150,25 @@ export function MenuItem({ children, onSelect, onClose, iconLeft, danger, testId
     </button>
   );
 }
+
+export function MenuDivider() {
+  return <div role="separator" className="my-1 border-t border-line" />;
+}
+
+interface MenuStaticItemProps {
+  children: ReactNode;
+  className?: string;
+  testId?: string;
+}
+
+export function MenuStaticItem({ children, className, testId }: MenuStaticItemProps) {
+  return (
+    <div
+      role="presentation"
+      data-testid={testId}
+      className={cn("truncate px-3 py-2 text-xs text-fg-subtle", className)}
+    >
+      {children}
+    </div>
+  );
+}

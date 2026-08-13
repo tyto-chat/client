@@ -8,8 +8,9 @@ import {
   revokeRefreshToken,
   __resetRefreshStateForTests,
   isRefreshRateLimited,
+  setRefreshExecutor,
 } from "@/api/auth";
-import { configureApiClient } from "@/api/client";
+import { ApiError, configureApiClient } from "@/api/client";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { TEST_BASE_URL as BASE } from "../../fixtures";
 
@@ -17,6 +18,7 @@ beforeEach(() => {
   configureApiClient(BASE);
   setAccessToken(null);
   __resetRefreshStateForTests();
+  setRefreshExecutor(null);
 });
 
 describe("login", () => {
@@ -103,6 +105,33 @@ describe("refreshAccessToken", () => {
     server.use(http.post(`${BASE}/token/refresh`, () => new HttpResponse(null, { status: 429 })));
 
     await expect(refreshAccessToken()).rejects.toThrow();
+    expect(getAccessToken()).toBe("still-valid");
+  });
+});
+
+describe("refreshAccessToken via executor", () => {
+  it("throttles after an executor rejection without re-invoking the executor", async () => {
+    let calls = 0;
+    setRefreshExecutor(async () => {
+      calls++;
+      throw new Error("network down");
+    });
+
+    await expect(refreshAccessToken()).rejects.toThrow("refresh_failed");
+    expect(calls).toBe(1);
+    expect(localStorage.getItem("hadSession")).toBeNull();
+
+    await expect(refreshAccessToken()).rejects.toThrow("refresh_failed");
+    expect(calls).toBe(1);
+  });
+
+  it("maps a 429 ApiError from the executor to RefreshRateLimitedError and preserves the session", async () => {
+    setAccessToken("still-valid");
+    setRefreshExecutor(async () => {
+      throw new ApiError(429, null);
+    });
+
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshRateLimited);
     expect(getAccessToken()).toBe("still-valid");
   });
 });

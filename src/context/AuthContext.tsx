@@ -3,13 +3,19 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchMe } from "@/api/users";
-import { isRefreshRateLimited, refreshAccessToken, revokeRefreshToken } from "@/api/auth";
-import { ApiError } from "@/api/client";
+import {
+  isRefreshRateLimited,
+  refreshAccessToken,
+  revokeRefreshToken,
+  setRefreshExecutor,
+} from "@/api/auth";
+import { ApiError, getBaseUrl } from "@/api/client";
 import { finishAuthRestore, getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { decodeJwtPayload } from "@/utils/jwtPayload";
 import { mercureTokenCoversTopic } from "@/utils/mercureToken";
 import { unsubscribeFromPush } from "@/utils/webPush";
+import { isManagedIdentityMode } from "@/platform/appMode";
 import type { User } from "@/types/api";
 
 interface AuthState {
@@ -266,6 +272,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    if (isManagedIdentityMode()) {
+      try {
+        const { getPlatformBridge } = await import("@/platform/bridge");
+        const { loadDesktopConfig, secretKey } = await import("@/desktop/desktopConfig");
+        const bridge = getPlatformBridge();
+        const config = await loadDesktopConfig(bridge);
+        const profileId = config.lastActiveProfileId ?? config.profiles[0]?.id ?? null;
+        const profile = profileId ? config.profiles.find((p) => p.id === profileId) : undefined;
+        const identityId = profile
+          ? (profile.lastActiveIdentityId ?? profile.identities[0]?.id ?? null)
+          : null;
+        if (profileId && identityId) {
+          const refreshTokenKey = secretKey(profileId, identityId, "refreshToken");
+          const refreshToken = await bridge.secrets.get(refreshTokenKey);
+          if (refreshToken) {
+            try {
+              await fetch(getBaseUrl() + "/logout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "omit",
+                body: JSON.stringify({ refresh_token: refreshToken }),
+              });
+            } catch {
+              /* best-effort */
+            }
+          }
+          await bridge.secrets.delete(refreshTokenKey);
+        }
+      } catch {
+        /* best-effort: local session teardown below still proceeds */
+      }
+      setRefreshExecutor(null);
+    }
+
     clearRefreshTimer();
     clearMercureTimer();
     setMercureToken(null);
@@ -275,12 +315,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(STORAGE_KEYS.HAD_SESSION);
     queryClient.clear();
     void unsubscribeFromPush().catch(() => {});
-    try {
-      await revokeRefreshToken();
-    } catch {
-      /* ignore */
+    if (!isManagedIdentityMode()) {
+      try {
+        await revokeRefreshToken();
+      } catch {
+        /* ignore */
+      }
     }
     void doPublicMercureFetch();
+
+    if (isManagedIdentityMode()) {
+      window.location.replace("/");
+    }
   }, [clearRefreshTimer, clearMercureTimer, doPublicMercureFetch, queryClient, setToken]);
 
   useEffect(() => {

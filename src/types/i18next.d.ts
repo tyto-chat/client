@@ -8,6 +8,7 @@ import type admin from "@/locales/en/admin.json";
 import type conversation from "@/locales/en/conversation.json";
 import type reports from "@/locales/en/reports.json";
 import type appeals from "@/locales/en/appeals.json";
+import type desktop from "@/locales/en/desktop.json";
 
 declare module "i18next" {
   interface CustomTypeOptions {
@@ -23,6 +24,7 @@ declare module "i18next" {
       conversation: typeof conversation;
       reports: typeof reports;
       appeals: typeof appeals;
+      desktop: typeof desktop;
     };
   }
 }

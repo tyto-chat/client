@@ -30,6 +30,7 @@ const NAMESPACES = [
   "admin",
   "reports",
   "appeals",
+  "desktop",
 ] as const;
 
 export const i18nReady = i18n

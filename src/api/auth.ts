@@ -1,20 +1,32 @@
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { getBaseUrl, ApiError } from "@/api/client";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
+import { isManagedIdentityMode } from "@/platform/appMode";
+
+function transportHeaders(): Record<string, string> {
+  return isManagedIdentityMode() ? { "X-Token-Transport": "body" } : {};
+}
 
 export interface LoginResult {
   token: string;
   twoFactorRequired?: boolean;
 }
 
-export async function login(
+export interface LoginTokens {
+  token: string;
+  refreshToken: string | null;
+  twoFactorRequired?: boolean;
+}
+
+export async function loginAt(
+  baseUrl: string,
   email: string,
   password: string,
   rememberMe = false,
-): Promise<LoginResult> {
-  const response = await fetch(getBaseUrl() + "/auth", {
+): Promise<LoginTokens> {
+  const response = await fetch(baseUrl + "/auth", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...transportHeaders() },
     credentials: "include",
     body: JSON.stringify({ email, password, remember_me: rememberMe }),
   });
@@ -23,17 +35,40 @@ export async function login(
     throw new Error("Invalid credentials");
   }
 
-  return (await response.json()) as LoginResult;
+  const data = (await response.json()) as {
+    token: string;
+    refresh_token?: string;
+    twoFactorRequired?: boolean;
+  };
+  return {
+    token: data.token,
+    refreshToken: data.refresh_token ?? null,
+    twoFactorRequired: data.twoFactorRequired,
+  };
 }
 
-export async function verifyTwoFactorLogin(
+export async function login(
+  email: string,
+  password: string,
+  rememberMe = false,
+): Promise<LoginResult> {
+  const { token, twoFactorRequired } = await loginAt(getBaseUrl(), email, password, rememberMe);
+  return { token, twoFactorRequired };
+}
+
+export async function verifyTwoFactorAt(
+  baseUrl: string,
   pendingToken: string,
   code: string,
   rememberMe = false,
-): Promise<string> {
-  const response = await fetch(getBaseUrl() + "/auth/2fa", {
+): Promise<{ token: string; refreshToken: string | null }> {
+  const response = await fetch(baseUrl + "/auth/2fa", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${pendingToken}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${pendingToken}`,
+      ...transportHeaders(),
+    },
     credentials: "include",
     body: JSON.stringify({ code, remember_me: rememberMe }),
   });
@@ -42,8 +77,35 @@ export async function verifyTwoFactorLogin(
     throw new ApiError(response.status, await response.json().catch(() => null));
   }
 
-  const data = (await response.json()) as { token: string };
-  return data.token;
+  const data = (await response.json()) as { token: string; refresh_token?: string };
+  return { token: data.token, refreshToken: data.refresh_token ?? null };
+}
+
+export async function verifyTwoFactorLogin(
+  pendingToken: string,
+  code: string,
+  rememberMe = false,
+): Promise<string> {
+  const { token } = await verifyTwoFactorAt(getBaseUrl(), pendingToken, code, rememberMe);
+  return token;
+}
+
+export async function refreshWithToken(
+  baseUrl: string,
+  refreshToken: string,
+): Promise<{ token: string; refreshToken: string | null }> {
+  const response = await fetch(baseUrl + "/token/refresh", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...transportHeaders() },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await response.json().catch(() => null));
+  }
+
+  const data = (await response.json()) as { token: string; refresh_token?: string };
+  return { token: data.token, refreshToken: data.refresh_token ?? null };
 }
 
 export class RefreshRateLimitedError extends Error {
@@ -60,6 +122,11 @@ export function isRefreshRateLimited(error: unknown): boolean {
 let activeRefresh: Promise<string> | null = null;
 let lastRefreshedAt = 0;
 let lastFailedAt = 0;
+let refreshExecutor: (() => Promise<string>) | null = null;
+
+export function setRefreshExecutor(executor: (() => Promise<string>) | null): void {
+  refreshExecutor = executor;
+}
 
 export function refreshAccessToken(): Promise<string> {
   if (activeRefresh) return activeRefresh;
@@ -70,24 +137,43 @@ export function refreshAccessToken(): Promise<string> {
   if (!token && Date.now() - lastFailedAt < 10_000) {
     return Promise.reject(new Error("refresh_failed"));
   }
-  activeRefresh = fetch(getBaseUrl() + "/token/refresh", { method: "POST", credentials: "include" })
-    .then(async (res) => {
-      // A rate-limited refresh says "ask again shortly", not "your session is
-      // gone" — callers must keep the session and retry rather than sign out.
-      if (res.status === 429) {
-        throw new RefreshRateLimitedError();
-      }
-      if (!res.ok) {
+  activeRefresh = (
+    refreshExecutor
+      ? refreshExecutor()
+          .then((newToken) => ({ ok: true, newToken }) as const)
+          .catch((err: unknown) => {
+            if (err instanceof ApiError && err.status === 429) {
+              throw new RefreshRateLimitedError();
+            }
+            return { ok: false } as const;
+          })
+      : fetch(getBaseUrl() + "/token/refresh", { method: "POST", credentials: "include" }).then(
+          async (res) => {
+            // A rate-limited refresh says "ask again shortly", not "your session
+            // is gone" — callers must keep the session and retry rather than sign
+            // out, so this bypasses the shared failure bookkeeping below.
+            if (res.status === 429) {
+              throw new RefreshRateLimitedError();
+            }
+            if (!res.ok) {
+              return { ok: false } as const;
+            }
+            const { token: newToken } = (await res.json()) as { token: string };
+            return { ok: true, newToken } as const;
+          },
+        )
+  )
+    .then((result) => {
+      if (!result.ok) {
         lastFailedAt = Date.now();
         localStorage.removeItem(STORAGE_KEYS.HAD_SESSION);
         throw new Error("refresh_failed");
       }
-      const { token: newToken } = (await res.json()) as { token: string };
-      setAccessToken(newToken);
+      setAccessToken(result.newToken);
       lastRefreshedAt = Date.now();
       lastFailedAt = 0;
       localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
-      return newToken;
+      return result.newToken;
     })
     .finally(() => {
       activeRefresh = null;
