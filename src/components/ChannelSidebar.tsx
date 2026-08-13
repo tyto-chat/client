@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { getBaseUrl } from "@/api/client";
+import { isManagedIdentityMode } from "@/platform/appMode";
 import { useCommunity } from "@/queries/communityQueries";
 import { useCommunityMembership } from "@/queries/membershipQueries";
 import {
@@ -40,7 +42,7 @@ import { ChannelModal } from "@/components/ChannelModal";
 import { NotificationPopover } from "@/components/NotificationPopover";
 import { ChannelParticipantsList } from "@/components/ChannelParticipantsList";
 import { ChannelNotificationMenu } from "@/components/ChannelNotificationMenu";
-import { Menu, MenuItem } from "@/components/ui";
+import { Menu, MenuItem, MenuDivider, MenuStaticItem } from "@/components/ui";
 import {
   EditIcon,
   TrashIcon,
@@ -137,6 +139,15 @@ export function ChannelSidebar({ communityId }: Props) {
   });
   const hasRealSections = (community?.channelSections ?? []).length > 0;
 
+  let serverOrigin: string | null = null;
+  if (isManagedIdentityMode()) {
+    try {
+      serverOrigin = new URL(getBaseUrl()).origin;
+    } catch {
+      serverOrigin = null;
+    }
+  }
+
   const { navOpen } = useMobileNav();
 
   return (
@@ -157,7 +168,7 @@ export function ChannelSidebar({ communityId }: Props) {
             <span className="block cap-trim-truncate truncate">{community?.name ?? "…"}</span>
           </h2>
           <div className="flex h-8 items-center gap-0.5">
-            {(user || isAdmin || canSeeModLog || ownsAnyGroup || hasJoined) && (
+            {(user || isAdmin || canSeeModLog || ownsAnyGroup || hasJoined || serverOrigin) && (
               <Menu
                 align="right"
                 label={t("common:more")}
@@ -213,6 +224,12 @@ export function ChannelSidebar({ communityId }: Props) {
                   >
                     {t("leave_community")}
                   </MenuItem>
+                )}
+                {serverOrigin && <MenuDivider />}
+                {serverOrigin && (
+                  <MenuStaticItem className="font-mono" testId="community-menu-server-origin">
+                    {serverOrigin}
+                  </MenuStaticItem>
                 )}
               </Menu>
             )}

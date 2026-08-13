@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { StrictMode } from "react";
+import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -22,6 +23,8 @@ import { i18nReady } from "@/i18n";
 import { StaleTime } from "@/queries/staleTimes";
 import { negotiateApiVersion, getApiVersion } from "@/api/apiVersion";
 import { VersionMismatchScreen } from "@/components/VersionMismatchScreen";
+import { getAppMode } from "@/platform/appMode";
+import { DesktopBootstrap } from "@/desktop/DesktopBootstrap";
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -59,7 +62,49 @@ function InnerApp() {
   return <RouterProvider router={router} context={{ queryClient, auth, serverInfo }} />;
 }
 
+function Providers({ children }: { children: ReactNode }) {
+  return (
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <FontSizeProvider>
+            <TimezoneProvider>
+              <SubmitKeyProvider>{children}</SubmitKeyProvider>
+            </TimezoneProvider>
+          </FontSizeProvider>
+        </ThemeProvider>
+        {import.meta.env.VITE_QUERY_DEVTOOLS === "true" && (
+          <ReactQueryDevtools initialIsOpen={false} />
+        )}
+      </QueryClientProvider>
+    </StrictMode>
+  );
+}
+
+function AppShell() {
+  return (
+    <AuthProvider>
+      <NotificationProvider>
+        <PreferenceSyncRoot />
+        <InnerApp />
+      </NotificationProvider>
+    </AuthProvider>
+  );
+}
+
 (async () => {
+  if (getAppMode() === "desktop") {
+    await i18nReady;
+    createRoot(document.getElementById("root")!).render(
+      <Providers>
+        <DesktopBootstrap>
+          <AppShell />
+        </DesktopBootstrap>
+      </Providers>,
+    );
+    return;
+  }
+
   const serverInfoUrl = resolveServerInfoUrl();
   let origin: string | null = null;
   try {
@@ -97,26 +142,8 @@ function InnerApp() {
   beginAuthRestore();
 
   createRoot(document.getElementById("root")!).render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <FontSizeProvider>
-            <TimezoneProvider>
-              <SubmitKeyProvider>
-                <AuthProvider>
-                  <NotificationProvider>
-                    <PreferenceSyncRoot />
-                    <InnerApp />
-                  </NotificationProvider>
-                </AuthProvider>
-              </SubmitKeyProvider>
-            </TimezoneProvider>
-          </FontSizeProvider>
-        </ThemeProvider>
-        {import.meta.env.VITE_QUERY_DEVTOOLS === "true" && (
-          <ReactQueryDevtools initialIsOpen={false} />
-        )}
-      </QueryClientProvider>
-    </StrictMode>,
+    <Providers>
+      <AppShell />
+    </Providers>,
   );
 })();
