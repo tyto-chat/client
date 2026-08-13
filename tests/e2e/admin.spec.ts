@@ -1,5 +1,6 @@
 import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
+import { T } from "./fixtures";
 
 /**
  * Admin Shell access control (ROLE_PERMISSIONS.md § Admin Shell).
@@ -18,11 +19,11 @@ test.describe.serial("Admin shell — menu entry visibility", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await page.getByTestId(testIds.profileMenuButton).click();
     // Menu is open (a known entry renders) but the admin entry is absent.
-    await expect(page.getByTestId(testIds.profileMenu)).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTestId(testIds.profileMenu)).toBeVisible({ timeout: T(6_000) });
     await expect(page.getByTestId(testIds.adminPanelMenuEntry)).toHaveCount(0);
   });
 
@@ -31,10 +32,10 @@ test.describe.serial("Admin shell — menu entry visibility", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await page.getByTestId(testIds.profileMenuButton).click();
-    await expect(page.getByTestId(testIds.profileMenu)).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTestId(testIds.profileMenu)).toBeVisible({ timeout: T(6_000) });
     // Community admin is a community-scoped role, not ROLE_ADMIN — no admin shell.
     await expect(page.getByTestId(testIds.adminPanelMenuEntry)).toHaveCount(0);
   });
@@ -44,16 +45,16 @@ test.describe.serial("Admin shell — menu entry visibility", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await page.getByTestId(testIds.profileMenuButton).click();
     const entry = page.getByTestId(testIds.adminPanelMenuEntry);
-    await expect(entry).toBeVisible({ timeout: 6_000 });
+    await expect(entry).toBeVisible({ timeout: T(6_000) });
 
     await entry.click();
     // `/admin` (no child) redirects to the users tab.
-    await expect(page).toHaveURL(/\/admin\/users/, { timeout: 8_000 });
-    await expect(page.getByTestId(testIds.adminShell)).toBeVisible({ timeout: 8_000 });
+    await expect(page).toHaveURL(/\/admin\/users/, { timeout: T(8_000) });
+    await expect(page.getByTestId(testIds.adminShell)).toBeVisible({ timeout: T(8_000) });
   });
 });
 
@@ -81,14 +82,16 @@ test.describe.serial("Admin shell — route guard", () => {
 test.describe.serial("Admin shell — global admin surface", () => {
   test("global admin sees every admin section nav link", async ({ adminPage: page, world }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
     await page.getByTestId(testIds.profileMenuButton).click();
     await page.getByTestId(testIds.adminPanelMenuEntry).click();
-    await expect(page.getByTestId(testIds.adminShell)).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByTestId(testIds.adminShell)).toBeVisible({ timeout: T(8_000) });
 
     // Assert by href (i18n-stable) rather than the localized nav labels.
     for (const seg of ["users", "communities", "settings", "health", "webhooks", "audit"]) {
-      await expect(page.locator(`aside a[href="/admin/${seg}"]`)).toBeVisible({ timeout: 6_000 });
+      await expect(page.locator(`aside a[href="/admin/${seg}"]`)).toBeVisible({
+        timeout: T(6_000),
+      });
     }
   });
 
@@ -96,7 +99,7 @@ test.describe.serial("Admin shell — global admin surface", () => {
   // resolve the roles itself or a refresh throws the admin out of /admin.
   test("global admin hard-loading an admin URL stays there", async ({ adminPage: page }) => {
     await page.goto("/admin/settings");
-    await expect(page.getByTestId(testIds.adminShell)).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByTestId(testIds.adminShell)).toBeVisible({ timeout: T(8_000) });
     await expect(page).toHaveURL(/\/admin\/settings/);
   });
 });

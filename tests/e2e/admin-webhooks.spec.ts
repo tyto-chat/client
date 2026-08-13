@@ -11,6 +11,7 @@
 
 import { test, expect } from "./worldFixtures";
 import type { Page } from "@playwright/test";
+import { T } from "./fixtures";
 
 const CREATE = "Create webhook";
 
@@ -19,10 +20,10 @@ async function createWebhook(page: Page, name: string): Promise<void> {
   await page.getByRole("button", { name: CREATE }).click();
 
   const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible({ timeout: 8_000 });
+  await expect(dialog).toBeVisible({ timeout: T(8_000) });
   await dialog.getByPlaceholder("e.g. Slack notifications").fill(name);
   await dialog.getByPlaceholder("https://example.com/webhook").fill("https://example.com/hook");
-  await expect(dialog.locator("select").first()).not.toHaveValue("", { timeout: 8_000 });
+  await expect(dialog.locator("select").first()).not.toHaveValue("", { timeout: T(8_000) });
   await dialog.getByRole("button", { name: CREATE }).click();
 }
 
@@ -30,7 +31,9 @@ async function deleteWebhook(page: Page, name: string): Promise<void> {
   const row = page.getByRole("row").filter({ hasText: name });
   await row.getByRole("button", { name: "Delete", exact: true }).click();
   await page.getByRole("button", { name: "Permanently delete" }).click();
-  await expect(page.getByRole("row").filter({ hasText: name })).toHaveCount(0, { timeout: 8_000 });
+  await expect(page.getByRole("row").filter({ hasText: name })).toHaveCount(0, {
+    timeout: T(8_000),
+  });
 }
 
 test.describe.serial("Admin webhooks", () => {
@@ -40,10 +43,12 @@ test.describe.serial("Admin webhooks", () => {
     const name = `Hook create ${String(Date.now()).slice(-6)}`;
     await createWebhook(page, name);
 
-    await expect(page.getByText("Signing secret")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Signing secret")).toBeVisible({ timeout: T(10_000) });
     await page.getByRole("button", { name: "Done" }).click();
 
-    await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible({
+      timeout: T(8_000),
+    });
 
     // The secret is shown exactly once — reopening the webhook must not surface it.
     await page
@@ -51,7 +56,7 @@ test.describe.serial("Admin webhooks", () => {
       .filter({ hasText: name })
       .getByRole("button", { name: "View" })
       .click();
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(8_000) });
     await expect(page.getByText("Signing secret")).toHaveCount(0);
     await page.getByRole("button", { name: "Cancel" }).click();
 
@@ -65,15 +70,15 @@ test.describe.serial("Admin webhooks", () => {
 
     const row = page.getByRole("row").filter({ hasText: name });
     const toggle = row.getByRole("switch");
-    await expect(toggle).toHaveAttribute("aria-checked", "true", { timeout: 8_000 });
+    await expect(toggle).toHaveAttribute("aria-checked", "true", { timeout: T(8_000) });
 
     await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-checked", "false", { timeout: 8_000 });
+    await expect(toggle).toHaveAttribute("aria-checked", "false", { timeout: T(8_000) });
 
     await page.reload();
     const reloadedRow = page.getByRole("row").filter({ hasText: name });
     await expect(reloadedRow.getByRole("switch")).toHaveAttribute("aria-checked", "false", {
-      timeout: 10_000,
+      timeout: T(10_000),
     });
 
     await deleteWebhook(page, name);
@@ -90,7 +95,7 @@ test.describe.serial("Admin webhooks", () => {
       .getByRole("button", { name: "Deliveries" })
       .click();
 
-    await expect(page.getByText("No deliveries recorded yet.")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("No deliveries recorded yet.")).toBeVisible({ timeout: T(10_000) });
     await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 
     await deleteWebhook(page, name);

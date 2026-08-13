@@ -3,6 +3,7 @@ import { testIds } from "./testIds";
 import { ChannelSidebar } from "../pages/ChannelSidebar";
 import { AppShell } from "../pages/AppShell";
 import { CommunityRolesPanel } from "../pages/CommunityRolesPanel";
+import { T } from "./fixtures";
 
 test.describe.serial("Community admin — controls and permissions", () => {
   test("sees the manage-community button in sidebar header", async ({
@@ -10,7 +11,7 @@ test.describe.serial("Community admin — controls and permissions", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     // Manage-community moved into the community-header overflow (⋯) menu.
     await page.getByTestId(testIds.communityActionsBtn).click();
@@ -23,13 +24,13 @@ test.describe.serial("Community admin — controls and permissions", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await page.getByTestId(testIds.communityActionsBtn).click();
     await page.getByTestId(testIds.manageCommunity).click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 6_000 });
+    await expect(dialog).toBeVisible({ timeout: T(6_000) });
     await expect(dialog.getByRole("button", { name: "Overview", exact: true })).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Roles", exact: true })).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Groups", exact: true })).toBeVisible();
@@ -42,7 +43,7 @@ test.describe.serial("Community admin — controls and permissions", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     const panel = new CommunityRolesPanel(page);
     await panel.openFromSidebar();
@@ -55,7 +56,7 @@ test.describe.serial("Community admin — controls and permissions", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     const panel = new CommunityRolesPanel(page);
     await panel.openFromSidebar();
@@ -78,7 +79,7 @@ test.describe.serial("Community admin — controls and permissions", () => {
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Name").fill("Community Admin Section");
     await dialog.getByRole("button", { name: /create/i }).click();
-    await expect(dialog).not.toBeVisible({ timeout: 6_000 });
+    await expect(dialog).not.toBeVisible({ timeout: T(6_000) });
 
     await sidebar.expectSectionVisible("Community Admin Section");
   });
@@ -99,16 +100,16 @@ test.describe.serial("Community admin — controls and permissions", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await page.getByTestId(testIds.communityActionsBtn).click();
     await page.getByTestId(testIds.manageCommunity).click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 6_000 });
+    await expect(dialog).toBeVisible({ timeout: T(6_000) });
     // Overview tab is the default; modal opens successfully — that's sufficient.
     await dialog.getByRole("button", { name: "Close" }).first().dispatchEvent("click");
-    await expect(dialog).not.toBeVisible({ timeout: 6_000 });
+    await expect(dialog).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("can switch to the groups tab inside the manage-community modal", async ({
@@ -116,16 +117,16 @@ test.describe.serial("Community admin — controls and permissions", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await page.getByTestId(testIds.communityActionsBtn).click();
     await page.getByTestId(testIds.manageCommunity).click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 6_000 });
+    await expect(dialog).toBeVisible({ timeout: T(6_000) });
     await dialog.getByRole("button", { name: "Groups", exact: true }).click();
     await dialog.getByRole("button", { name: "Close" }).first().dispatchEvent("click");
-    await expect(dialog).not.toBeVisible({ timeout: 6_000 });
+    await expect(dialog).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("can see and access private channels", async ({ cadminPage: page, browser, world }) => {
@@ -143,7 +144,7 @@ test.describe.serial("Community admin — controls and permissions", () => {
     const userPage = await authedPage(browser, world.userJwt);
     try {
       await userPage.goto(`/${world.communityId}`);
-      await expect(userPage.locator("aside")).toBeVisible({ timeout: 8_000 });
+      await expect(userPage.locator("aside")).toBeVisible({ timeout: T(8_000) });
       await expect(userPage.locator(`aside a[href$="/cadmin-private"]`)).toBeHidden();
     } finally {
       await userPage.context().close();
@@ -157,7 +158,7 @@ test.describe.serial("Community admin — regular user boundary", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await expect(page.getByTestId(testIds.manageCommunity)).not.toBeAttached();
   });

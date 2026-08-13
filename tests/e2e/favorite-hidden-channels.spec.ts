@@ -1,6 +1,7 @@
 import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
+import { T } from "./fixtures";
 
 /**
  * Favorite & Hidden channels — per-user star/hide + sidebar sections.
@@ -48,7 +49,7 @@ async function openChannelMenu(
   });
   await row.hover();
   const moreBtn = row.getByTestId(testIds.channelMoreActionsBtn);
-  await expect(moreBtn).toBeAttached({ timeout: 6_000 });
+  await expect(moreBtn).toBeAttached({ timeout: T(6_000) });
   await moreBtn.click({ force: true });
 }
 
@@ -61,34 +62,34 @@ test.describe.serial("Favorite & Hidden channels", () => {
     await shell.gotoChannel(world.textChannelId);
 
     await expect(page.getByTestId(testIds.sidebarFavoritesSection)).not.toBeVisible({
-      timeout: 5_000,
+      timeout: T(5_000),
     });
 
     await openChannelMenu(page, world.textChannelId, world.communityId);
     const favoriteBtn = page.getByTestId(testIds.channelFavoriteBtn);
-    await expect(favoriteBtn).toBeVisible({ timeout: 4_000 });
+    await expect(favoriteBtn).toBeVisible({ timeout: T(4_000) });
     await favoriteBtn.click();
 
     const favSection = page.getByTestId(testIds.sidebarFavoritesSection);
-    await expect(favSection).toBeVisible({ timeout: 8_000 });
+    await expect(favSection).toBeVisible({ timeout: T(8_000) });
     await expect(
       favSection.locator(`a[href$="/${world.communityId}/${world.textChannelId}"]`),
-    ).toBeVisible({ timeout: 8_000 });
+    ).toBeVisible({ timeout: T(8_000) });
 
     // --- Cleanup: unfavorite ---
     await openChannelMenu(page, world.textChannelId, world.communityId);
     const unfavoriteBtn = page.getByTestId(testIds.channelFavoriteBtn);
-    await expect(unfavoriteBtn).toBeVisible({ timeout: 4_000 });
+    await expect(unfavoriteBtn).toBeVisible({ timeout: T(4_000) });
     await expect(unfavoriteBtn).toHaveText(/remove from favorites/i);
     await unfavoriteBtn.click();
 
     await expect(page.getByTestId(testIds.sidebarFavoritesSection)).not.toBeVisible({
-      timeout: 8_000,
+      timeout: T(8_000),
     });
 
     await expect(
       page.locator(`aside a[href$="/${world.communityId}/${world.textChannelId}"]`),
-    ).toBeVisible({ timeout: 8_000 });
+    ).toBeVisible({ timeout: T(8_000) });
   });
 
   test("hide a channel — moves to Hidden section", async ({ userPage: page, world }) => {
@@ -96,18 +97,18 @@ test.describe.serial("Favorite & Hidden channels", () => {
     await shell.gotoChannel(world.textChannelId);
 
     await expect(page.getByTestId(testIds.sidebarHiddenSection)).not.toBeVisible({
-      timeout: 5_000,
+      timeout: T(5_000),
     });
 
     await openChannelMenu(page, world.textChannelId, world.communityId);
     const hideBtn = page.getByTestId(testIds.channelHideBtn);
-    await expect(hideBtn).toBeVisible({ timeout: 4_000 });
+    await expect(hideBtn).toBeVisible({ timeout: T(4_000) });
     await expect(hideBtn).toHaveText(/^hide$/i);
     await hideBtn.click();
 
     // The Hidden section should appear. It starts collapsed by default.
     const hiddenSection = page.getByTestId(testIds.sidebarHiddenSection);
-    await expect(hiddenSection).toBeVisible({ timeout: 8_000 });
+    await expect(hiddenSection).toBeVisible({ timeout: T(8_000) });
 
     const collapseToggle = hiddenSection.locator("button").first();
     const channelInHidden = hiddenSection.locator(
@@ -117,13 +118,13 @@ test.describe.serial("Favorite & Hidden channels", () => {
     if (!(await channelInHidden.isVisible())) {
       await collapseToggle.click();
     }
-    await expect(channelInHidden).toBeVisible({ timeout: 8_000 });
+    await expect(channelInHidden).toBeVisible({ timeout: T(8_000) });
 
     const allChannelLinks = page.locator(
       `aside a[href$="/${world.communityId}/${world.textChannelId}"]`,
     );
     // All visible links for this channel should be inside the hidden section.
-    await expect(allChannelLinks).toHaveCount(1, { timeout: 6_000 });
+    await expect(allChannelLinks).toHaveCount(1, { timeout: T(6_000) });
     await expect(channelInHidden).toBeVisible();
   });
 
@@ -137,7 +138,7 @@ test.describe.serial("Favorite & Hidden channels", () => {
     await shell.gotoChannel(world.textChannelId);
 
     const hiddenSection = page.getByTestId(testIds.sidebarHiddenSection);
-    await expect(hiddenSection).toBeVisible({ timeout: 8_000 });
+    await expect(hiddenSection).toBeVisible({ timeout: T(8_000) });
 
     const collapseToggle = hiddenSection.locator("button").first();
     const channelInHidden = hiddenSection.locator(
@@ -147,7 +148,7 @@ test.describe.serial("Favorite & Hidden channels", () => {
     if (!(await channelInHidden.isVisible())) {
       await collapseToggle.click();
     }
-    await expect(channelInHidden).toBeVisible({ timeout: 8_000 });
+    await expect(channelInHidden).toBeVisible({ timeout: T(8_000) });
 
     // The channel link is inside the hidden section — use the shared helper to
     // open its row menu. The helper scans the entire aside so it finds the row
@@ -155,17 +156,17 @@ test.describe.serial("Favorite & Hidden channels", () => {
     await openChannelMenu(page, world.textChannelId, world.communityId);
 
     const unhideBtn = page.getByTestId(testIds.channelHideBtn);
-    await expect(unhideBtn).toBeVisible({ timeout: 4_000 });
+    await expect(unhideBtn).toBeVisible({ timeout: T(4_000) });
     await expect(unhideBtn).toHaveText(/unhide/i);
     await unhideBtn.click();
 
     await expect(page.getByTestId(testIds.sidebarHiddenSection)).not.toBeVisible({
-      timeout: 8_000,
+      timeout: T(8_000),
     });
 
     await expect(
       page.locator(`aside a[href$="/${world.communityId}/${world.textChannelId}"]`),
-    ).toBeVisible({ timeout: 8_000 });
+    ).toBeVisible({ timeout: T(8_000) });
   });
 
   test("favorite persists across page reload", async ({ userPage: page, world }) => {
@@ -174,26 +175,28 @@ test.describe.serial("Favorite & Hidden channels", () => {
 
     await openChannelMenu(page, world.textChannelId, world.communityId);
     const favoriteBtn = page.getByTestId(testIds.channelFavoriteBtn);
-    await expect(favoriteBtn).toBeVisible({ timeout: 4_000 });
+    await expect(favoriteBtn).toBeVisible({ timeout: T(4_000) });
     await favoriteBtn.click();
-    await expect(page.getByTestId(testIds.sidebarFavoritesSection)).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByTestId(testIds.sidebarFavoritesSection)).toBeVisible({
+      timeout: T(8_000),
+    });
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.locator("aside")).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(10_000) });
 
     const favSection = page.getByTestId(testIds.sidebarFavoritesSection);
-    await expect(favSection).toBeVisible({ timeout: 8_000 });
+    await expect(favSection).toBeVisible({ timeout: T(8_000) });
     await expect(
       favSection.locator(`a[href$="/${world.communityId}/${world.textChannelId}"]`),
-    ).toBeVisible({ timeout: 8_000 });
+    ).toBeVisible({ timeout: T(8_000) });
 
     // --- Cleanup: unfavorite so subsequent worker tests start clean ---
     await openChannelMenu(page, world.textChannelId, world.communityId);
     const unfavoriteBtn = page.getByTestId(testIds.channelFavoriteBtn);
-    await expect(unfavoriteBtn).toBeVisible({ timeout: 4_000 });
+    await expect(unfavoriteBtn).toBeVisible({ timeout: T(4_000) });
     await unfavoriteBtn.click();
     await expect(page.getByTestId(testIds.sidebarFavoritesSection)).not.toBeVisible({
-      timeout: 8_000,
+      timeout: T(8_000),
     });
   });
 });

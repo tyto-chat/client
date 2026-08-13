@@ -1,6 +1,7 @@
 import type { Page, Locator } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { testIds } from "../e2e/testIds";
+import { T } from "../e2e/fixtures";
 
 export class ChannelPage {
   /** The Tiptap ProseMirror editor (send box). */
@@ -53,8 +54,8 @@ export class ChannelPage {
     // cursor directly onto the button before clicking.  Moving the cursor from
     // the message content to the button travels through DOM descendants of the
     // message group, so the hover state (isGroupHovered) is never lost.
-    await expect(button).toBeAttached({ timeout: 8_000 });
-    await expect(button).toBeVisible({ timeout: 5_000 });
+    await expect(button).toBeAttached({ timeout: T(8_000) });
+    await expect(button).toBeVisible({ timeout: T(5_000) });
     await button.hover();
     await button.click();
   }

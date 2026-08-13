@@ -2,6 +2,7 @@ import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
+import { T } from "./fixtures";
 
 /**
  * Message action permission boundaries (ROLE_PERMISSIONS.md § Messages).
@@ -26,7 +27,7 @@ test.describe.serial("Message permissions — pin", () => {
 
     await page.locator("main .message-content").last().hover();
     // The action bar IS shown (own message → Edit appears), but pin is absent.
-    await expect(page.getByTestId(testIds.msgActionEdit).last()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId(testIds.msgActionEdit).last()).toBeVisible({ timeout: T(5_000) });
     await expect(page.getByTestId(testIds.msgActionPin)).toHaveCount(0);
   });
 
@@ -40,7 +41,7 @@ test.describe.serial("Message permissions — pin", () => {
     await channel.expectMessage(text);
 
     await page.locator("main .message-content").last().hover();
-    await expect(page.getByTestId(testIds.msgActionPin).last()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId(testIds.msgActionPin).last()).toBeVisible({ timeout: T(5_000) });
   });
 });
 
@@ -64,7 +65,7 @@ test.describe.serial("Message permissions — view history", () => {
     await channel.expectMessage(edited);
 
     await page.locator("main .message-content").last().hover();
-    await expect(page.getByTestId(testIds.msgActionEdit).last()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId(testIds.msgActionEdit).last()).toBeVisible({ timeout: T(5_000) });
     await expect(page.getByTestId(testIds.msgActionHistory)).toHaveCount(0);
   });
 });

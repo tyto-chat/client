@@ -10,7 +10,7 @@
  */
 
 import { test, expect } from "./worldFixtures";
-import { E2E_API_URL, E2E_BASE_URL } from "./fixtures";
+import { E2E_API_URL, E2E_BASE_URL, T } from "./fixtures";
 import { WorldBuilder } from "./world/builder";
 import { testIds } from "./testIds";
 import type { Page } from "@playwright/test";
@@ -19,9 +19,9 @@ let sectionName: string;
 let channelNames: string[] = [];
 
 async function openSectionMenu(page: Page, section: string): Promise<void> {
-  await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
   const header = page.locator("aside").getByRole("button", { name: section, exact: true });
-  await expect(header).toBeVisible({ timeout: 8_000 });
+  await expect(header).toBeVisible({ timeout: T(8_000) });
   await header.hover();
   await header.locator("..").getByRole("button", { name: "More" }).click();
 }
@@ -88,14 +88,14 @@ test.describe.serial("Reordering", () => {
     await page.getByRole("menuitem", { name: "Reorder channels" }).click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 8_000 });
+    await expect(dialog).toBeVisible({ timeout: T(8_000) });
     expect(await rowOrder(page)).toEqual(channelNames);
 
     await moveRow(page, channelNames[0]!, "ArrowDown");
     expect(await rowOrder(page)).toEqual([channelNames[1]!, channelNames[0]!, channelNames[2]!]);
 
     await dialog.getByRole("button", { name: "Save" }).click();
-    await expect(dialog).not.toBeVisible({ timeout: 8_000 });
+    await expect(dialog).not.toBeVisible({ timeout: T(8_000) });
   });
 
   test("the new channel order survives a reload", async ({ adminPage: page, world }) => {
@@ -103,19 +103,19 @@ test.describe.serial("Reordering", () => {
     await openSectionMenu(page, sectionName);
     await page.getByRole("menuitem", { name: "Reorder channels" }).click();
 
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(8_000) });
     expect(await rowOrder(page)).toEqual([channelNames[1]!, channelNames[0]!, channelNames[2]!]);
   });
 
   test("sections can be reordered and the order persists", async ({ adminPage: page, world }) => {
     await page.goto(`/${world.communityId}`);
     // Section ordering lives in the community header menu, not the section's own.
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
     await page.getByTestId(testIds.communityActionsBtn).click();
     await page.getByRole("menuitem", { name: "Reorder sections" }).click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 8_000 });
+    await expect(dialog).toBeVisible({ timeout: T(8_000) });
     const before = await rowOrder(page);
     expect(before.length).toBeGreaterThan(1);
 
@@ -124,14 +124,14 @@ test.describe.serial("Reordering", () => {
     expect(moved).not.toEqual(before);
 
     await dialog.getByRole("button", { name: "Save" }).click();
-    await expect(dialog).not.toBeVisible({ timeout: 8_000 });
+    await expect(dialog).not.toBeVisible({ timeout: T(8_000) });
 
     await page.reload();
     // Section ordering lives in the community header menu, not the section's own.
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
     await page.getByTestId(testIds.communityActionsBtn).click();
     await page.getByRole("menuitem", { name: "Reorder sections" }).click();
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(8_000) });
     expect(await rowOrder(page)).toEqual(moved);
   });
 });

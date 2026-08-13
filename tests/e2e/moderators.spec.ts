@@ -2,6 +2,7 @@ import { test, expect, authedPage } from "./worldFixtures";
 import { ChannelSidebar } from "../pages/ChannelSidebar";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
+import { T } from "./fixtures";
 
 /**
  * Click "Add as mod" on the search result row for a specific user name.
@@ -14,7 +15,7 @@ async function addAsMod(
   userName: string,
 ): Promise<void> {
   await modal.getByRole("textbox").first().fill(userName);
-  await expect(modal.getByText(userName)).toBeVisible({ timeout: 10_000 });
+  await expect(modal.getByText(userName)).toBeVisible({ timeout: T(10_000) });
 
   // The candidate list re-renders on each cache invalidation, so the button can
   // detach mid-click. Retry until one click lands — once it does the row is
@@ -24,10 +25,10 @@ async function addAsMod(
     .filter({ hasText: userName })
     .getByRole("button", { name: "Add as mod" });
   await expect(async () => {
-    await addButton.click({ timeout: 2_000 });
-  }).toPass({ timeout: 15_000 });
+    await addButton.click({ timeout: T(2_000) });
+  }).toPass({ timeout: T(15_000) });
   // Small settle — the Moderators list re-renders after cache update
-  await expect(modal.getByText(userName)).toBeVisible({ timeout: 6_000 });
+  await expect(modal.getByText(userName)).toBeVisible({ timeout: T(6_000) });
 }
 
 test.describe.serial("Channel moderators", () => {
@@ -48,14 +49,14 @@ test.describe.serial("Channel moderators", () => {
     await shell.openManageChannelAccess();
 
     const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
 
     await addAsMod(modal, page, world.userName);
 
     await expect(modal.getByText("No moderators yet.")).toBeHidden();
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("moderator sees Manage channel access button on private channel", async ({
@@ -78,11 +79,11 @@ test.describe.serial("Channel moderators", () => {
     await shell.openManageChannelAccess();
 
     const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
     await addAsMod(modal, page, world.userName);
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
     // 2. Open world user context — they're a moderator so they can see the private channel
     const userPage = await authedPage(browser, world.userJwt);
@@ -93,7 +94,7 @@ test.describe.serial("Channel moderators", () => {
       // Moderator sees "Manage channel access" (isChannelModerator && isPrivate)
       await userShell.openChannelHeaderMenu();
       await expect(userPage.getByRole("menuitem", { name: "Manage channel access" })).toBeVisible({
-        timeout: 6_000,
+        timeout: T(6_000),
       });
     } finally {
       await userPage.context().close();
@@ -124,10 +125,10 @@ test.describe.serial("Channel moderators", () => {
 
     await shell.openManageChannelAccess();
     const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
     await addAsMod(modal, page, world.userName);
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
     const userPage = await authedPage(browser, world.userJwt);
     try {
@@ -162,28 +163,30 @@ test.describe.serial("Channel moderators", () => {
     await shell.openManageChannelAccess();
 
     const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
 
-    await expect(modal.getByText("No moderators yet.")).toBeVisible({ timeout: 6_000 });
-    await expect(modal.getByText("No members yet.")).toBeVisible({ timeout: 6_000 });
+    await expect(modal.getByText("No moderators yet.")).toBeVisible({ timeout: T(6_000) });
+    await expect(modal.getByText("No members yet.")).toBeVisible({ timeout: T(6_000) });
 
     await addAsMod(modal, page, world.userName);
-    await expect(modal.getByRole("button", { name: "Remove mod" })).toBeVisible({ timeout: 6_000 });
+    await expect(modal.getByRole("button", { name: "Remove mod" })).toBeVisible({
+      timeout: T(6_000),
+    });
 
     // Demote to member via "Remove mod" — user moves to Members section
     await modal.getByRole("button", { name: "Remove mod" }).click();
-    await expect(modal.getByText("No moderators yet.")).toBeVisible({ timeout: 6_000 });
+    await expect(modal.getByText("No moderators yet.")).toBeVisible({ timeout: T(6_000) });
 
     await modal.getByRole("button", { name: "Make mod" }).click();
 
     // Cache is updated immediately via setQueryData — user moves to Moderators list.
     await expect(modal.getByRole("button", { name: "Remove mod" })).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
     await expect(modal.getByRole("button", { name: "Make mod" })).toBeHidden();
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("admin removes moderator role → user no longer in moderators list", async ({
@@ -203,14 +206,14 @@ test.describe.serial("Channel moderators", () => {
     await shell.openManageChannelAccess();
 
     const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
 
     await addAsMod(modal, page, world.userName);
 
     await modal.getByRole("button", { name: "Remove mod" }).click();
-    await expect(modal.getByText("No moderators yet.")).toBeVisible({ timeout: 6_000 });
+    await expect(modal.getByText("No moderators yet.")).toBeVisible({ timeout: T(6_000) });
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
   });
 });

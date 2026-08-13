@@ -27,6 +27,7 @@
 import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
+import { T } from "./fixtures";
 
 test.describe.serial("Search — dialog UX", () => {
   test("open via magnifier button — dialog visible", async ({ adminPage: page, world }) => {
@@ -35,8 +36,8 @@ test.describe.serial("Search — dialog UX", () => {
 
     await page.getByTestId(testIds.searchOpenBtn).click();
 
-    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: 6_000 });
-    await expect(page.getByTestId(testIds.searchInput)).toBeFocused({ timeout: 4_000 });
+    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: T(6_000) });
+    await expect(page.getByTestId(testIds.searchInput)).toBeFocused({ timeout: T(4_000) });
   });
 
   test("open via Ctrl+K — dialog visible", async ({ adminPage: page, world }) => {
@@ -45,7 +46,7 @@ test.describe.serial("Search — dialog UX", () => {
 
     await page.keyboard.press("Control+k");
 
-    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: T(6_000) });
   });
 
   test("close via Esc key", async ({ adminPage: page, world }) => {
@@ -53,11 +54,11 @@ test.describe.serial("Search — dialog UX", () => {
     await shell.gotoChannel(world.textChannelId);
 
     await page.getByTestId(testIds.searchOpenBtn).click();
-    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: T(6_000) });
 
     await page.keyboard.press("Escape");
 
-    await expect(page.getByTestId(testIds.searchDialog)).not.toBeVisible({ timeout: 4_000 });
+    await expect(page.getByTestId(testIds.searchDialog)).not.toBeVisible({ timeout: T(4_000) });
   });
 
   test("close via backdrop click", async ({ adminPage: page, world }) => {
@@ -65,14 +66,14 @@ test.describe.serial("Search — dialog UX", () => {
     await shell.gotoChannel(world.textChannelId);
 
     await page.getByTestId(testIds.searchOpenBtn).click();
-    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: T(6_000) });
 
     // The dialog has no X button — clicking the backdrop (outside the dialog,
     // top-left corner) dismisses it. The backdrop is a full-screen z-50 overlay
     // whose mousedown handler closes the modal.
     await page.mouse.click(5, 5);
 
-    await expect(page.getByTestId(testIds.searchDialog)).not.toBeVisible({ timeout: 4_000 });
+    await expect(page.getByTestId(testIds.searchDialog)).not.toBeVisible({ timeout: T(4_000) });
   });
 
   test("min-query gate — single character keeps Search button disabled", async ({
@@ -83,7 +84,7 @@ test.describe.serial("Search — dialog UX", () => {
     await shell.gotoChannel(world.textChannelId);
 
     await page.getByTestId(testIds.searchOpenBtn).click();
-    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: T(6_000) });
 
     const input = page.getByTestId(testIds.searchInput);
     await input.fill("a");
@@ -104,7 +105,7 @@ test.describe.serial("Search — dialog UX", () => {
     await shell.gotoChannel(world.textChannelId);
 
     await page.getByTestId(testIds.searchOpenBtn).click();
-    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: T(6_000) });
 
     const input = page.getByTestId(testIds.searchInput);
     await input.fill("hi");
@@ -119,6 +120,6 @@ test.describe.serial("Search — dialog UX", () => {
     // rows. We assert the absence of a loading spinner to confirm the response
     // arrived, then verify the empty-state copy.
     const dialog = page.getByTestId(testIds.searchDialog);
-    await expect(dialog.getByText(/no messages match/i)).toBeVisible({ timeout: 8_000 });
+    await expect(dialog.getByText(/no messages match/i)).toBeVisible({ timeout: T(8_000) });
   });
 });

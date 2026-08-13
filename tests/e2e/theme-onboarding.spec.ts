@@ -12,7 +12,7 @@
 
 import { test, expect } from "./worldFixtures";
 import { authedPage } from "./worldFixtures";
-import { E2E_API_URL, E2E_BASE_URL } from "./fixtures";
+import { E2E_API_URL, E2E_BASE_URL, T } from "./fixtures";
 import { WorldBuilder } from "./world/builder";
 import { testIds } from "./testIds";
 
@@ -23,19 +23,19 @@ test.describe.serial("Theme preference", () => {
     await page.goto(`/${world.communityId}`);
     await page.getByTestId(testIds.profileMenuButton).click();
     await page.getByRole("button", { name: "Preferences" }).click();
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(8_000) });
 
     await page.getByRole("button", { name: "Dark", exact: true }).click();
-    await expect(page.locator("html")).toHaveClass(/dark/, { timeout: 8_000 });
+    await expect(page.locator("html")).toHaveClass(/dark/, { timeout: T(8_000) });
 
     await page.reload();
-    await expect(page.locator("html")).toHaveClass(/dark/, { timeout: 10_000 });
+    await expect(page.locator("html")).toHaveClass(/dark/, { timeout: T(10_000) });
 
     // Restore: the fixture account is shared with later specs on this worker.
     await page.getByTestId(testIds.profileMenuButton).click();
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("button", { name: "Light", exact: true }).click();
-    await expect(page.locator("html")).not.toHaveClass(/dark/, { timeout: 8_000 });
+    await expect(page.locator("html")).not.toHaveClass(/dark/, { timeout: T(8_000) });
   });
 });
 
@@ -59,13 +59,13 @@ test.describe.serial("Welcome wizard", () => {
     try {
       await page.goto("/");
 
-      await expect(page.getByText("Set up your profile")).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText("Set up your profile")).toBeVisible({ timeout: T(15_000) });
       await page.getByRole("button", { name: "Next" }).click();
 
-      await expect(page.getByRole("button", { name: "Done" })).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByRole("button", { name: "Done" })).toBeVisible({ timeout: T(10_000) });
       await page.getByRole("button", { name: "Done" }).click();
 
-      await expect(page.getByText("Set up your profile")).toHaveCount(0, { timeout: 10_000 });
+      await expect(page.getByText("Set up your profile")).toHaveCount(0, { timeout: T(10_000) });
     } finally {
       await page.context().close();
     }
@@ -75,7 +75,7 @@ test.describe.serial("Welcome wizard", () => {
     const page = await authedPage(browser, rookieJwt);
     try {
       await page.goto("/");
-      await expect(page.getByTestId(testIds.profileMenuButton)).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByTestId(testIds.profileMenuButton)).toBeVisible({ timeout: T(15_000) });
       await expect(page.getByText("Set up your profile")).toHaveCount(0);
     } finally {
       await page.context().close();

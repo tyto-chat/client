@@ -1,6 +1,7 @@
 import type { Page, Locator } from "@playwright/test";
 import { testIds } from "../e2e/testIds";
 import { expect } from "@playwright/test";
+import { T } from "../e2e/fixtures";
 
 /**
  * Page object for the channel sidebar (left panel inside the app shell).
@@ -17,7 +18,7 @@ export class ChannelSidebar {
 
   async goto(): Promise<void> {
     await this.page.goto(`/${this.communityId}`);
-    await expect(this.page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(this.page.locator("aside")).toBeVisible({ timeout: T(8_000) });
   }
 
   async openCreateSection(): Promise<void> {
@@ -50,11 +51,11 @@ export class ChannelSidebar {
   }
 
   async expectSectionVisible(name: string): Promise<void> {
-    await expect(this.sectionHeader(name)).toBeVisible({ timeout: 6_000 });
+    await expect(this.sectionHeader(name)).toBeVisible({ timeout: T(6_000) });
   }
 
   async expectSectionGone(name: string): Promise<void> {
-    await expect(this.sectionHeader(name)).not.toBeVisible({ timeout: 6_000 });
+    await expect(this.sectionHeader(name)).not.toBeVisible({ timeout: T(6_000) });
   }
 
   /**
@@ -74,13 +75,13 @@ export class ChannelSidebar {
   async expectChannelInSidebar(identifier: string): Promise<void> {
     // Match by href ending — avoids substring collisions (e.g. "foo" vs "foo-1")
     await expect(this.page.locator(`aside a[href$="/${identifier}"]`)).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   }
 
   async expectChannelGone(identifier: string): Promise<void> {
     await expect(this.page.locator(`aside a[href$="/${identifier}"]`)).not.toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   }
 
@@ -100,7 +101,7 @@ export class ChannelSidebar {
     isReadonly?: boolean;
   }): Promise<void> {
     const modal = this.page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
 
     if (type) {
       const label = type === "text" ? /# text/i : /voice/i;
@@ -125,6 +126,6 @@ export class ChannelSidebar {
   async submitModal(): Promise<void> {
     const modal = this.page.getByRole("dialog");
     await modal.getByRole("button", { name: /^(create|save)$/i }).click();
-    await expect(modal).not.toBeVisible({ timeout: 8_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(8_000) });
   }
 }

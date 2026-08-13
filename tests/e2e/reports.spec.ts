@@ -2,6 +2,7 @@ import { test, expect, authedPage } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
+import { T } from "./fixtures";
 
 /**
  * Message reporting — end to end from the hover action to the admin inbox.
@@ -25,19 +26,19 @@ test.describe.serial("Message reports", () => {
 
       await userPage.locator("main .message-content").last().hover();
       const reportBtn = userPage.getByTestId(testIds.msgActionReport).last();
-      await expect(reportBtn).toBeVisible({ timeout: 5_000 });
+      await expect(reportBtn).toBeVisible({ timeout: T(5_000) });
       await reportBtn.click();
 
       const dialog = userPage.getByRole("dialog");
-      await expect(dialog).toBeVisible({ timeout: 5_000 });
+      await expect(dialog).toBeVisible({ timeout: T(5_000) });
       await dialog.locator("input[type='radio']").first().check();
       await dialog.getByRole("button", { name: /submit report/i }).click();
-      await expect(userPage.getByText(/report submitted/i)).toBeVisible({ timeout: 8_000 });
+      await expect(userPage.getByText(/report submitted/i)).toBeVisible({ timeout: T(8_000) });
 
       // Admin inbox lists the report: reported user is the admin, reporter shown.
       await adminPage.goto("/admin/reports");
       await expect(adminPage.getByText(world.userName, { exact: false }).first()).toBeVisible({
-        timeout: 15_000,
+        timeout: T(15_000),
       });
     } finally {
       await adminPage.context().close();

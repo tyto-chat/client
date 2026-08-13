@@ -1,6 +1,7 @@
 import type { Page, Locator } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { testIds } from "../e2e/testIds";
+import { T } from "../e2e/fixtures";
 
 /**
  * Phone-viewport shell affordances (MobileTopBar + off-canvas nav drawer +
@@ -28,7 +29,7 @@ export class MobilePage {
 
   async gotoChannel(channelId: string): Promise<void> {
     await this.page.goto(`/${this.communityId}/${channelId}`);
-    await expect(this.navToggle).toBeVisible({ timeout: 15_000 });
+    await expect(this.navToggle).toBeVisible({ timeout: T(15_000) });
   }
 
   /** Open the off-canvas nav drawer; resolves once the scrim is in view. */

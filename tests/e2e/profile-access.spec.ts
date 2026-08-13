@@ -2,6 +2,7 @@ import { test, expect, authedPage } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
+import { T } from "./fixtures";
 
 /**
  * Role-based access to the user-profile modal opened by clicking a message
@@ -31,7 +32,7 @@ test.describe.serial("Profile modal — role access", () => {
     await new AppShell(page, world.communityId).gotoChannel(world.textChannelId);
 
     const name = page.locator("main").getByTestId(testIds.msgAuthorName).last();
-    await expect(name).toBeVisible({ timeout: 8_000 });
+    await expect(name).toBeVisible({ timeout: T(8_000) });
     await name.click();
 
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -45,10 +46,10 @@ test.describe.serial("Profile modal — role access", () => {
     await new AppShell(page, world.communityId).gotoChannel(world.textChannelId);
 
     const name = page.locator("main").getByTestId(testIds.msgAuthorName).last();
-    await expect(name).toBeVisible({ timeout: 8_000 });
+    await expect(name).toBeVisible({ timeout: T(8_000) });
     await name.click();
 
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(8_000) });
   });
 
   test("anonymous: clicking the author avatar is also inert", async ({ page, world }) => {
@@ -62,7 +63,7 @@ test.describe.serial("Profile modal — role access", () => {
     await new AppShell(page, world.communityId).gotoChannel(world.textChannelId);
 
     const avatar = page.locator("main [data-testid='avatar']").last();
-    await expect(avatar).toBeVisible({ timeout: 8_000 });
+    await expect(avatar).toBeVisible({ timeout: T(8_000) });
     await avatar.click();
 
     await expect(page.getByRole("dialog")).toHaveCount(0);

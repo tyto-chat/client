@@ -12,7 +12,7 @@
 
 import { test, expect } from "./worldFixtures";
 import { authedPage } from "./worldFixtures";
-import { E2E_API_URL, E2E_BASE_URL } from "./fixtures";
+import { E2E_API_URL, E2E_BASE_URL, T } from "./fixtures";
 import { WorldBuilder } from "./world/builder";
 import { CommunitySettings } from "../pages/CommunitySettings";
 import { testIds } from "./testIds";
@@ -56,7 +56,7 @@ test.describe.serial("Moderation appeals", () => {
             (await asAppellant.getCommunityNotifications(world.communityId)).some(
               (n) => n.type === "warn",
             ),
-          { timeout: 20_000 },
+          { timeout: T(20_000) },
         )
         .toBe(true);
     } finally {
@@ -71,11 +71,11 @@ test.describe.serial("Moderation appeals", () => {
       await page.getByTestId(testIds.notificationBell).click();
 
       const appealButton = page.getByRole("button", { name: "Appeal" });
-      await expect(appealButton).toBeVisible({ timeout: 10_000 });
+      await expect(appealButton).toBeVisible({ timeout: T(10_000) });
       await appealButton.click();
 
       const reason = page.getByPlaceholder("Why should this action be reconsidered?");
-      await expect(reason).toBeVisible({ timeout: 8_000 });
+      await expect(reason).toBeVisible({ timeout: T(8_000) });
       await reason.fill("It was a quote, not spam.");
       await expect(reason).toHaveValue("It was a quote, not spam.");
 
@@ -85,7 +85,7 @@ test.describe.serial("Moderation appeals", () => {
 
       // The success toast auto-dismisses; the modal closing is the stable signal,
       // and the next test proves the appeal actually landed.
-      await expect(reason).toHaveCount(0, { timeout: 10_000 });
+      await expect(reason).toHaveCount(0, { timeout: T(10_000) });
     } finally {
       await page.context().close();
     }
@@ -95,7 +95,7 @@ test.describe.serial("Moderation appeals", () => {
     await page.goto(`/${world.communityId}`);
     await openAppealsTab(page);
 
-    await expect(page.getByText("It was a quote, not spam.")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("It was a quote, not spam.")).toBeVisible({ timeout: T(10_000) });
     await expect(page.getByText("Spamming the general channel")).toBeVisible();
   });
 
@@ -107,19 +107,19 @@ test.describe.serial("Moderation appeals", () => {
     await openAppealsTab(page);
 
     const card = page.getByTestId("appeal-card").filter({ hasText: "It was a quote, not spam." });
-    await expect(card).toBeVisible({ timeout: 10_000 });
+    await expect(card).toBeVisible({ timeout: T(10_000) });
     await card
       .getByPlaceholder("Add a note explaining your decision (optional)")
       .fill("Reviewed — warning withdrawn.");
     await card.getByRole("button", { name: "Overturn & lift" }).click();
 
     await expect(page.getByText("Appeal granted — action lifted.")).toBeVisible({
-      timeout: 10_000,
+      timeout: T(10_000),
     });
 
     // Pending is the default filter, so the decided appeal leaves the list.
     await expect(
       page.getByTestId("appeal-card").filter({ hasText: "It was a quote, not spam." }),
-    ).toHaveCount(0, { timeout: 10_000 });
+    ).toHaveCount(0, { timeout: T(10_000) });
   });
 });

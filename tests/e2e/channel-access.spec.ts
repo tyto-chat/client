@@ -1,6 +1,7 @@
 import { test, expect, authedPage } from "./worldFixtures";
 import { ChannelSidebar } from "../pages/ChannelSidebar";
 import { AppShell } from "../pages/AppShell";
+import { T } from "./fixtures";
 
 test.describe.serial("Channel access management", () => {
   test("admin adds a member to a private channel → member gains access", async ({
@@ -20,24 +21,24 @@ test.describe.serial("Channel access management", () => {
     await shell.openManageChannelAccess();
 
     const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
 
     // Search for the world user — wait for result to load, then add
     await modal.getByRole("textbox").nth(1).fill(world.userName);
-    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: 6_000 });
+    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: T(6_000) });
     await modal.getByRole("button", { name: "Add" }).click();
 
-    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: 6_000 });
+    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: T(6_000) });
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
     const userPage = await authedPage(browser, world.userJwt);
     try {
       await userPage.goto(`/${world.communityId}`);
-      await expect(userPage.locator("aside")).toBeVisible({ timeout: 8_000 });
+      await expect(userPage.locator("aside")).toBeVisible({ timeout: T(8_000) });
       await expect(userPage.locator(`aside a[href$="/priv-access"]`)).toBeVisible({
-        timeout: 6_000,
+        timeout: T(6_000),
       });
     } finally {
       await userPage.context().close();
@@ -62,42 +63,42 @@ test.describe.serial("Channel access management", () => {
     await shell.openManageChannelAccess();
 
     let modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
 
     // Add the world user — wait for search result before clicking
     await modal.getByRole("textbox").nth(1).fill(world.userName);
-    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: 6_000 });
+    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: T(6_000) });
     await modal.getByRole("button", { name: "Add" }).click();
-    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: 6_000 });
+    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: T(6_000) });
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
     // 2. Open user context and verify they can see the channel
     const userPage = await authedPage(browser, world.userJwt);
     try {
       await userPage.goto(`/${world.communityId}`);
-      await expect(userPage.locator("aside")).toBeVisible({ timeout: 8_000 });
+      await expect(userPage.locator("aside")).toBeVisible({ timeout: T(8_000) });
       await expect(userPage.locator(`aside a[href$="/kick-access"]`)).toBeVisible({
-        timeout: 6_000,
+        timeout: T(6_000),
       });
 
       // 3. Admin kicks the member
       await shell.openManageChannelAccess();
       modal = page.getByRole("dialog");
-      await expect(modal).toBeVisible({ timeout: 6_000 });
+      await expect(modal).toBeVisible({ timeout: T(6_000) });
       await modal.getByRole("button", { name: "Kick" }).click();
 
-      await expect(modal.getByText("No members yet.")).toBeVisible({ timeout: 6_000 });
+      await expect(modal.getByText("No members yet.")).toBeVisible({ timeout: T(6_000) });
 
       await modal.getByRole("button", { name: "Close" }).click();
-      await expect(modal).not.toBeVisible({ timeout: 6_000 });
+      await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
       // 4. User page should no longer see the channel after reload
       await userPage.reload();
-      await expect(userPage.locator("aside")).toBeVisible({ timeout: 8_000 });
+      await expect(userPage.locator("aside")).toBeVisible({ timeout: T(8_000) });
       await expect(userPage.locator(`aside a[href$="/kick-access"]`)).not.toBeVisible({
-        timeout: 6_000,
+        timeout: T(6_000),
       });
     } finally {
       await userPage.context().close();

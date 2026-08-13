@@ -1,5 +1,6 @@
 import type { Page, Locator } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { T } from "../e2e/fixtures";
 
 export class LoginPage {
   readonly emailInput: Locator;
@@ -32,6 +33,6 @@ export class LoginPage {
   }
 
   async expectRedirectedAway(): Promise<void> {
-    await expect(this.page).not.toHaveURL(/\/login/, { timeout: 10_000 });
+    await expect(this.page).not.toHaveURL(/\/login/, { timeout: T(10_000) });
   }
 }

@@ -1,6 +1,7 @@
 import type { Page, Locator } from "@playwright/test";
 import { testIds } from "../e2e/testIds";
 import { expect } from "@playwright/test";
+import { T } from "../e2e/fixtures";
 
 export class GroupsModal {
   readonly dialog: Locator;
@@ -15,13 +16,13 @@ export class GroupsModal {
   async openFromSidebar(): Promise<void> {
     await this.page.getByTestId(testIds.communityActionsBtn).click();
     await this.page.getByTestId(testIds.manageCommunity).click();
-    await expect(this.dialog).toBeVisible({ timeout: 6_000 });
+    await expect(this.dialog).toBeVisible({ timeout: T(6_000) });
     await this.dialog.getByRole("button", { name: "Groups", exact: true }).click();
   }
 
   async close(): Promise<void> {
     await this.dialog.getByRole("button", { name: "Close" }).dispatchEvent("click");
-    await expect(this.dialog).not.toBeVisible({ timeout: 6_000 });
+    await expect(this.dialog).not.toBeVisible({ timeout: T(6_000) });
   }
 
   async createGroup(name: string): Promise<void> {
@@ -39,7 +40,7 @@ export class GroupsModal {
     await this.dialog.getByRole("button", { name: "Save" }).click();
     // Save returns to the detail view — hop back to the list.
     await expect(this.dialog.getByTestId(testIds.groupChannelPermissions)).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
     await this.back();
     await this.expectGroupInList(newName);
@@ -54,7 +55,7 @@ export class GroupsModal {
   async openDetail(name: string): Promise<void> {
     await this.dialog.locator("li.cursor-pointer").filter({ hasText: name }).click();
     await expect(this.dialog.getByTestId(testIds.groupChannelPermissions)).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   }
 
@@ -65,7 +66,7 @@ export class GroupsModal {
       .filter({ hasText: query })
       .filter({ has: this.page.getByRole("button", { name: "Add" }) })
       .first();
-    await expect(resultItem).toBeVisible({ timeout: 6_000 });
+    await expect(resultItem).toBeVisible({ timeout: T(6_000) });
     await resultItem.getByRole("button", { name: "Add" }).click();
   }
 
@@ -84,18 +85,18 @@ export class GroupsModal {
 
   async expectOwnerBadge(name: string): Promise<void> {
     const row = this.dialog.getByRole("listitem").filter({ hasText: name });
-    await expect(row.getByText("Owner", { exact: true })).toBeVisible({ timeout: 6_000 });
+    await expect(row.getByText("Owner", { exact: true })).toBeVisible({ timeout: T(6_000) });
   }
 
   async expectNoOwnerBadge(name: string): Promise<void> {
     const row = this.dialog.getByRole("listitem").filter({ hasText: name });
-    await expect(row.getByText("Owner", { exact: true })).not.toBeVisible({ timeout: 6_000 });
+    await expect(row.getByText("Owner", { exact: true })).not.toBeVisible({ timeout: T(6_000) });
   }
 
   async openChannelPermissions(): Promise<void> {
     await this.dialog.getByTestId(testIds.groupChannelPermissions).click();
     await expect(this.dialog.getByRole("button", { name: /back/i })).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   }
 
@@ -109,7 +110,7 @@ export class GroupsModal {
     await expect(channelRow.locator(`[data-role-value="${role}"]`)).toHaveAttribute(
       "aria-pressed",
       "true",
-      { timeout: 6_000 },
+      { timeout: T(6_000) },
     );
   }
 
@@ -121,7 +122,7 @@ export class GroupsModal {
     await expect(channelRow.locator(`[data-role-value="${role}"]`)).toHaveAttribute(
       "aria-pressed",
       "true",
-      { timeout: 6_000 },
+      { timeout: T(6_000) },
     );
   }
 
@@ -131,23 +132,23 @@ export class GroupsModal {
 
   async expectGroupInList(name: string): Promise<void> {
     await expect(this.dialog.locator("li.cursor-pointer").filter({ hasText: name })).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   }
 
   async expectGroupGone(name: string): Promise<void> {
     await expect(
       this.dialog.locator("li.cursor-pointer").filter({ hasText: name }),
-    ).not.toBeVisible({ timeout: 6_000 });
+    ).not.toBeVisible({ timeout: T(6_000) });
   }
 
   async expectMemberInList(name: string): Promise<void> {
     await expect(this.dialog.getByRole("listitem").filter({ hasText: name }).last()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   }
 
   async expectNoMembers(): Promise<void> {
-    await expect(this.dialog.getByText(/no members yet/i)).toBeVisible({ timeout: 6_000 });
+    await expect(this.dialog.getByText(/no members yet/i)).toBeVisible({ timeout: T(6_000) });
   }
 }

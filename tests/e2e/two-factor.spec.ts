@@ -15,7 +15,7 @@
 
 import { test, expect } from "./worldFixtures";
 import { authedPage } from "./worldFixtures";
-import { E2E_API_URL, E2E_BASE_URL } from "./fixtures";
+import { E2E_API_URL, E2E_BASE_URL, T } from "./fixtures";
 import { WorldBuilder } from "./world/builder";
 import { LoginPage } from "../pages/LoginPage";
 import { testIds } from "./testIds";
@@ -42,7 +42,7 @@ function nextStepCode(): string {
 async function openSecurityPanel(page: Page): Promise<void> {
   await page.getByTestId(testIds.profileMenuButton).click();
   await page.getByRole("button", { name: "Preferences" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(6_000) });
   await page.getByTestId(testIds.prefTabAccount).click();
 }
 
@@ -78,7 +78,7 @@ test.describe.serial("Two-factor authentication", () => {
       await page.getByTestId(testIds.twoFactorEnable).click();
 
       const secretEl = page.getByTestId(testIds.twoFactorSecret);
-      await expect(secretEl).toBeVisible({ timeout: 8_000 });
+      await expect(secretEl).toBeVisible({ timeout: T(8_000) });
       secret = ((await secretEl.textContent()) ?? "").trim();
       expect(secret.length).toBeGreaterThan(0);
 
@@ -87,13 +87,13 @@ test.describe.serial("Two-factor authentication", () => {
       await page.getByRole("button", { name: "Turn on" }).click();
 
       const codeCells = page.getByTestId(testIds.recoveryCode);
-      await expect(codeCells.first()).toBeVisible({ timeout: 8_000 });
+      await expect(codeCells.first()).toBeVisible({ timeout: T(8_000) });
       recoveryCodes = await codeCells.allInnerTexts();
       expect(recoveryCodes).toHaveLength(10);
 
       await page.getByTestId(testIds.twoFactorCodesSaved).click();
 
-      await expect(page.getByTestId(testIds.twoFactorDisable)).toBeVisible({ timeout: 8_000 });
+      await expect(page.getByTestId(testIds.twoFactorDisable)).toBeVisible({ timeout: T(8_000) });
       await expect(page.getByTestId(testIds.twoFactorEnable)).toHaveCount(0);
     } finally {
       await page.context().close();
@@ -106,13 +106,13 @@ test.describe.serial("Two-factor authentication", () => {
     await login.login(enrollee.email, PASSWORD);
 
     const codeInput = page.getByTestId(testIds.twoFactorCodeInput);
-    await expect(codeInput).toBeVisible({ timeout: 10_000 });
+    await expect(codeInput).toBeVisible({ timeout: T(10_000) });
 
     // Filling the sixth digit auto-submits the form.
     await codeInput.fill(nextStepCode());
 
     await login.expectRedirectedAway();
-    await expect(page.getByTestId(testIds.profileMenuButton)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId(testIds.profileMenuButton)).toBeVisible({ timeout: T(10_000) });
   });
 
   test("a wrong code is rejected, then a recovery code signs in", async ({ page }) => {
@@ -121,11 +121,11 @@ test.describe.serial("Two-factor authentication", () => {
     await login.login(enrollee.email, PASSWORD);
 
     const codeInput = page.getByTestId(testIds.twoFactorCodeInput);
-    await expect(codeInput).toBeVisible({ timeout: 10_000 });
+    await expect(codeInput).toBeVisible({ timeout: T(10_000) });
 
     await codeInput.fill("000000");
     await expect(page.getByText("That code is not valid. Try again.")).toBeVisible({
-      timeout: 10_000,
+      timeout: T(10_000),
     });
     await expect(page).toHaveURL(/\/login/);
 
@@ -134,7 +134,7 @@ test.describe.serial("Two-factor authentication", () => {
     await page.getByRole("button", { name: "Verify" }).click();
 
     await login.expectRedirectedAway();
-    await expect(page.getByTestId(testIds.profileMenuButton)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId(testIds.profileMenuButton)).toBeVisible({ timeout: T(10_000) });
   });
 
   test("a spent recovery code cannot be reused", async ({ page }) => {
@@ -143,13 +143,13 @@ test.describe.serial("Two-factor authentication", () => {
     await login.login(enrollee.email, PASSWORD);
 
     const codeInput = page.getByTestId(testIds.twoFactorCodeInput);
-    await expect(codeInput).toBeVisible({ timeout: 10_000 });
+    await expect(codeInput).toBeVisible({ timeout: T(10_000) });
 
     await codeInput.fill(recoveryCodes[0]!);
     await page.getByRole("button", { name: "Verify" }).click();
 
     await expect(page.getByText("That code is not valid. Try again.")).toBeVisible({
-      timeout: 10_000,
+      timeout: T(10_000),
     });
     await expect(page).toHaveURL(/\/login/);
   });
@@ -164,7 +164,7 @@ test.describe.serial("Two-factor authentication", () => {
       await page.getByLabel("Current password").fill(PASSWORD);
       await page.getByTestId(testIds.twoFactorActionSubmit).click();
 
-      await expect(page.getByTestId(testIds.twoFactorEnable)).toBeVisible({ timeout: 8_000 });
+      await expect(page.getByTestId(testIds.twoFactorEnable)).toBeVisible({ timeout: T(8_000) });
       await expect(page.getByTestId(testIds.twoFactorDisable)).toHaveCount(0);
     } finally {
       await page.context().close();
@@ -174,16 +174,16 @@ test.describe.serial("Two-factor authentication", () => {
   test("global admin can force-disable a locked-out user's 2FA", async ({ adminPage: page }) => {
     await page.goto("/admin/users");
 
-    await page.getByPlaceholder("name or email").fill(victim.name);
-    const row = page.getByRole("row").filter({ hasText: victim.name });
-    await expect(row).toBeVisible({ timeout: 10_000 });
+    await page.getByPlaceholder("name or email").fill(victim.email);
+    const row = page.getByRole("row").filter({ hasText: victim.email });
+    await expect(row).toBeVisible({ timeout: T(10_000) });
     await row.click();
 
     const forceDisable = page.getByTestId(testIds.adminDisableTwoFactor);
-    await expect(forceDisable).toBeVisible({ timeout: 8_000 });
+    await expect(forceDisable).toBeVisible({ timeout: T(8_000) });
     await forceDisable.click();
     await page.getByTestId(testIds.confirmDialogConfirm).click();
 
-    await expect(forceDisable).toHaveCount(0, { timeout: 8_000 });
+    await expect(forceDisable).toHaveCount(0, { timeout: T(8_000) });
   });
 });

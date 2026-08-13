@@ -1,6 +1,7 @@
 import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { MobilePage } from "../pages/MobilePage";
+import { T } from "./fixtures";
 
 /**
  * M2 mobile top-bar overflow menu + M3 thread panel full-screen drawer.
@@ -33,7 +34,7 @@ test.describe.serial("Mobile action menu + thread overlay (390px)", () => {
     await menuBtn.click();
 
     await expect(page.getByRole("button", { name: /Pinned/i }).first()).toBeVisible({
-      timeout: 5_000,
+      timeout: T(5_000),
     });
   });
 
@@ -46,7 +47,7 @@ test.describe.serial("Mobile action menu + thread overlay (390px)", () => {
 
     await page.getByTestId(testIds.mobileSearchOpenBtn).click();
 
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(5_000) });
   });
 
   test("tapping 'Pinned messages' in overflow opens the pinned modal", async ({
@@ -63,7 +64,7 @@ test.describe.serial("Mobile action menu + thread overlay (390px)", () => {
       .first()
       .click();
 
-    await expect(page.getByTestId(testIds.pinnedMessagesModal)).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByTestId(testIds.pinnedMessagesModal)).toBeVisible({ timeout: T(8_000) });
   });
 
   test("clicking outside the overflow menu closes it", async ({ userPage: page, world }) => {
@@ -72,13 +73,13 @@ test.describe.serial("Mobile action menu + thread overlay (390px)", () => {
 
     await page.getByTestId(testIds.mobileActionMenuBtn).click();
     await expect(page.getByRole("button", { name: /Pinned/i }).first()).toBeVisible({
-      timeout: 5_000,
+      timeout: T(5_000),
     });
 
     await page.locator("main").click({ position: { x: 100, y: 300 }, force: true });
 
     await expect(page.getByRole("button", { name: /Pinned/i }).first()).not.toBeVisible({
-      timeout: 3_000,
+      timeout: T(3_000),
     });
   });
 
@@ -92,16 +93,16 @@ test.describe.serial("Mobile action menu + thread overlay (390px)", () => {
     await editor.press("Enter");
 
     const lastMsg = page.locator("main .message-content").last();
-    await expect(lastMsg).toBeAttached({ timeout: 8_000 });
+    await expect(lastMsg).toBeAttached({ timeout: T(8_000) });
     // Hidden action bars stay in the DOM, so filter to the hovered row's visible one.
     const replyBtn = page.getByTestId(testIds.msgActionReply).filter({ visible: true }).last();
     await lastMsg.hover();
-    await expect(replyBtn).toBeAttached({ timeout: 8_000 });
-    await expect(replyBtn).toBeVisible({ timeout: 5_000 });
+    await expect(replyBtn).toBeAttached({ timeout: T(8_000) });
+    await expect(replyBtn).toBeVisible({ timeout: T(5_000) });
     await replyBtn.click();
 
     const panel = page.getByTestId(testIds.threadPanel);
-    await expect(panel).toBeVisible({ timeout: 8_000 });
+    await expect(panel).toBeVisible({ timeout: T(8_000) });
     await expect(panel).toBeInViewport();
 
     // The panel's bounding box should cover most of the viewport (≥ 95% width).
@@ -118,6 +119,6 @@ test.describe.serial("Mobile action menu + thread overlay (390px)", () => {
     expect(closeBox!.height).toBeGreaterThanOrEqual(44);
 
     await closeBtn.click();
-    await expect(panel).not.toBeVisible({ timeout: 5_000 });
+    await expect(panel).not.toBeVisible({ timeout: T(5_000) });
   });
 });

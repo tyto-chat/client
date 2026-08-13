@@ -1,6 +1,7 @@
 import { test, expect } from "./worldFixtures";
 import { AppShell } from "../pages/AppShell";
 import { ChannelSidebar } from "../pages/ChannelSidebar";
+import { T } from "./fixtures";
 
 // Helper: admin creates a private channel and adds the world user to it.
 // Returns the channel identifier (slug).
@@ -19,13 +20,13 @@ async function createPrivateChannelWithUser(
   await shell.gotoChannel(channelName);
   await shell.openManageChannelAccess();
   const modal = adminPage.getByRole("dialog");
-  await expect(modal).toBeVisible({ timeout: 6_000 });
+  await expect(modal).toBeVisible({ timeout: T(6_000) });
   await modal.getByRole("textbox").nth(1).fill(world.userName);
-  await expect(modal.getByText(world.userName)).toBeVisible({ timeout: 6_000 });
+  await expect(modal.getByText(world.userName)).toBeVisible({ timeout: T(6_000) });
   await modal.getByRole("button", { name: "Add" }).click();
-  await expect(modal.getByText(world.userName)).toBeVisible({ timeout: 6_000 });
+  await expect(modal.getByText(world.userName)).toBeVisible({ timeout: T(6_000) });
   await modal.getByRole("button", { name: "Close" }).click();
-  await expect(modal).not.toBeVisible({ timeout: 6_000 });
+  await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
   return channelName; // identifier = slugified name (same if no spaces)
 }
@@ -44,7 +45,7 @@ test.describe.serial("Channel members modal — regular user", () => {
 
     await shell.openChannelHeaderMenu();
     await expect(page.getByRole("menuitem", { name: "View members" })).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   });
 
@@ -61,8 +62,8 @@ test.describe.serial("Channel members modal — regular user", () => {
     await shell.openChannelMembers();
 
     const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
-    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
+    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: T(6_000) });
   });
 
   test("user can leave a private channel via the members modal", async ({
@@ -78,19 +79,19 @@ test.describe.serial("Channel members modal — regular user", () => {
 
     await shell.openChannelMembers();
     const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
 
     // Two-step leave confirmation
     await modal.getByRole("button", { name: "Leave channel" }).click();
-    await expect(modal.getByText("Leave this channel?")).toBeVisible({ timeout: 4_000 });
+    await expect(modal.getByText("Leave this channel?")).toBeVisible({ timeout: T(4_000) });
     await modal.getByRole("button", { name: "Leave" }).click();
 
     // User should be redirected away from the private channel
     // (the community index may forward to another channel like /general)
-    await expect(page).not.toHaveURL(new RegExp(`/${channelId}`), { timeout: 8_000 });
+    await expect(page).not.toHaveURL(new RegExp(`/${channelId}`), { timeout: T(8_000) });
 
     await expect(page.locator(`aside a[href$="/${channelId}"]`)).not.toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   });
 
@@ -107,15 +108,15 @@ test.describe.serial("Channel members modal — regular user", () => {
 
     await shell.openChannelMembers();
     const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
 
     await modal.getByRole("button", { name: "Leave channel" }).click();
-    await expect(modal.getByText("Leave this channel?")).toBeVisible({ timeout: 4_000 });
+    await expect(modal.getByText("Leave this channel?")).toBeVisible({ timeout: T(4_000) });
 
     await modal.getByRole("button", { name: "Cancel" }).click();
 
     await expect(modal.getByRole("button", { name: "Leave channel" })).toBeVisible({
-      timeout: 4_000,
+      timeout: T(4_000),
     });
     await expect(modal.getByText("Leave this channel?")).toBeHidden();
   });
@@ -138,7 +139,7 @@ test.describe.serial("Channel members modal — admin", () => {
 
     await shell.openChannelHeaderMenu();
     await expect(page.getByRole("menuitem", { name: "Manage channel access" })).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
     await expect(page.getByRole("menuitem", { name: "View members" })).toHaveCount(0);
   });

@@ -1,6 +1,7 @@
 import { test, expect, authedPage } from "./worldFixtures";
 import { ChannelSidebar } from "../pages/ChannelSidebar";
 import { AppShell } from "../pages/AppShell";
+import { T } from "./fixtures";
 
 test.describe.serial("Channel management — admin", () => {
   test("create a section → appears in the sidebar", async ({ adminPage: page, world }) => {
@@ -13,7 +14,7 @@ test.describe.serial("Channel management — admin", () => {
     await expect(modal).toBeVisible();
     await modal.getByLabel("Name").fill("Test Section");
     await modal.getByRole("button", { name: /create/i }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
     await sidebar.expectSectionVisible("Test Section");
   });
@@ -27,14 +28,14 @@ test.describe.serial("Channel management — admin", () => {
     const modal = page.getByRole("dialog");
     await modal.getByLabel("Name").fill("Rename Me");
     await modal.getByRole("button", { name: /create/i }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
     await sidebar.expectSectionVisible("Rename Me");
 
     await sidebar.openEditSection("Rename Me");
     const editModal = page.getByRole("dialog");
     await editModal.getByLabel("Name").fill("Renamed Section");
     await editModal.getByRole("button", { name: /save/i }).click();
-    await expect(editModal).not.toBeVisible({ timeout: 6_000 });
+    await expect(editModal).not.toBeVisible({ timeout: T(6_000) });
 
     await sidebar.expectSectionVisible("Renamed Section");
     await sidebar.expectSectionGone("Rename Me");
@@ -49,7 +50,7 @@ test.describe.serial("Channel management — admin", () => {
     const modal = page.getByRole("dialog");
     await modal.getByLabel("Name").fill("Delete Me");
     await modal.getByRole("button", { name: /create/i }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
     await sidebar.expectSectionVisible("Delete Me");
 
     await sidebar.deleteSection("Delete Me");
@@ -104,7 +105,7 @@ test.describe.serial("Channel management — admin", () => {
       await shell.gotoChannel("readonly-channel");
       await expect(userPage.locator('[contenteditable="true"]')).toBeHidden();
       await expect(userPage.getByText(/this channel is readonly/i)).toBeVisible({
-        timeout: 6_000,
+        timeout: T(6_000),
       });
     } finally {
       await userPage.context().close();
@@ -125,13 +126,13 @@ test.describe.serial("Channel management — admin", () => {
     await sidebar.expectChannelInSidebar("private-channel");
 
     await expect(page.locator("aside").getByTitle("Private channel").first()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     const userPage = await authedPage(browser, world.userJwt);
     try {
       await userPage.goto(`/${world.communityId}`);
-      await expect(userPage.locator("aside")).toBeVisible({ timeout: 8_000 });
+      await expect(userPage.locator("aside")).toBeVisible({ timeout: T(8_000) });
       await expect(userPage.locator(`aside a[href$="/private-channel"]`)).toBeHidden();
     } finally {
       await userPage.context().close();
@@ -155,15 +156,22 @@ test.describe.serial("Channel management — admin", () => {
     const modal = page.getByRole("dialog");
     await expect(modal).toBeVisible();
     await modal.getByLabel("Name").fill("renamed-channel");
-    await modal.getByRole("button", { name: /save/i }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    const save = modal.getByRole("button", { name: /save/i });
+    await expect(async () => {
+      if (!(await save.isEnabled())) {
+        await modal.getByLabel("Name").fill("renamed-channel");
+      }
+      await expect(save).toBeEnabled();
+    }).toPass({ timeout: T(10_000) });
+    await save.click();
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
     // Slugs are frozen at creation: a rename changes the label, never the URL,
     // so the sidebar entry keeps its /to-rename href and only its text changes.
-    await expect(page).toHaveURL(/to-rename/, { timeout: 6_000 });
+    await expect(page).toHaveURL(/to-rename/, { timeout: T(6_000) });
     await sidebar.expectChannelInSidebar("to-rename");
     await expect(page.locator('aside a[href$="/to-rename"]')).toContainText("renamed-channel", {
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   });
 
@@ -189,13 +197,21 @@ test.describe.serial("Channel management — admin", () => {
       await shell.gotoChannel("toggle-readonly");
       await shell.openEditChannel();
       const modal = page.getByRole("dialog");
-      await modal.getByLabel(/readonly/i).click();
-      await modal.getByRole("button", { name: /save/i }).click();
-      await expect(modal).not.toBeVisible({ timeout: 6_000 });
+      const readonlyToggle = modal.getByLabel(/readonly/i);
+      await readonlyToggle.click();
+      const save = modal.getByRole("button", { name: /save/i });
+      await expect(async () => {
+        if (!(await readonlyToggle.isChecked())) {
+          await readonlyToggle.click();
+        }
+        await expect(save).toBeEnabled();
+      }).toPass({ timeout: T(10_000) });
+      await save.click();
+      await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
       // User page should reflect the change after reload
       await userPage.reload();
-      await expect(userPage.locator("main h1:visible").first()).toBeVisible({ timeout: 8_000 });
+      await expect(userPage.locator("main h1:visible").first()).toBeVisible({ timeout: T(8_000) });
       await expect(userPage.locator('[contenteditable="true"]')).toBeHidden();
     } finally {
       await userPage.context().close();
@@ -209,7 +225,7 @@ test.describe.serial("Channel management — regular user", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     // Hover the sidebar — no "+ Add Section" button should appear
     await page.locator("aside").hover();

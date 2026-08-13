@@ -1,13 +1,14 @@
 import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
+import { T } from "./fixtures";
 
 async function openEmojisTab(page: import("@playwright/test").Page, communityId: string) {
   await page.goto(`/${communityId}`);
-  await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
   await page.getByTestId(testIds.communityActionsBtn).click();
   await page.getByTestId(testIds.manageCommunity).click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible({ timeout: 6_000 });
+  await expect(dialog).toBeVisible({ timeout: T(6_000) });
   await dialog.getByRole("button", { name: "Emojis", exact: true }).click();
   return dialog;
 }
@@ -18,7 +19,7 @@ test.describe.serial("Community emoji manager — admin", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
     await page.getByTestId(testIds.communityActionsBtn).click();
 
     await expect(page.getByTestId(testIds.manageCommunity)).toBeVisible();
@@ -31,7 +32,7 @@ test.describe.serial("Community emoji manager — admin", () => {
     const dialog = await openEmojisTab(page, world.communityId);
 
     // Test world is seeded fresh per-run with no community emojis.
-    await expect(dialog.getByText(/No emojis yet\./i)).toBeVisible({ timeout: 4_000 });
+    await expect(dialog.getByText(/No emojis yet\./i)).toBeVisible({ timeout: T(4_000) });
 
     await dialog.getByRole("button", { name: "Close" }).first().dispatchEvent("click");
   });
@@ -54,7 +55,7 @@ test.describe.serial("Community emoji manager — regular user boundary", () => 
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await expect(page.getByTestId(testIds.manageCommunity)).not.toBeAttached();
   });

@@ -12,7 +12,7 @@
 import { request } from "@playwright/test";
 import { test, expect } from "./worldFixtures";
 import { authedPage } from "./worldFixtures";
-import { E2E_API_URL, E2E_BASE_URL } from "./fixtures";
+import { E2E_API_URL, E2E_BASE_URL, T } from "./fixtures";
 import { WorldBuilder } from "./world/builder";
 import { testIds } from "./testIds";
 import type { Page } from "@playwright/test";
@@ -25,7 +25,7 @@ const KEY_NAME = "E2E token";
 async function openApiKeysTab(page: Page): Promise<void> {
   await page.getByTestId(testIds.profileMenuButton).click();
   await page.getByRole("button", { name: "Preferences" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(6_000) });
   await page.getByTestId("pref-tab-apikeys").click();
 }
 
@@ -60,7 +60,7 @@ test.describe.serial("API keys", () => {
       await page.goto(`/${world.communityId}`);
       await openApiKeysTab(page);
 
-      await expect(page.getByText("No API keys yet.")).toBeVisible({ timeout: 8_000 });
+      await expect(page.getByText("No API keys yet.")).toBeVisible({ timeout: T(8_000) });
       await page.getByRole("button", { name: "Create new key" }).click();
 
       const dialog = page.getByRole("dialog").last();
@@ -80,10 +80,10 @@ test.describe.serial("API keys", () => {
       token = ((await created.json()) as { plainToken: string }).plainToken;
       expect(token.startsWith("pat_")).toBe(true);
 
-      await expect(page.getByText("Save this token now")).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByText("Save this token now")).toBeVisible({ timeout: T(10_000) });
 
       await page.getByRole("button", { name: "I've saved it" }).click();
-      await expect(page.getByText(KEY_NAME)).toBeVisible({ timeout: 8_000 });
+      await expect(page.getByText(KEY_NAME)).toBeVisible({ timeout: T(8_000) });
     } finally {
       await page.context().close();
     }
@@ -92,7 +92,7 @@ test.describe.serial("API keys", () => {
   test("the issued token authenticates against the API", async () => {
     // Polled rather than asserted once: the key is seconds old and a single
     // sampled status has nothing to retry against.
-    await expect.poll(() => meStatusWithToken(token), { timeout: 10_000 }).toBe(200);
+    await expect.poll(() => meStatusWithToken(token), { timeout: T(10_000) }).toBe(200);
   });
 
   test("revoking the key stops the token working", async ({ browser, world }) => {
@@ -104,11 +104,11 @@ test.describe.serial("API keys", () => {
       await page.getByRole("button", { name: "Revoke", exact: true }).first().click();
       await page.getByTestId(testIds.confirmDialogConfirm).click();
 
-      await expect(page.getByText("Revoked")).toBeVisible({ timeout: 8_000 });
+      await expect(page.getByText("Revoked")).toBeVisible({ timeout: T(8_000) });
     } finally {
       await page.context().close();
     }
 
-    await expect.poll(() => meStatusWithToken(token), { timeout: 10_000 }).toBe(401);
+    await expect.poll(() => meStatusWithToken(token), { timeout: T(10_000) }).toBe(401);
   });
 });

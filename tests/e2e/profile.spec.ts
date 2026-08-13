@@ -2,6 +2,7 @@ import { fileURLToPath } from "url";
 import { testIds, voiceModeTestId } from "./testIds";
 import path from "path";
 import { test, expect } from "./worldFixtures";
+import { T } from "./fixtures";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const AVATAR1 = path.resolve(__dirname, "../fixtures/avatar1.jpg");
@@ -14,13 +15,13 @@ async function openEditProfileModal(page: import("@playwright/test").Page) {
   // The profile button lives in the left nav; its title is the user's display name.
   await page.getByTestId(testIds.profileMenuButton).click();
   await page.getByRole("button", { name: "Edit Profile" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(6_000) });
 }
 
 async function openPreferencesModal(page: import("@playwright/test").Page) {
   await page.getByTestId(testIds.profileMenuButton).click();
   await page.getByRole("button", { name: "Preferences" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(6_000) });
 }
 
 async function clickModalTab(page: import("@playwright/test").Page, testId: string) {
@@ -33,17 +34,17 @@ async function clickModalTab(page: import("@playwright/test").Page, testId: stri
 async function openChangePasswordModal(page: import("@playwright/test").Page) {
   await page.getByTestId(testIds.profileMenuButton).click();
   await page.getByRole("button", { name: "Preferences" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(6_000) });
   await clickModalTab(page, testIds.prefTabAccount);
   await page.getByRole("button", { name: "Change Password" }).click();
   // The change-password modal opens on top of Preferences — it's the last dialog.
-  await expect(page.getByRole("dialog").last()).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByRole("dialog").last()).toBeVisible({ timeout: T(6_000) });
 }
 
 test.describe.serial("User profile", () => {
   test("edit display name → nav button title updates", async ({ userPage: page, world }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openEditProfileModal(page);
 
@@ -52,20 +53,22 @@ test.describe.serial("User profile", () => {
     await nameInput.fill("User Updated");
     await modal.getByRole("button", { name: /^save$/i }).click();
 
-    await expect(modal).not.toBeVisible({ timeout: 8_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(8_000) });
 
-    await expect(page.locator("nav button[title='User Updated']")).toBeVisible({ timeout: 6_000 });
+    await expect(page.locator("nav button[title='User Updated']")).toBeVisible({
+      timeout: T(6_000),
+    });
 
     // --- Restore original name so other tests are not affected ---
     await openEditProfileModal(page);
     await modal.getByRole("textbox").first().fill(world.userName);
     await modal.getByRole("button", { name: /^save$/i }).click();
-    await expect(modal).not.toBeVisible({ timeout: 8_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(8_000) });
   });
 
   test("Save button is disabled when name is unchanged", async ({ userPage: page, world }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openEditProfileModal(page);
 
@@ -76,7 +79,7 @@ test.describe.serial("User profile", () => {
     await expect(modal.getByRole("button", { name: /^save$/i })).toBeEnabled();
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("upload avatar → image appears; remove avatar → initials appear", async ({
@@ -84,7 +87,7 @@ test.describe.serial("User profile", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openEditProfileModal(page);
     const modal = page.getByRole("dialog");
@@ -92,25 +95,25 @@ test.describe.serial("User profile", () => {
     // Upload a pre-downloaded 512×512 JPEG fixture (within the 100–1000 px valid range)
     await modal.locator('input[type="file"]').setInputFiles(AVATAR1);
 
-    await expect(page.getByText("Avatar updated.")).toBeVisible({ timeout: 10_000 });
-    await expect(modal.locator('img[alt="avatar"]')).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByText("Avatar updated.")).toBeVisible({ timeout: T(10_000) });
+    await expect(modal.locator('img[alt="avatar"]')).toBeVisible({ timeout: T(6_000) });
 
     await expect(modal.getByRole("button", { name: "Remove avatar" })).toBeVisible();
 
     await modal.getByRole("button", { name: "Remove avatar" }).click();
-    await expect(page.getByText("Avatar removed.")).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByText("Avatar removed.")).toBeVisible({ timeout: T(8_000) });
 
     // Image should be gone; the initials fallback is rendered as text in the circle
-    await expect(modal.locator('img[alt="avatar"]')).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal.locator('img[alt="avatar"]')).not.toBeVisible({ timeout: T(6_000) });
     await expect(modal.getByRole("button", { name: "Remove avatar" })).toBeHidden();
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("avatar validation: image too small → error message", async ({ userPage: page, world }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openEditProfileModal(page);
     const modal = page.getByRole("dialog");
@@ -127,11 +130,11 @@ test.describe.serial("User profile", () => {
     });
 
     await expect(modal.getByText("Image must be at least 100×100 pixels.")).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
   });
 });
 
@@ -141,7 +144,7 @@ test.describe.serial("Preferences", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openPreferencesModal(page);
     const modal = page.getByRole("dialog");
@@ -158,7 +161,7 @@ test.describe.serial("Preferences", () => {
     // Restore 100%
     await modal.getByRole("button", { name: "100%" }).click();
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("change send message key → persists after modal close/reopen", async ({
@@ -166,7 +169,7 @@ test.describe.serial("Preferences", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openPreferencesModal(page);
     const modal = page.getByRole("dialog");
@@ -178,7 +181,7 @@ test.describe.serial("Preferences", () => {
     );
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
     await openPreferencesModal(page);
     const modal2 = page.getByRole("dialog");
@@ -190,7 +193,7 @@ test.describe.serial("Preferences", () => {
     // Restore Enter
     await modal2.getByRole("button", { name: "Enter", exact: true }).click();
     await modal2.getByRole("button", { name: "Close" }).click();
-    await expect(modal2).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal2).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("change timezone → dropdown shows selected value and localStorage updates", async ({
@@ -198,7 +201,7 @@ test.describe.serial("Preferences", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openPreferencesModal(page);
     const modal = page.getByRole("dialog");
@@ -212,7 +215,7 @@ test.describe.serial("Preferences", () => {
     expect(stored).toBe("America/New_York");
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
     await openPreferencesModal(page);
     const modal2 = page.getByRole("dialog");
@@ -222,7 +225,7 @@ test.describe.serial("Preferences", () => {
     // Restore browser default by clearing localStorage and closing
     await page.evaluate(() => localStorage.removeItem("timezone"));
     await modal2.getByRole("button", { name: "Close" }).click();
-    await expect(modal2).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal2).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("switch voice mode to Push to Talk → PTT key bind section appears", async ({
@@ -230,7 +233,7 @@ test.describe.serial("Preferences", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openPreferencesModal(page);
     const modal = page.getByRole("dialog");
@@ -248,14 +251,14 @@ test.describe.serial("Preferences", () => {
     await expect(modal.getByText("Push to talk key")).toBeHidden();
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
   });
 });
 
 test.describe.serial("Change password", () => {
   test("wrong current password → error message", async ({ userPage: page, world }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openChangePasswordModal(page);
     const modal = page.getByRole("dialog").last();
@@ -266,15 +269,15 @@ test.describe.serial("Change password", () => {
 
     await modal.getByRole("button", { name: "Change Password" }).click();
 
-    await expect(modal.getByText(/failed to change password/i)).toBeVisible({ timeout: 8_000 });
+    await expect(modal.getByText(/failed to change password/i)).toBeVisible({ timeout: T(8_000) });
 
     await modal.getByRole("button", { name: "Cancel" }).click();
-    await expect(page.getByLabel("Current password")).not.toBeVisible({ timeout: 6_000 });
+    await expect(page.getByLabel("Current password")).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("new password too short → inline validation error", async ({ userPage: page, world }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openChangePasswordModal(page);
     const modal = page.getByRole("dialog").last();
@@ -284,13 +287,13 @@ test.describe.serial("Change password", () => {
     await modal.getByLabel("New password", { exact: true }).blur();
 
     await expect(modal.getByText("Password must be at least 8 characters.")).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     await expect(modal.getByRole("button", { name: "Change Password" })).toBeDisabled();
 
     await modal.getByRole("button", { name: "Cancel" }).click();
-    await expect(page.getByLabel("Current password")).not.toBeVisible({ timeout: 6_000 });
+    await expect(page.getByLabel("Current password")).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("password confirmation mismatch → inline validation error", async ({
@@ -298,7 +301,7 @@ test.describe.serial("Change password", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openChangePasswordModal(page);
     const modal = page.getByRole("dialog").last();
@@ -307,11 +310,11 @@ test.describe.serial("Change password", () => {
     await modal.getByLabel("Confirm new password").fill("differentpassword");
     await modal.getByLabel("Confirm new password").blur();
 
-    await expect(modal.getByText("Passwords do not match.")).toBeVisible({ timeout: 6_000 });
+    await expect(modal.getByText("Passwords do not match.")).toBeVisible({ timeout: T(6_000) });
     await expect(modal.getByRole("button", { name: "Change Password" })).toBeDisabled();
 
     await modal.getByRole("button", { name: "Cancel" }).click();
-    await expect(page.getByLabel("Current password")).not.toBeVisible({ timeout: 6_000 });
+    await expect(page.getByLabel("Current password")).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("correct current password → password changed and modal closes", async ({
@@ -319,7 +322,7 @@ test.describe.serial("Change password", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openChangePasswordModal(page);
     const modal = page.getByRole("dialog").last();
@@ -329,15 +332,15 @@ test.describe.serial("Change password", () => {
     await modal.getByLabel("Confirm new password").fill("e2e-password-new");
 
     await modal.getByRole("button", { name: "Change Password" }).click();
-    await expect(page.getByLabel("Current password")).not.toBeVisible({ timeout: 8_000 });
+    await expect(page.getByLabel("Current password")).not.toBeVisible({ timeout: T(8_000) });
 
     await page.getByRole("button", { name: "Change Password" }).click();
     const modal2 = page.getByRole("dialog").last();
-    await expect(modal2.getByLabel("Current password")).toBeVisible({ timeout: 6_000 });
+    await expect(modal2.getByLabel("Current password")).toBeVisible({ timeout: T(6_000) });
     await modal2.getByLabel("Current password").fill("e2e-password-new");
     await modal2.getByLabel("New password", { exact: true }).fill("e2e-password");
     await modal2.getByLabel("Confirm new password").fill("e2e-password");
     await modal2.getByRole("button", { name: "Change Password" }).click();
-    await expect(page.getByLabel("Current password")).not.toBeVisible({ timeout: 8_000 });
+    await expect(page.getByLabel("Current password")).not.toBeVisible({ timeout: T(8_000) });
   });
 });

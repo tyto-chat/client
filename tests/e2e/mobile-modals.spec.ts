@@ -1,5 +1,6 @@
 import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
+import { T } from "./fixtures";
 
 /**
  * M5 — modal + popover mobile responsiveness at a phone viewport (390×844).
@@ -16,12 +17,12 @@ test.describe.serial("M5 mobile modals (390px)", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}/${world.textChannelId}`);
-    await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: T(15_000) });
 
     await page.getByTestId(testIds.mobileSearchOpenBtn).click();
 
     const dialog = page.getByTestId(testIds.searchDialog);
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
+    await expect(dialog).toBeVisible({ timeout: T(5_000) });
 
     await expect(dialog).toBeInViewport();
 
@@ -34,7 +35,7 @@ test.describe.serial("M5 mobile modals (390px)", () => {
     await expect(page.getByTestId(testIds.searchInput)).toBeVisible();
 
     await page.keyboard.press("Escape");
-    await expect(dialog).not.toBeVisible({ timeout: 3_000 });
+    await expect(dialog).not.toBeVisible({ timeout: T(3_000) });
   });
 
   test("PinnedMessages modal opens via overflow menu and fits the viewport", async ({
@@ -42,7 +43,7 @@ test.describe.serial("M5 mobile modals (390px)", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}/${world.textChannelId}`);
-    await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: T(15_000) });
 
     await page.getByTestId(testIds.mobileActionMenuBtn).click();
 
@@ -52,7 +53,7 @@ test.describe.serial("M5 mobile modals (390px)", () => {
       .click();
 
     const modal = page.getByTestId(testIds.pinnedMessagesModal);
-    await expect(modal).toBeVisible({ timeout: 8_000 });
+    await expect(modal).toBeVisible({ timeout: T(8_000) });
 
     // The modal's scroll container should be within the viewport horizontally.
     const box = await modal.boundingBox();
@@ -66,7 +67,7 @@ test.describe.serial("M5 mobile modals (390px)", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}/${world.textChannelId}`);
-    await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: T(15_000) });
 
     // The profile button lives in the community rail — open the mobile drawer.
     await page.getByTestId(testIds.mobileNavToggle).click();
@@ -74,7 +75,7 @@ test.describe.serial("M5 mobile modals (390px)", () => {
     await page.getByRole("button", { name: "Preferences" }).click();
 
     const dialog = page.getByRole("dialog").first();
-    await expect(dialog).toBeVisible({ timeout: 8_000 });
+    await expect(dialog).toBeVisible({ timeout: T(8_000) });
 
     const box = await dialog.boundingBox();
     expect(box).not.toBeNull();
@@ -94,10 +95,10 @@ test.describe.serial("M5 voice pre-join (short viewport 390×600)", () => {
 
   test("Join button stays in the viewport on a short screen", async ({ userPage: page, world }) => {
     await page.goto(`/${world.communityId}/${world.audioChannelId}`);
-    await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: T(15_000) });
 
     const joinBtn = page.getByRole("button", { name: /join/i }).last();
-    await expect(joinBtn).toBeVisible({ timeout: 10_000 });
+    await expect(joinBtn).toBeVisible({ timeout: T(10_000) });
     await expect(joinBtn).toBeInViewport();
   });
 });

@@ -1,6 +1,7 @@
 import { test, expect, authedPage } from "./worldFixtures";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
+import { T } from "./fixtures";
 
 /**
  * "X is typing" indicator — two-user realtime flow with no prior coverage.
@@ -30,12 +31,12 @@ test.describe.serial("Typing indicator", () => {
 
       await expect(
         adminPage.locator("main").getByText(new RegExp(`${world.userName}.*typing`, "i")),
-      ).toBeVisible({ timeout: 10_000 });
+      ).toBeVisible({ timeout: T(10_000) });
 
       // Indicator clears after the sender stops (client TTL).
       await expect(
         adminPage.locator("main").getByText(new RegExp(`${world.userName}.*typing`, "i")),
-      ).toBeHidden({ timeout: 15_000 });
+      ).toBeHidden({ timeout: T(15_000) });
     } finally {
       await adminPage.context().close();
       await userPage.context().close();
