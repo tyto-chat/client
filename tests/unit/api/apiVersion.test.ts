@@ -4,6 +4,7 @@ import { server } from "../../mocks/server";
 import {
   negotiateApiVersion,
   getApiVersion,
+  getApiVersionForOrigin,
   supportsFeature,
   _resetNegotiationForTests,
 } from "@/api/apiVersion";
@@ -64,6 +65,25 @@ describe("negotiateApiVersion", () => {
       ),
     );
     await expect(negotiateApiVersion(ORIGIN)).rejects.toThrow("malformed versions payload");
+  });
+});
+
+describe("getApiVersionForOrigin", () => {
+  it("keeps each origin's own negotiated version even after another origin negotiates", async () => {
+    const OTHER_ORIGIN = "https://other.example";
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+      http.get(`${OTHER_ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+    );
+    await negotiateApiVersion(ORIGIN);
+    await negotiateApiVersion(OTHER_ORIGIN);
+    expect(getApiVersion()).toBe("v1");
+    expect(getApiVersionForOrigin(ORIGIN)).toBe("v1");
+    expect(getApiVersionForOrigin(OTHER_ORIGIN)).toBe("v1");
+  });
+
+  it("falls back to the highest supported version for an un-negotiated origin", () => {
+    expect(getApiVersionForOrigin("https://never-negotiated.example")).toBe("v1");
   });
 });
 
