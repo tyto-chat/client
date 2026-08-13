@@ -1,5 +1,6 @@
 import { test, expect } from "./worldFixtures";
 import { AppShell } from "../pages/AppShell";
+import { T } from "./fixtures";
 
 test.describe.serial("Navigation — admin", () => {
   test("community sidebar renders the seeded community", async ({ adminPage: page, world }) => {
@@ -7,9 +8,9 @@ test.describe.serial("Navigation — admin", () => {
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
     // Wait for the community nav to render before clicking
-    await expect(page.locator("nav").first()).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("nav").first()).toBeVisible({ timeout: T(8_000) });
     await shell.clickCommunity(world.communityId);
-    await expect(page).toHaveURL(new RegExp(world.communityId), { timeout: 8_000 });
+    await expect(page).toHaveURL(new RegExp(world.communityId), { timeout: T(8_000) });
   });
 
   test("navigating to a text channel loads its view", async ({ adminPage: page, world }) => {
@@ -30,7 +31,9 @@ test.describe.serial("Navigation — admin", () => {
   test("direct URL navigation to channel works", async ({ adminPage: page, world }) => {
     await page.goto(`/${world.communityId}/${world.textChannelId}`);
     await expect(page).toHaveURL(new RegExp(world.textChannelId));
-    await expect(page.locator('[contenteditable="true"]').last()).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator('[contenteditable="true"]').last()).toBeVisible({
+      timeout: T(8_000),
+    });
   });
 });
 
@@ -44,7 +47,7 @@ test.describe.serial("Navigation — regular user", () => {
   test("navigating to a non-existent community redirects home", async ({ userPage: page }) => {
     // The channel loader 404s on an unknown community and throws redirect({to:"/"}).
     await page.goto("/no-such-community-xyz/no-such-channel");
-    await expect(page).not.toHaveURL(/no-such-community-xyz/, { timeout: 10_000 });
+    await expect(page).not.toHaveURL(/no-such-community-xyz/, { timeout: T(10_000) });
   });
 
   test("permalink to a non-existent message shows the unavailable page", async ({
@@ -53,6 +56,6 @@ test.describe.serial("Navigation — regular user", () => {
     // GET /api/messages/{uuid} 404s → resolver renders the generic not-available
     // view (403/404 deliberately conflated), leaking nothing.
     await page.goto("/m/00000000-0000-0000-0000-000000000000");
-    await expect(page.getByText("Message not available")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Message not available")).toBeVisible({ timeout: T(10_000) });
   });
 });

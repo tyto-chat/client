@@ -14,13 +14,14 @@
 
 import { test, expect } from "./worldFixtures";
 import type { Page } from "@playwright/test";
+import { T } from "./fixtures";
 
 const SAVE = "Save changes";
 const SAVED_TOAST = "Settings saved.";
 
 async function gotoSettingsTab(page: Page, tab: string): Promise<void> {
   await page.goto(`/admin/settings?tab=${tab}`);
-  await expect(page.getByRole("button", { name: SAVE })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("button", { name: SAVE })).toBeVisible({ timeout: T(10_000) });
 }
 
 test.describe.serial("Admin settings", () => {
@@ -33,26 +34,26 @@ test.describe.serial("Admin settings", () => {
 
     await field.fill(changed);
     await page.getByRole("button", { name: SAVE }).click();
-    await expect(page.getByText(SAVED_TOAST)).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByText(SAVED_TOAST)).toBeVisible({ timeout: T(8_000) });
 
     await gotoSettingsTab(page, "general");
     await expect(page.getByLabel("Message retention (days)")).toHaveValue(changed);
 
     await page.getByLabel("Message retention (days)").fill(original);
     await page.getByRole("button", { name: SAVE }).click();
-    await expect(page.getByText(SAVED_TOAST)).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByText(SAVED_TOAST)).toBeVisible({ timeout: T(8_000) });
   });
 
   test("a toggle survives save and reload", async ({ adminPage: page }) => {
     await gotoSettingsTab(page, "general");
 
     const toggle = page.getByRole("switch", { name: "List in tyto server catalogue" });
-    await expect(toggle).toBeVisible({ timeout: 8_000 });
+    await expect(toggle).toBeVisible({ timeout: T(8_000) });
     const wasOn = (await toggle.getAttribute("aria-checked")) === "true";
 
     await toggle.click();
     await page.getByRole("button", { name: SAVE }).click();
-    await expect(page.getByText(SAVED_TOAST)).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByText(SAVED_TOAST)).toBeVisible({ timeout: T(8_000) });
 
     await gotoSettingsTab(page, "general");
     const reloaded = page.getByRole("switch", { name: "List in tyto server catalogue" });
@@ -60,7 +61,7 @@ test.describe.serial("Admin settings", () => {
 
     await reloaded.click();
     await page.getByRole("button", { name: SAVE }).click();
-    await expect(page.getByText(SAVED_TOAST)).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByText(SAVED_TOAST)).toBeVisible({ timeout: T(8_000) });
   });
 
   test("the save button stays disabled until something changes", async ({ adminPage: page }) => {
@@ -87,14 +88,16 @@ test.describe.serial("Admin settings", () => {
     await page.getByRole("button", { name: "New user" }).click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 8_000 });
+    await expect(dialog).toBeVisible({ timeout: T(8_000) });
     await dialog.getByLabel("Name").fill(name);
     await dialog.getByLabel("Email").fill(email);
     await dialog.getByRole("button", { name: "Create & invite" }).click();
 
-    await expect(dialog).not.toBeVisible({ timeout: 10_000 });
+    await expect(dialog).not.toBeVisible({ timeout: T(10_000) });
 
     await page.getByPlaceholder("name or email").fill(email);
-    await expect(page.getByRole("row").filter({ hasText: email })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("row").filter({ hasText: email })).toBeVisible({
+      timeout: T(10_000),
+    });
   });
 });

@@ -1,7 +1,7 @@
 import { devices, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
-import { setupServerInfoRoute, attachPageDiagnostics, E2E_BASE_URL } from "./fixtures";
+import { setupServerInfoRoute, attachPageDiagnostics, E2E_BASE_URL, T } from "./fixtures";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
 
@@ -48,11 +48,11 @@ test.describe.serial("Embeddable message card", () => {
       await expect(page.locator("[data-message-id]").last()).not.toHaveAttribute(
         "data-message-id",
         /optimistic/,
-        { timeout: 10_000 },
+        { timeout: T(10_000) },
       );
       await page.locator("main .message-content").last().hover();
       const copyBtn = page.getByTestId(testIds.msgActionCopyLink).last();
-      await expect(copyBtn).toBeVisible({ timeout: 5_000 });
+      await expect(copyBtn).toBeVisible({ timeout: T(5_000) });
       await copyBtn.click();
       const url = await page.evaluate(() => navigator.clipboard.readText());
       uuid = url.split("/m/")[1] ?? "";
@@ -65,19 +65,19 @@ test.describe.serial("Embeddable message card", () => {
   test("anonymous visitor sees the card with the message text", async ({ page }) => {
     await page.goto(`${E2E_BASE_URL}/embed/m/${uuid}`);
     const card = page.locator(".embed-card");
-    await expect(card).toBeVisible({ timeout: 15_000 });
+    await expect(card).toBeVisible({ timeout: T(15_000) });
     await expect(card).not.toHaveClass(/embed-card--unavailable/);
-    await expect(card.getByText(messageText, { exact: false })).toBeVisible({ timeout: 8_000 });
+    await expect(card.getByText(messageText, { exact: false })).toBeVisible({ timeout: T(8_000) });
   });
 
   test("card links back to the full message permalink", async ({ page }) => {
     await page.goto(`${E2E_BASE_URL}/embed/m/${uuid}`);
     const link = page.locator(`a.embed-card[href*="/m/${uuid}"]`).first();
-    await expect(link).toBeAttached({ timeout: 15_000 });
+    await expect(link).toBeAttached({ timeout: T(15_000) });
   });
 
   test("unknown uuid renders the unavailable card, not an error page", async ({ page }) => {
     await page.goto(`${E2E_BASE_URL}/embed/m/00000000-0000-4000-8000-000000000000`);
-    await expect(page.locator(".embed-card--unavailable")).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(".embed-card--unavailable")).toBeVisible({ timeout: T(15_000) });
   });
 });

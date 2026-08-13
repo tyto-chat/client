@@ -1,7 +1,7 @@
 import { devices, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
-import { setupServerInfoRoute, attachPageDiagnostics, E2E_BASE_URL } from "./fixtures";
+import { setupServerInfoRoute, attachPageDiagnostics, E2E_BASE_URL, T } from "./fixtures";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
 
@@ -34,11 +34,11 @@ async function copyPermalinkOfLastMessage(page: Page): Promise<string> {
   await expect(page.locator("[data-message-id]").last()).not.toHaveAttribute(
     "data-message-id",
     /optimistic/,
-    { timeout: 10_000 },
+    { timeout: T(10_000) },
   );
   await page.locator("main .message-content").last().hover();
   const copyBtn = page.getByTestId(testIds.msgActionCopyLink).last();
-  await expect(copyBtn).toBeVisible({ timeout: 5_000 });
+  await expect(copyBtn).toBeVisible({ timeout: T(5_000) });
   await copyBtn.click();
   const url = await page.evaluate(() => navigator.clipboard.readText());
   expect(url).toMatch(/\/m\/[0-9a-f-]{36}$/);
@@ -65,10 +65,10 @@ test.describe.serial("Message permalinks", () => {
 
       await page.goto(permalink);
       await expect(page).toHaveURL(new RegExp(`/${world.communityId}/${world.textChannelId}`), {
-        timeout: 15_000,
+        timeout: T(15_000),
       });
       await expect(page.locator("main").getByText(messageText, { exact: false })).toBeVisible({
-        timeout: 10_000,
+        timeout: T(10_000),
       });
     } finally {
       await page.context().close();
@@ -80,7 +80,7 @@ test.describe.serial("Message permalinks", () => {
 
     await page.goto(permalink.replace(/^https?:\/\/[^/]+/, E2E_BASE_URL));
     await expect(page.locator("main").getByText(messageText, { exact: false })).toBeVisible({
-      timeout: 15_000,
+      timeout: T(15_000),
     });
     // Still anonymous: guest prompt visible, no editor.
     await expect(page.locator("main").locator('[contenteditable="true"]')).toHaveCount(0);
@@ -89,7 +89,7 @@ test.describe.serial("Message permalinks", () => {
   test("anonymous visitor gets the unavailable page for a bogus permalink", async ({ page }) => {
     await page.goto(`${E2E_BASE_URL}/m/00000000-0000-4000-8000-000000000000`);
     await expect(page.getByText(/not available|unavailable/i).first()).toBeVisible({
-      timeout: 15_000,
+      timeout: T(15_000),
     });
   });
 });

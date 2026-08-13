@@ -1,6 +1,7 @@
 import { test, expect } from "./worldFixtures";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
+import { T } from "./fixtures";
 
 /**
  * Emoji autocomplete tests.
@@ -26,7 +27,7 @@ test.describe.serial("Emoji autocomplete", () => {
     // Unicode catalog has many smiling-face entries; expect at least one
     // suggestion button whose label contains "smil".
     await expect(page.getByRole("button", { name: /smil/i }).first()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   });
 
@@ -42,13 +43,13 @@ test.describe.serial("Emoji autocomplete", () => {
     await channel.messageEditor.pressSequentially(":slightly");
 
     const suggestion = page.getByRole("button", { name: /slightly smiling face/i }).first();
-    await expect(suggestion).toBeVisible({ timeout: 6_000 });
+    await expect(suggestion).toBeVisible({ timeout: T(6_000) });
     await suggestion.click();
 
     await channel.messageEditor.press("Enter");
 
     await expect(page.locator("main .message-content").last()).toContainText("🙂", {
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   });
 
@@ -64,17 +65,17 @@ test.describe.serial("Emoji autocomplete", () => {
     await channel.messageEditor.pressSequentially(":slightly");
 
     await expect(page.getByRole("button", { name: /slightly smiling face/i }).first()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     // Suggestion dropdown intercepts Enter — it picks, not submit.
     await channel.messageEditor.press("Enter");
 
     await expect(page.getByRole("button", { name: /slightly smiling face/i })).toHaveCount(0, {
-      timeout: 4_000,
+      timeout: T(4_000),
     });
     // Editor still focused with the glyph inserted (no message sent yet).
-    await expect(channel.messageEditor).toContainText("🙂", { timeout: 4_000 });
+    await expect(channel.messageEditor).toContainText("🙂", { timeout: T(4_000) });
   });
 
   test("clicking outside the dropdown dismisses it", async ({ adminPage: page, world }) => {
@@ -86,7 +87,7 @@ test.describe.serial("Emoji autocomplete", () => {
     await channel.messageEditor.pressSequentially(":smil");
 
     await expect(page.getByRole("button", { name: /smil/i }).first()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     // Click somewhere unrelated — the community sidebar is far from the
@@ -96,7 +97,7 @@ test.describe.serial("Emoji autocomplete", () => {
       .first()
       .click({ position: { x: 5, y: 5 } });
 
-    await expect(page.getByRole("button", { name: /smil/i })).toHaveCount(0, { timeout: 4_000 });
+    await expect(page.getByRole("button", { name: /smil/i })).toHaveCount(0, { timeout: T(4_000) });
   });
 
   test("Escape dismisses the dropdown", async ({ adminPage: page, world }) => {
@@ -108,12 +109,12 @@ test.describe.serial("Emoji autocomplete", () => {
     await channel.messageEditor.pressSequentially(":smil");
 
     await expect(page.getByRole("button", { name: /smil/i }).first()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     await channel.messageEditor.press("Escape");
 
-    await expect(page.getByRole("button", { name: /smil/i })).toHaveCount(0, { timeout: 4_000 });
+    await expect(page.getByRole("button", { name: /smil/i })).toHaveCount(0, { timeout: T(4_000) });
   });
 
   test("`:` mid-word (no preceding space) does not trigger autocomplete", async ({

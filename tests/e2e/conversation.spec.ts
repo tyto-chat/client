@@ -1,7 +1,7 @@
 import { test, expect, authedPage } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { WorldBuilder } from "./world/builder";
-import { E2E_API_URL, E2E_BASE_URL } from "./fixtures";
+import { E2E_API_URL, E2E_BASE_URL, T } from "./fixtures";
 import { ConversationPage } from "../pages/ConversationPage";
 
 /**
@@ -83,7 +83,7 @@ test.describe.serial("Direct messages — lifecycle", () => {
 
       await userPage.goto("/dm");
       await expect(userPage.getByTestId(testIds.dmMutedIndicator).first()).toBeVisible({
-        timeout: 10_000,
+        timeout: T(10_000),
       });
     } finally {
       await adminPage.context().close();
@@ -136,7 +136,7 @@ test.describe.serial("Direct messages — access", () => {
 
     // useConversation 403/404s for a non-member → the route shows not-found,
     // never the message history.
-    await expect(userPage.getByText("Conversation not found.")).toBeVisible({ timeout: 10_000 });
+    await expect(userPage.getByText("Conversation not found.")).toBeVisible({ timeout: T(10_000) });
   });
 });
 
@@ -162,12 +162,12 @@ test.describe.serial("Direct messages — threads", () => {
 
       await adminPage.locator("main .message-content").last().hover();
       const replyBtn = adminPage.getByTestId(testIds.msgActionReply).last();
-      await expect(replyBtn).toBeVisible({ timeout: 5_000 });
+      await expect(replyBtn).toBeVisible({ timeout: T(5_000) });
       await replyBtn.click();
 
       const panel = adminPage.getByTestId(testIds.threadPanel);
-      await expect(panel).toBeVisible({ timeout: 8_000 });
-      await expect(panel.getByText(rootText, { exact: false })).toBeVisible({ timeout: 6_000 });
+      await expect(panel).toBeVisible({ timeout: T(8_000) });
+      await expect(panel.getByText(rootText, { exact: false })).toBeVisible({ timeout: T(6_000) });
 
       const replyText = `DM thread reply ${Date.now()}`;
       const editor = panel.locator('[contenteditable="true"]');
@@ -175,7 +175,7 @@ test.describe.serial("Direct messages — threads", () => {
       await editor.fill(replyText);
       await editor.press("Enter");
 
-      await expect(panel.getByText(replyText, { exact: false })).toBeVisible({ timeout: 8_000 });
+      await expect(panel.getByText(replyText, { exact: false })).toBeVisible({ timeout: T(8_000) });
 
       // The reply must not appear in the main DM timeline.
       const timeline = adminPage.locator("main [role='log']").first();

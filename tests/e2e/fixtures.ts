@@ -3,6 +3,12 @@ import { test as base, type BrowserContext, type Page, type TestInfo } from "@pl
 export const E2E_API_URL = process.env.E2E_API_URL ?? "https://core-test.ddev.site";
 export const E2E_BASE_URL = process.env.E2E_BASE_URL ?? "https://client.ddev.site";
 
+export const timeoutScale = process.env.CI ? 2 : 1;
+
+export function T(ms: number): number {
+  return ms * timeoutScale;
+}
+
 /**
  * Applies the server-info route intercept to a page or context so the app
  * uses the test backend (E2E_API_URL) instead of what's baked into the Vite

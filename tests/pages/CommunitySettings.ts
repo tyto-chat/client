@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { testIds } from "../e2e/testIds";
+import { T } from "../e2e/fixtures";
 
 /**
  * Community settings modal — opened from the sidebar header's ⋯ menu.
@@ -18,12 +19,12 @@ export class CommunitySettings {
   }
 
   async openTab(key: string): Promise<void> {
-    await expect(this.page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(this.page.locator("aside")).toBeVisible({ timeout: T(8_000) });
     await this.page.getByTestId(testIds.communityActionsBtn).click();
     await this.page.getByTestId(testIds.manageCommunity).click();
 
     const dialog = this.page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 8_000 });
+    await expect(dialog).toBeVisible({ timeout: T(8_000) });
 
     // Not scoped to the dialog: overflowed tabs render as menu items in a portal
     // outside it.

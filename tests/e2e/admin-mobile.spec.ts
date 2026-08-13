@@ -1,5 +1,6 @@
 import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
+import { T } from "./fixtures";
 
 /**
  * Admin shell responsiveness at a phone viewport (390px). Below the `md`
@@ -19,7 +20,7 @@ async function openAdminShell(page: import("@playwright/test").Page, communityId
   await page.getByTestId(testIds.mobileNavToggle).click();
   await page.getByTestId(testIds.profileMenuButton).click();
   await page.getByTestId(testIds.adminPanelMenuEntry).click();
-  await expect(page.getByTestId(testIds.adminShell)).toBeVisible({ timeout: 8_000 });
+  await expect(page.getByTestId(testIds.adminShell)).toBeVisible({ timeout: T(8_000) });
 }
 
 test.describe.serial("Admin shell — mobile (390px)", () => {
@@ -30,7 +31,9 @@ test.describe.serial("Admin shell — mobile (390px)", () => {
     await expect(page.locator(`aside a[href="/admin/users"]`)).toBeInViewport();
     // Every section is present (scrolled into the horizontal nav as needed).
     for (const seg of ["users", "communities", "settings", "health", "webhooks", "audit"]) {
-      await expect(page.locator(`aside a[href="/admin/${seg}"]`)).toBeVisible({ timeout: 6_000 });
+      await expect(page.locator(`aside a[href="/admin/${seg}"]`)).toBeVisible({
+        timeout: T(6_000),
+      });
     }
   });
 
@@ -48,6 +51,6 @@ test.describe.serial("Admin shell — mobile (390px)", () => {
     await openAdminShell(page, world.communityId);
 
     await page.locator(`aside a[href="/admin/health"]`).click();
-    await expect(page).toHaveURL(/\/admin\/health/, { timeout: 8_000 });
+    await expect(page).toHaveURL(/\/admin\/health/, { timeout: T(8_000) });
   });
 });

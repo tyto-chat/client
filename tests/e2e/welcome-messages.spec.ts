@@ -12,7 +12,7 @@
 
 import { test, expect } from "./worldFixtures";
 import { authedPage } from "./worldFixtures";
-import { E2E_API_URL, E2E_BASE_URL } from "./fixtures";
+import { E2E_API_URL, E2E_BASE_URL, T } from "./fixtures";
 import { WorldBuilder } from "./world/builder";
 import { CommunitySettings } from "../pages/CommunitySettings";
 
@@ -59,11 +59,11 @@ test.describe.serial("Welcome messages", () => {
       .filter({ has: page.getByText("Welcome channel", { exact: true }) })
       .last()
       .getByRole("combobox");
-    await expect(select).toBeVisible({ timeout: 8_000 });
+    await expect(select).toBeVisible({ timeout: T(8_000) });
     await select.selectOption({ label: `#${channelId}` });
     await page.getByRole("button", { name: "Save" }).click();
 
-    await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: T(10_000) });
   });
 
   test("joining posts a system welcome message rendered without an author", async ({ browser }) => {
@@ -75,7 +75,7 @@ test.describe.serial("Welcome messages", () => {
       await page.goto(`/${communityId}/${channelId}`);
 
       const systemRow = page.locator("[data-message-id]").filter({ hasText: joiner.name });
-      await expect(systemRow.first()).toBeVisible({ timeout: 15_000 });
+      await expect(systemRow.first()).toBeVisible({ timeout: T(15_000) });
 
       // The mention renders through the normal pipeline, so the joiner's name is
       // a mention span rather than an author header.
@@ -90,13 +90,13 @@ test.describe.serial("Welcome messages", () => {
     await page.goto(`/${communityId}/${channelId}`);
 
     const systemRow = page.locator("[data-message-id]").first();
-    await expect(systemRow).toBeVisible({ timeout: 10_000 });
+    await expect(systemRow).toBeVisible({ timeout: T(10_000) });
     await systemRow.hover();
 
     // System messages carry their own trash affordance, not the standard hover bar.
     await page.getByTitle("Delete welcome message").click();
 
     // Soft delete: the row stays and becomes a tombstone.
-    await expect(page.getByText("This message was deleted.")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("This message was deleted.")).toBeVisible({ timeout: T(10_000) });
   });
 });

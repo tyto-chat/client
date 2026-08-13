@@ -11,7 +11,7 @@
 
 import { test, expect } from "./worldFixtures";
 import { authedPage } from "./worldFixtures";
-import { E2E_API_URL, E2E_BASE_URL } from "./fixtures";
+import { E2E_API_URL, E2E_BASE_URL, T } from "./fixtures";
 import { WorldBuilder } from "./world/builder";
 import { testIds } from "./testIds";
 import type { Page } from "@playwright/test";
@@ -22,7 +22,7 @@ let leaver: { jwt: string; name: string; email: string };
 async function openAccountPanel(page: Page): Promise<void> {
   await page.getByTestId(testIds.profileMenuButton).click();
   await page.getByRole("button", { name: "Preferences" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(6_000) });
   await page.getByTestId(testIds.prefTabAccount).click();
 }
 
@@ -47,13 +47,13 @@ test.describe.serial("GDPR self-service", () => {
       await page.goto(`/${world.communityId}`);
       await openAccountPanel(page);
 
-      await expect(page.getByText("Download your data")).toBeVisible({ timeout: 8_000 });
+      await expect(page.getByText("Download your data")).toBeVisible({ timeout: T(8_000) });
       await page.getByRole("button", { name: "Request export" }).click();
 
       // The export handler runs inline in this environment, so the archive is
       // built for real — assert the download link, not just the queued state.
       await expect(page.getByRole("link", { name: "Download archive" })).toBeVisible({
-        timeout: 20_000,
+        timeout: T(20_000),
       });
       await expect(page.getByRole("button", { name: "Request again" })).toBeVisible();
     } finally {
@@ -69,7 +69,7 @@ test.describe.serial("GDPR self-service", () => {
 
       await page.getByRole("button", { name: "Delete my account" }).click();
       const dialog = page.getByRole("dialog").last();
-      await expect(dialog.getByPlaceholder(leaver.email)).toBeVisible({ timeout: 8_000 });
+      await expect(dialog.getByPlaceholder(leaver.email)).toBeVisible({ timeout: T(8_000) });
 
       const submit = dialog.getByRole("button", { name: "Schedule deletion" });
       await expect(submit).toBeDisabled();
@@ -101,7 +101,7 @@ test.describe.serial("GDPR self-service", () => {
       // The gate renders in place over whatever route the user was on — the URL
       // does not change.
       await expect(page.getByRole("button", { name: "Cancel deletion" })).toBeVisible({
-        timeout: 10_000,
+        timeout: T(10_000),
       });
       await expect(page.getByText(/scheduled for deletion/i).first()).toBeVisible();
     } finally {
@@ -117,17 +117,17 @@ test.describe.serial("GDPR self-service", () => {
     try {
       await page.goto("/account-pending-deletion");
       await expect(page.getByRole("button", { name: "Cancel deletion" })).toBeVisible({
-        timeout: 10_000,
+        timeout: T(10_000),
       });
       await page.getByRole("button", { name: "Cancel deletion" }).click();
 
       // Assert the lock lifting rather than the toast — the toast auto-dismisses.
       await expect(page.getByRole("button", { name: "Cancel deletion" })).toHaveCount(0, {
-        timeout: 10_000,
+        timeout: T(10_000),
       });
 
       await page.goto(`/${world.communityId}`);
-      await expect(page.locator("aside")).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator("aside")).toBeVisible({ timeout: T(10_000) });
       await expect(page.getByRole("button", { name: "Cancel deletion" })).toHaveCount(0);
     } finally {
       await page.context().close();

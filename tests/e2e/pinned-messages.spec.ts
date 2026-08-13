@@ -2,6 +2,7 @@ import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
+import { T } from "./fixtures";
 
 /**
  * Pinned messages flow — pin, list in modal, unpin.
@@ -31,12 +32,14 @@ import { ChannelPage } from "../pages/ChannelPage";
 
 async function openPinnedModal(page: import("@playwright/test").Page) {
   await page.getByTestId(testIds.pinnedOpenBtn).click();
-  await expect(page.getByTestId(testIds.pinnedMessagesModal)).toBeVisible({ timeout: 8_000 });
+  await expect(page.getByTestId(testIds.pinnedMessagesModal)).toBeVisible({ timeout: T(8_000) });
 }
 
 async function closePinnedModal(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Close" }).click();
-  await expect(page.getByTestId(testIds.pinnedMessagesModal)).not.toBeVisible({ timeout: 5_000 });
+  await expect(page.getByTestId(testIds.pinnedMessagesModal)).not.toBeVisible({
+    timeout: T(5_000),
+  });
 }
 
 test.describe.serial("Pinned messages — flow", () => {
@@ -59,7 +62,7 @@ test.describe.serial("Pinned messages — flow", () => {
     const lastContent = page.locator("main .message-content").last();
     await lastContent.hover();
     const pinBtn = page.getByTestId(testIds.msgActionPin).last();
-    await expect(pinBtn).toBeVisible({ timeout: 8_000 });
+    await expect(pinBtn).toBeVisible({ timeout: T(8_000) });
     await expect(pinBtn).toHaveAttribute("title", "Pin message");
     await pinBtn.hover();
     await pinBtn.click();
@@ -68,7 +71,7 @@ test.describe.serial("Pinned messages — flow", () => {
 
     const modal = page.getByTestId(testIds.pinnedMessagesModal);
 
-    await expect(modal.getByText(text, { exact: false })).toBeVisible({ timeout: 8_000 });
+    await expect(modal.getByText(text, { exact: false })).toBeVisible({ timeout: T(8_000) });
 
     await closePinnedModal(page);
   });
@@ -95,7 +98,7 @@ test.describe.serial("Pinned messages — flow", () => {
     await lastContent.hover();
 
     const pinBtn = page.getByTestId(testIds.msgActionPin).last();
-    await expect(pinBtn).toBeVisible({ timeout: 8_000 });
+    await expect(pinBtn).toBeVisible({ timeout: T(8_000) });
     await expect(pinBtn).toHaveAttribute("title", "Unpin");
     // Re-hover the row right before acting: the hover bar hides again if the
     // pointer settles elsewhere between the visibility check and the click.
@@ -106,7 +109,7 @@ test.describe.serial("Pinned messages — flow", () => {
     // channel's pin list. The header pin button is gated on having ≥1 pin, so
     // it must disappear — which is itself proof the unpin took effect. (We
     // can't reopen the modal to check: with zero pins there's no entry point.)
-    await expect(page.getByTestId(testIds.pinnedOpenBtn)).toHaveCount(0, { timeout: 8_000 });
+    await expect(page.getByTestId(testIds.pinnedOpenBtn)).toHaveCount(0, { timeout: T(8_000) });
   });
 
   test("unpin from inside the modal — message removed from list", async ({
@@ -125,21 +128,21 @@ test.describe.serial("Pinned messages — flow", () => {
     const lastContent = page.locator("main .message-content").last();
     await lastContent.hover();
     const pinBtn = page.getByTestId(testIds.msgActionPin).last();
-    await expect(pinBtn).toBeVisible({ timeout: 8_000 });
+    await expect(pinBtn).toBeVisible({ timeout: T(8_000) });
     await pinBtn.hover();
     await pinBtn.click();
 
     await openPinnedModal(page);
     const modal = page.getByTestId(testIds.pinnedMessagesModal);
     const row = modal.getByTestId(testIds.pinnedMessageRow).filter({ hasText: text });
-    await expect(row).toBeVisible({ timeout: 8_000 });
+    await expect(row).toBeVisible({ timeout: T(8_000) });
 
     await row.hover();
     const unpinInModal = row.getByTestId(testIds.pinnedModalUnpinBtn);
-    await expect(unpinInModal).toBeVisible({ timeout: 5_000 });
+    await expect(unpinInModal).toBeVisible({ timeout: T(5_000) });
     await unpinInModal.click();
 
-    await expect(row).not.toBeVisible({ timeout: 8_000 });
+    await expect(row).not.toBeVisible({ timeout: T(8_000) });
 
     // 5. If that was the only pin, the modal (which stays open after an in-modal
     //    unpin) now shows the empty-state placeholder — the one reachable way to
@@ -149,7 +152,7 @@ test.describe.serial("Pinned messages — flow", () => {
     if (rowCount === 0) {
       // eslint-disable-next-line playwright/no-conditional-expect -- guarded by the rowCount check above
       await expect(modal.getByText("No pinned messages yet.", { exact: true })).toBeVisible({
-        timeout: 5_000,
+        timeout: T(5_000),
       });
     }
 

@@ -2,6 +2,7 @@ import { test, expect, authedPage } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
+import { T } from "./fixtures";
 
 test.describe.serial("Role visibility — anonymous user", () => {
   test.beforeAll(async ({ browser, world }) => {
@@ -51,10 +52,10 @@ test.describe.serial("Role visibility — anonymous user", () => {
     }
 
     await page.reload();
-    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
     await page.locator("main .message-content").last().hover();
-    await expect(page.getByTestId(testIds.msgActionEdit)).not.toBeVisible({ timeout: 3_000 });
-    await expect(page.getByTestId(testIds.msgActionDelete)).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.getByTestId(testIds.msgActionEdit)).not.toBeVisible({ timeout: T(3_000) });
+    await expect(page.getByTestId(testIds.msgActionDelete)).not.toBeVisible({ timeout: T(3_000) });
   });
 });
 
@@ -81,7 +82,7 @@ test.describe.serial("Role visibility — regular user", () => {
     await channel.sendMessage(text);
     await channel.expectMessage(text);
     await page.locator("main .message-content").last().hover();
-    await expect(page.getByTitle(/make mod/i)).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.getByTitle(/make mod/i)).not.toBeVisible({ timeout: T(3_000) });
   });
 
   test("regular user sees Edit and Delete only on own messages", async ({
@@ -101,8 +102,8 @@ test.describe.serial("Role visibility — regular user", () => {
     // composer overlay, which would intercept the pointer.
     const ownRow = page.locator("main [data-message-id]").filter({ hasText: ownText }).last();
     await ownRow.locator(".message-content").first().hover();
-    await expect(ownRow.getByTestId(testIds.msgActionEdit)).toBeVisible({ timeout: 5_000 });
-    await expect(ownRow.getByTestId(testIds.msgActionDelete)).toBeVisible({ timeout: 5_000 });
+    await expect(ownRow.getByTestId(testIds.msgActionEdit)).toBeVisible({ timeout: T(5_000) });
+    await expect(ownRow.getByTestId(testIds.msgActionDelete)).toBeVisible({ timeout: T(5_000) });
 
     const adminText = `Admin msg ${Date.now()}`;
     const adminPage = await authedPage(browser, world.adminJwt);
@@ -118,9 +119,9 @@ test.describe.serial("Role visibility — regular user", () => {
     // never renders Edit/Delete controls, so they are absent from the DOM —
     // assert that directly (no hover, no visibility race).
     await page.reload();
-    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
     const adminRow = page.locator("main [data-message-id]").filter({ hasText: adminText }).last();
-    await expect(adminRow).toBeVisible({ timeout: 10_000 });
+    await expect(adminRow).toBeVisible({ timeout: T(10_000) });
     await expect(adminRow.getByTestId(testIds.msgActionEdit)).toHaveCount(0);
     await expect(adminRow.getByTestId(testIds.msgActionDelete)).toHaveCount(0);
   });
@@ -142,7 +143,7 @@ test.describe.serial("Role visibility — admin user", () => {
     await section.hover();
     await section.getByTestId(testIds.sectionActionsBtn).click({ force: true });
     await expect(page.getByRole("menuitem", { name: /add channel/i })).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   });
 
@@ -158,7 +159,7 @@ test.describe.serial("Role visibility — admin user", () => {
     }
 
     await page.reload();
-    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
 
     // Scoped to the message under test, not to whatever is last: the new message
     // can render between the two assertions, which moves `.last()` onto a row
@@ -166,11 +167,11 @@ test.describe.serial("Role visibility — admin user", () => {
     // data-message-id is on both the group wrapper and the individual row; the
     // inner row is the one that owns the hover state and the action bar.
     const row = page.locator("main [data-message-id]").filter({ hasText: msgText }).last();
-    await expect(row).toBeVisible({ timeout: 10_000 });
+    await expect(row).toBeVisible({ timeout: T(10_000) });
     await row.locator(".message-content").hover();
 
-    await expect(row.getByTestId(testIds.msgActionEdit)).toBeVisible({ timeout: 5_000 });
-    await expect(row.getByTestId(testIds.msgActionDelete)).toBeVisible({ timeout: 5_000 });
+    await expect(row.getByTestId(testIds.msgActionEdit)).toBeVisible({ timeout: T(5_000) });
+    await expect(row.getByTestId(testIds.msgActionDelete)).toBeVisible({ timeout: T(5_000) });
   });
 
   test("admin does not see guest prompt in text channel", async ({ adminPage: page }) => {

@@ -2,7 +2,7 @@ import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
 import { test, expect, authedPage } from "./worldFixtures";
-import { E2E_API_URL } from "./fixtures";
+import { E2E_API_URL, T } from "./fixtures";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
 
@@ -54,10 +54,10 @@ test.describe.serial("Attachments — admin enables attachments", () => {
     await shell.gotoChannel(world.textChannelId);
     await setAllowAttachments(page, world.communityId, world.textChannelId, true);
     await page.reload();
-    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
 
     await new ChannelPage(page).focusComposer();
-    await expect(page.getByTitle("Attach file")).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTitle("Attach file")).toBeVisible({ timeout: T(6_000) });
 
     // Cleanup
     await setAllowAttachments(page, world.communityId, world.textChannelId, false);
@@ -71,7 +71,7 @@ test.describe.serial("Attachments — admin enables attachments", () => {
     await shell.gotoChannel(world.textChannelId);
     await setAllowAttachments(page, world.communityId, world.textChannelId, true);
     await page.reload();
-    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
 
     const channel = new ChannelPage(page);
     const filePath = createTempFile("e2e-attach.txt", "hello from E2E attachment test");
@@ -80,13 +80,13 @@ test.describe.serial("Attachments — admin enables attachments", () => {
       // Intercept the upload response to get the attachment IRI
       const uploadDone = page.waitForResponse(
         (res) => res.url().includes("/attachments") && res.request().method() === "POST",
-        { timeout: 10_000 },
+        { timeout: T(10_000) },
       );
 
       const fileInput = page.locator('input[type="file"]').last();
       await fileInput.setInputFiles(filePath);
 
-      await expect(page.getByText("e2e-attach.txt")).toBeVisible({ timeout: 8_000 });
+      await expect(page.getByText("e2e-attach.txt")).toBeVisible({ timeout: T(8_000) });
 
       const uploadRes = await uploadDone;
       expect(uploadRes.ok()).toBe(true);
@@ -96,12 +96,12 @@ test.describe.serial("Attachments — admin enables attachments", () => {
       expect(attachmentIri.length).toBeGreaterThan(0);
 
       // Wait for upload spinner to disappear — React has re-rendered with iri set
-      await expect(page.locator(".animate-spin")).not.toBeVisible({ timeout: 6_000 });
+      await expect(page.locator(".animate-spin")).not.toBeVisible({ timeout: T(6_000) });
 
       // Intercept the message creation response to verify attachment is linked
       const messageDone = page.waitForResponse(
         (res) => res.url().includes("/messages") && res.request().method() === "POST",
-        { timeout: 10_000 },
+        { timeout: T(10_000) },
       );
 
       const text = `Attach msg ${Date.now()}`;
@@ -116,7 +116,7 @@ test.describe.serial("Attachments — admin enables attachments", () => {
       expect((attachments ?? []).length).toBeGreaterThan(0);
 
       // The file name should now appear in the message bubble as an attachment chip.
-      await expect(page.getByText("e2e-attach.txt")).toBeVisible({ timeout: 8_000 });
+      await expect(page.getByText("e2e-attach.txt")).toBeVisible({ timeout: T(8_000) });
     } finally {
       fs.unlinkSync(filePath);
       await setAllowAttachments(page, world.communityId, world.textChannelId, false);
@@ -128,7 +128,7 @@ test.describe.serial("Attachments — admin enables attachments", () => {
     await shell.gotoChannel(world.textChannelId);
     await setAllowAttachments(page, world.communityId, world.textChannelId, true);
     await page.reload();
-    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
 
     const filePath = createTempFile("e2e-remove.txt", "remove me");
 
@@ -136,12 +136,12 @@ test.describe.serial("Attachments — admin enables attachments", () => {
       const fileInput = page.locator('input[type="file"]').last();
       await fileInput.setInputFiles(filePath);
 
-      await expect(page.getByText("e2e-remove.txt")).toBeVisible({ timeout: 8_000 });
+      await expect(page.getByText("e2e-remove.txt")).toBeVisible({ timeout: T(8_000) });
 
       // Click the × on the pending chip (rounded-full class, distinct from message trash button)
       await page.locator('button.rounded-full[title="Remove attachment"]').click();
 
-      await expect(page.getByText("e2e-remove.txt")).not.toBeVisible({ timeout: 6_000 });
+      await expect(page.getByText("e2e-remove.txt")).not.toBeVisible({ timeout: T(6_000) });
     } finally {
       fs.unlinkSync(filePath);
       await setAllowAttachments(page, world.communityId, world.textChannelId, false);
@@ -153,7 +153,7 @@ test.describe.serial("Attachments — admin enables attachments", () => {
     await shell.gotoChannel(world.textChannelId);
     await setAllowAttachments(page, world.communityId, world.textChannelId, true);
     await page.reload();
-    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
 
     const channel = new ChannelPage(page);
     const filePath = createTempFile("e2e-del-attach.txt", "delete this attachment");
@@ -161,7 +161,7 @@ test.describe.serial("Attachments — admin enables attachments", () => {
     try {
       const fileInput = page.locator('input[type="file"]').last();
       await fileInput.setInputFiles(filePath);
-      await expect(page.getByText("e2e-del-attach.txt")).toBeVisible({ timeout: 8_000 });
+      await expect(page.getByText("e2e-del-attach.txt")).toBeVisible({ timeout: T(8_000) });
 
       const text = `Del attach msg ${Date.now()}`;
       await channel.sendMessage(text);
@@ -174,7 +174,7 @@ test.describe.serial("Attachments — admin enables attachments", () => {
       await deleteBtn.hover();
       await deleteBtn.click();
 
-      await expect(page.getByText("e2e-del-attach.txt")).not.toBeVisible({ timeout: 6_000 });
+      await expect(page.getByText("e2e-del-attach.txt")).not.toBeVisible({ timeout: T(6_000) });
     } finally {
       fs.unlinkSync(filePath);
       await setAllowAttachments(page, world.communityId, world.textChannelId, false);
@@ -192,7 +192,7 @@ test.describe.serial("Attachments — toggle via Edit Channel modal", () => {
 
     await setAllowAttachments(page, world.communityId, world.textChannelId, false);
     await page.reload();
-    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
     await expect(page.getByTitle("Attach file")).toBeHidden();
 
     await shell.openChannelHeaderMenu();
@@ -203,10 +203,10 @@ test.describe.serial("Attachments — toggle via Edit Channel modal", () => {
     await expect(checkbox).not.toBeChecked();
     await checkbox.click();
     await modal.getByRole("button", { name: /save/i }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
     await new ChannelPage(page).focusComposer();
-    await expect(page.getByTitle("Attach file")).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTitle("Attach file")).toBeVisible({ timeout: T(6_000) });
 
     await shell.openChannelHeaderMenu();
     await page.getByRole("menuitem", { name: /edit channel/i }).click();
@@ -214,9 +214,9 @@ test.describe.serial("Attachments — toggle via Edit Channel modal", () => {
     await expect(modal2).toBeVisible();
     await modal2.getByLabel(/allow attachments/i).click();
     await modal2.getByRole("button", { name: /save/i }).click();
-    await expect(modal2).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal2).not.toBeVisible({ timeout: T(6_000) });
 
-    await expect(page.getByTitle("Attach file")).not.toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTitle("Attach file")).not.toBeVisible({ timeout: T(6_000) });
   });
 });
 
@@ -259,7 +259,7 @@ test.describe.serial("Attachments — regular user", () => {
     const shell = new AppShell(page, world.communityId);
     await shell.gotoChannel(world.textChannelId);
     await new ChannelPage(page).focusComposer();
-    await expect(page.getByTitle("Attach file")).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByTitle("Attach file")).toBeVisible({ timeout: T(8_000) });
 
     // Cleanup: disable attachments
     const adminPage2 = await authedPage(browser, world.adminJwt);
@@ -282,7 +282,7 @@ test.describe.serial("Attachments — regular user", () => {
     await setAllowAttachments(page, world.communityId, world.textChannelId, true);
     try {
       await page.reload();
-      await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
 
       // A type absent from server-info allowedMimes → client-side validation
       // rejects it before any upload request.
@@ -293,7 +293,7 @@ test.describe.serial("Attachments — regular user", () => {
         buffer: Buffer.from("#!/bin/sh\necho hi"),
       });
 
-      await expect(page.getByText("File type is not allowed.")).toBeVisible({ timeout: 6_000 });
+      await expect(page.getByText("File type is not allowed.")).toBeVisible({ timeout: T(6_000) });
       await expect(page.getByText("evil.sh")).toHaveCount(0);
     } finally {
       await setAllowAttachments(page, world.communityId, world.textChannelId, false);

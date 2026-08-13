@@ -2,6 +2,7 @@ import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
+import { T } from "./fixtures";
 
 /**
  * Mention tests.
@@ -29,7 +30,7 @@ test.describe.serial("Mentions", () => {
     await expect(
       page.getByRole("button", { name: new RegExp(world.userName, "i") }).first(),
     ).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     await page
@@ -39,7 +40,7 @@ test.describe.serial("Mentions", () => {
 
     await channel.messageEditor.press("Enter");
 
-    await expect(page.locator("main .mention-user").last()).toBeVisible({ timeout: 6_000 });
+    await expect(page.locator("main .mention-user").last()).toBeVisible({ timeout: T(6_000) });
   });
 
   test("#channel mention autocomplete → styled mention-channel span in sent message", async ({
@@ -56,7 +57,7 @@ test.describe.serial("Mentions", () => {
 
     await expect(
       page.getByRole("button", { name: new RegExp(world.textChannelId, "i") }).first(),
-    ).toBeVisible({ timeout: 6_000 });
+    ).toBeVisible({ timeout: T(6_000) });
 
     await page
       .getByRole("button", { name: new RegExp(world.textChannelId, "i") })
@@ -65,7 +66,7 @@ test.describe.serial("Mentions", () => {
 
     await channel.messageEditor.press("Enter");
 
-    await expect(page.locator("main .mention-channel").last()).toBeVisible({ timeout: 6_000 });
+    await expect(page.locator("main .mention-channel").last()).toBeVisible({ timeout: T(6_000) });
   });
 });
 
@@ -94,7 +95,7 @@ test.describe.serial("Broadcast mentions", () => {
 
     await channel.messageEditor.pressSequentially("@chan");
 
-    await expect(page.getByTestId(testIds.mentionOptionChannel)).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTestId(testIds.mentionOptionChannel)).toBeVisible({ timeout: T(6_000) });
 
     await page.getByTestId(testIds.mentionOptionChannel).click();
 
@@ -102,7 +103,7 @@ test.describe.serial("Broadcast mentions", () => {
 
     await expect(
       page.locator('main .mention-broadcast[data-broadcast="channel"]').last(),
-    ).toBeVisible({ timeout: 6_000 });
+    ).toBeVisible({ timeout: T(6_000) });
   });
 
   test("@here broadcast autocomplete → styled mention-broadcast span in sent message", async ({
@@ -117,14 +118,14 @@ test.describe.serial("Broadcast mentions", () => {
 
     await channel.messageEditor.pressSequentially("@here");
 
-    await expect(page.getByTestId(testIds.mentionOptionHere)).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTestId(testIds.mentionOptionHere)).toBeVisible({ timeout: T(6_000) });
 
     await page.getByTestId(testIds.mentionOptionHere).click();
 
     await channel.messageEditor.press("Enter");
 
     await expect(page.locator('main .mention-broadcast[data-broadcast="here"]').last()).toBeVisible(
-      { timeout: 6_000 },
+      { timeout: T(6_000) },
     );
   });
 });

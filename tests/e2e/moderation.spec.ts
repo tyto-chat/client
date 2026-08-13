@@ -1,7 +1,7 @@
 import { test, expect, authedPage } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { WorldBuilder } from "./world/builder";
-import { E2E_API_URL, E2E_BASE_URL } from "./fixtures";
+import { E2E_API_URL, E2E_BASE_URL, T } from "./fixtures";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
 import { ChannelSidebar } from "../pages/ChannelSidebar";
@@ -94,7 +94,7 @@ test.describe.serial("Moderation — warn and timeout", () => {
       const [response] = await Promise.all([
         userPage.waitForResponse(
           (r) => r.url().includes("/messages") && r.request().method() === "POST",
-          { timeout: 8_000 },
+          { timeout: T(8_000) },
         ),
         new ChannelPage(userPage).sendMessage(blockedMsg),
       ]);
@@ -107,7 +107,7 @@ test.describe.serial("Moderation — warn and timeout", () => {
       // the user doesn't lose it), which a page-wide getByText would match.
       await expect(
         userPage.locator("main [data-message-id]").filter({ hasText: blockedMsg }),
-      ).toHaveCount(0, { timeout: 4_000 });
+      ).toHaveCount(0, { timeout: T(4_000) });
     } finally {
       await userPage.context().close();
     }
@@ -166,7 +166,7 @@ test.describe.serial("Moderation — notes", () => {
 
     await modal.deleteNote("Edited note content");
     await modal.expectNoteGone("Edited note content");
-    await expect(modal.dialog.getByText("No notes yet.")).toBeVisible({ timeout: 4_000 });
+    await expect(modal.dialog.getByText("No notes yet.")).toBeVisible({ timeout: T(4_000) });
 
     await modal.close();
   });
@@ -202,16 +202,16 @@ test.describe.serial("Moderation — log", () => {
     await page.getByTestId(testIds.manageCommunity).click();
 
     const logDialog = page.getByRole("dialog");
-    await expect(logDialog).toBeVisible({ timeout: 6_000 });
+    await expect(logDialog).toBeVisible({ timeout: T(6_000) });
     await logDialog.getByRole("button", { name: "Moderation log", exact: true }).click();
 
     // Verify log entry: target name, type badge, actor name
-    await expect(logDialog.getByText(world.userName).first()).toBeVisible({ timeout: 6_000 });
-    await expect(logDialog.getByText("Warn").first()).toBeVisible({ timeout: 6_000 });
-    await expect(logDialog.getByText("Admin User").first()).toBeVisible({ timeout: 6_000 });
+    await expect(logDialog.getByText(world.userName).first()).toBeVisible({ timeout: T(6_000) });
+    await expect(logDialog.getByText("Warn").first()).toBeVisible({ timeout: T(6_000) });
+    await expect(logDialog.getByText("Admin User").first()).toBeVisible({ timeout: T(6_000) });
 
     await logDialog.getByRole("button", { name: "Close" }).first().click();
-    await expect(logDialog).not.toBeVisible({ timeout: 6_000 });
+    await expect(logDialog).not.toBeVisible({ timeout: T(6_000) });
   });
 });
 
@@ -238,14 +238,14 @@ test.describe.serial("Moderation — permission boundary", () => {
     // Admin User's span may contain a badge — use exact: false
     await page.locator("main").getByText("Admin User", { exact: false }).first().click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 6_000 });
+    await expect(dialog).toBeVisible({ timeout: T(6_000) });
 
     // No Actions or Notes tabs — canModerate is false for regular users
     await expect(dialog.getByRole("button", { name: "Actions" })).not.toBeAttached();
     await expect(dialog.getByRole("button", { name: "Notes" })).not.toBeAttached();
 
     await dialog.getByRole("button", { name: "Close" }).click();
-    await expect(dialog).not.toBeVisible({ timeout: 6_000 });
+    await expect(dialog).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("regular user has no access to the manage-community button", async ({
@@ -282,11 +282,11 @@ test.describe.serial("Moderation — admin immunity", () => {
     await modal.applyAction("warn", { reason: "history test reason" });
     await modal.expectActionSuccess();
 
-    await expect(modal.dialog.getByText("Action History")).toBeVisible({ timeout: 6_000 });
+    await expect(modal.dialog.getByText("Action History")).toBeVisible({ timeout: T(6_000) });
     await expect(modal.dialog.getByText("history test reason").first()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
-    await expect(modal.dialog.getByText("Warn").first()).toBeVisible({ timeout: 6_000 });
+    await expect(modal.dialog.getByText("Warn").first()).toBeVisible({ timeout: T(6_000) });
 
     await modal.close();
   });
@@ -338,17 +338,17 @@ test.describe.serial("Moderation — channel mod scoped actions", () => {
     await shell.gotoChannel(modScopeCh);
     await shell.openManageChannelAccess();
     const accessModal = page.getByRole("dialog");
-    await expect(accessModal).toBeVisible({ timeout: 6_000 });
+    await expect(accessModal).toBeVisible({ timeout: T(6_000) });
     await accessModal.getByRole("textbox").first().fill(world.userName);
-    await expect(accessModal.getByText(world.userName)).toBeVisible({ timeout: 6_000 });
+    await expect(accessModal.getByText(world.userName)).toBeVisible({ timeout: T(6_000) });
     await accessModal
       .getByRole("listitem")
       .filter({ hasText: world.userName })
       .getByRole("button", { name: "Add as mod" })
       .click();
-    await expect(accessModal.getByText(world.userName)).toBeVisible({ timeout: 6_000 });
+    await expect(accessModal.getByText(world.userName)).toBeVisible({ timeout: T(6_000) });
     await accessModal.getByRole("button", { name: "Close" }).click();
-    await expect(accessModal).not.toBeVisible({ timeout: 6_000 });
+    await expect(accessModal).not.toBeVisible({ timeout: T(6_000) });
 
     // Admin sends a message so channel mod has a target to click
     const targetMsg = `scope-target-${Date.now()}`;
@@ -363,7 +363,7 @@ test.describe.serial("Moderation — channel mod scoped actions", () => {
 
       const dialog = userPage.getByRole("dialog");
       await userPage.locator("main").getByText("Admin User", { exact: false }).first().click();
-      await expect(dialog).toBeVisible({ timeout: 6_000 });
+      await expect(dialog).toBeVisible({ timeout: T(6_000) });
       await dialog.getByRole("button", { name: "Actions" }).click();
 
       await expect(dialog.getByRole("button", { name: "Warn" })).not.toBeAttached();
@@ -406,17 +406,17 @@ test.describe.serial("Moderation — channel mod scoped actions", () => {
 
       const dialog = userPage.getByRole("dialog");
       await userPage.locator("main").getByText(victim.name, { exact: true }).first().click();
-      await expect(dialog).toBeVisible({ timeout: 6_000 });
+      await expect(dialog).toBeVisible({ timeout: T(6_000) });
       await dialog.getByRole("button", { name: "Actions" }).click();
       await dialog.getByRole("button", { name: "Timeout" }).click();
       await dialog.getByRole("button", { name: "Apply" }).click();
-      await expect(userPage.getByText("Action applied.")).toBeVisible({ timeout: 6_000 });
+      await expect(userPage.getByText("Action applied.")).toBeVisible({ timeout: T(6_000) });
 
-      await expect(dialog.getByRole("button", { name: "Lift" })).toBeVisible({ timeout: 6_000 });
+      await expect(dialog.getByRole("button", { name: "Lift" })).toBeVisible({ timeout: T(6_000) });
 
       // Lift it so victim is no longer timed out in this channel
       await dialog.getByRole("button", { name: "Lift" }).click();
-      await expect(userPage.getByText("Restriction lifted.")).toBeVisible({ timeout: 6_000 });
+      await expect(userPage.getByText("Restriction lifted.")).toBeVisible({ timeout: T(6_000) });
 
       await dialog.getByRole("button", { name: "Close" }).click();
     } finally {
@@ -430,11 +430,11 @@ test.describe.serial("Moderation — channel mod scoped actions", () => {
     await shell.gotoChannel(modScopeCh);
     await shell.openManageChannelAccess();
     const accessModal = page.getByRole("dialog");
-    await expect(accessModal).toBeVisible({ timeout: 6_000 });
+    await expect(accessModal).toBeVisible({ timeout: T(6_000) });
     await accessModal.getByRole("button", { name: "Remove mod" }).click();
-    await expect(accessModal.getByText("No moderators yet.")).toBeVisible({ timeout: 6_000 });
+    await expect(accessModal.getByText("No moderators yet.")).toBeVisible({ timeout: T(6_000) });
     await accessModal.getByRole("button", { name: "Close" }).click();
-    await expect(accessModal).not.toBeVisible({ timeout: 6_000 });
+    await expect(accessModal).not.toBeVisible({ timeout: T(6_000) });
   });
 });
 
@@ -477,33 +477,35 @@ test.describe.serial("Moderation — permanent ban", () => {
     await page.getByTestId(testIds.communityActionsBtn).click();
     await page.getByTestId(testIds.manageCommunity).click();
     const logDialog = page.getByRole("dialog");
-    await expect(logDialog).toBeVisible({ timeout: 6_000 });
+    await expect(logDialog).toBeVisible({ timeout: T(6_000) });
     await logDialog.getByRole("button", { name: "Moderation log", exact: true }).click();
 
     // "All" tab (default) — both Warn and Ban entries visible
     await expect(logDialog.getByRole("button", { name: "All" })).toBeVisible();
     await expect(logDialog.getByTestId(testIds.modlogRowWarn).first()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
     await expect(logDialog.getByTestId(testIds.modlogRowBan).first()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     // Switch to "Bans" tab — wait for the API response to settle, then verify only bans
     const [bansResponse] = await Promise.all([
       page.waitForResponse((r) => r.url().includes("/moderation") && r.url().includes("type=ban"), {
-        timeout: 8_000,
+        timeout: T(8_000),
       }),
       logDialog.getByRole("button", { name: "Bans" }).click(),
     ]);
     await bansResponse.finished();
     await expect(logDialog.getByTestId(testIds.modlogRowBan).first()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
-    await expect(logDialog.getByTestId(testIds.modlogRowWarn)).toHaveCount(0, { timeout: 4_000 });
+    await expect(logDialog.getByTestId(testIds.modlogRowWarn)).toHaveCount(0, {
+      timeout: T(4_000),
+    });
 
     await logDialog.getByRole("button", { name: "Close" }).click();
-    await expect(logDialog).not.toBeVisible({ timeout: 6_000 });
+    await expect(logDialog).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("admin permanently bans a user — Banned badge shown with no expiry", async ({

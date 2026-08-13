@@ -1,6 +1,6 @@
 import { test, expect, authedPage } from "./worldFixtures";
 import { WorldBuilder } from "./world/builder";
-import { E2E_API_URL, E2E_BASE_URL } from "./fixtures";
+import { E2E_API_URL, E2E_BASE_URL, T } from "./fixtures";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
 
@@ -25,21 +25,21 @@ test.describe.serial("Message edit history", () => {
     await channel.expectMessage("updated text for history test");
 
     await expect(page.locator("main span", { hasText: /^edited$/ }).last()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     const lastContent = page.locator("main .message-content").last();
     await lastContent.hover();
     const historyBtn = page.getByTitle("Edit history").last();
-    await expect(historyBtn).toBeVisible({ timeout: 6_000 });
+    await expect(historyBtn).toBeVisible({ timeout: T(6_000) });
     await historyBtn.click();
 
     const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
-    await expect(modal.getByText("latest")).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
+    await expect(modal.getByText("latest")).toBeVisible({ timeout: T(6_000) });
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("unedited message does not show Edit history button", async ({ adminPage: page, world }) => {
@@ -54,7 +54,7 @@ test.describe.serial("Message edit history", () => {
     const lastContent = page.locator("main .message-content").last();
     await lastContent.hover();
     await expect(lastContent.locator("..").getByTitle("Edit history")).not.toBeVisible({
-      timeout: 3_000,
+      timeout: T(3_000),
     });
   });
 
@@ -86,7 +86,7 @@ test.describe.serial("Message edit history", () => {
       const lastContent = memberPage.locator("main .message-content").last();
       await lastContent.hover();
       await expect(lastContent.locator("..").getByTitle("Edit history")).not.toBeVisible({
-        timeout: 3_000,
+        timeout: T(3_000),
       });
     } finally {
       await memberPage.context().close();

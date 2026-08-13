@@ -14,10 +14,11 @@
 import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
+import { T } from "./fixtures";
 
 async function openProfileMenu(page: import("@playwright/test").Page) {
   await page.getByTestId(testIds.profileMenuButton).click();
-  await expect(page.getByTestId(testIds.profileMenu)).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByTestId(testIds.profileMenu)).toBeVisible({ timeout: T(6_000) });
 }
 
 /**
@@ -30,7 +31,7 @@ async function selectStatus(
 ) {
   await page.getByTestId(testIds.statusCurrent).click();
   await page.getByTestId(`status-option-${key}`).click();
-  await expect(page.getByTestId(testIds.statusCurrent)).toBeVisible({ timeout: 4_000 });
+  await expect(page.getByTestId(testIds.statusCurrent)).toBeVisible({ timeout: T(4_000) });
 }
 
 test.describe.serial("Presence — self status dot", () => {
@@ -45,10 +46,10 @@ test.describe.serial("Presence — self status dot", () => {
     // so it renders a PresenceDot driven by the presence cache.
     // useMyPresence initialData is "online", so the dot is visible immediately.
     const profileBtn = page.getByTestId(testIds.profileMenuButton);
-    await expect(profileBtn).toBeVisible({ timeout: 8_000 });
+    await expect(profileBtn).toBeVisible({ timeout: T(8_000) });
 
     const dot = profileBtn.getByTestId(testIds.presenceDot);
-    await expect(dot).toBeVisible({ timeout: 6_000 });
+    await expect(dot).toBeVisible({ timeout: T(6_000) });
 
     await expect(dot).toHaveAttribute("data-state", "online");
   });
@@ -66,7 +67,7 @@ test.describe.serial("Presence — status menu", () => {
 
     // The collapsed status button should start on online (initialData)
     const currentBtn = page.getByTestId(testIds.statusCurrent);
-    await expect(currentBtn).toBeVisible({ timeout: 4_000 });
+    await expect(currentBtn).toBeVisible({ timeout: T(4_000) });
     await expect(currentBtn).toHaveAttribute("data-state", "online");
 
     await selectStatus(page, "away");
@@ -134,7 +135,7 @@ test.describe.serial("Presence — community online badge", () => {
     // InMemory stub after at least one API call during page load.
     // Poll up to 10s to allow the 30s-interval query to fire (or the first load).
     const badge = page.getByTestId(testIds.communityOnlineBadge);
-    await expect(badge).toBeVisible({ timeout: 10_000 });
+    await expect(badge).toBeVisible({ timeout: T(10_000) });
 
     const countText = await badge.textContent();
     const count = parseInt(countText?.trim() ?? "0", 10);
@@ -142,14 +143,14 @@ test.describe.serial("Presence — community online badge", () => {
 
     await badge.click();
     const panel = page.getByTestId(testIds.communityOnlinePanel);
-    await expect(panel).toBeVisible({ timeout: 4_000 });
+    await expect(panel).toBeVisible({ timeout: T(4_000) });
 
     // The panel renders a header and either a user row or "No one is online"
     // The current user made requests so they are live; assert the panel
     // contains the user's display name (or at minimum something in the list area).
-    await expect(panel).toContainText(world.userName, { timeout: 4_000 });
+    await expect(panel).toContainText(world.userName, { timeout: T(4_000) });
 
     await badge.click();
-    await expect(panel).not.toBeVisible({ timeout: 4_000 });
+    await expect(panel).not.toBeVisible({ timeout: T(4_000) });
   });
 });

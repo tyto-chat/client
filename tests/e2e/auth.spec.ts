@@ -1,5 +1,5 @@
 import { test, expect } from "./worldFixtures";
-import { setupServerInfoRoute } from "./fixtures";
+import { setupServerInfoRoute, T } from "./fixtures";
 import { LoginPage } from "../pages/LoginPage";
 import { testIds } from "./testIds";
 
@@ -8,8 +8,8 @@ test.describe.serial("Authentication", () => {
   test("anonymous user lands on community view, not /login", async ({ page }) => {
     await page.goto("/");
     // The app redirects anonymous users to the first public community, not /login
-    await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
-    await expect(page).toHaveURL(/\/[a-z0-9-]+\/[a-z0-9-]+/, { timeout: 8_000 });
+    await expect(page).not.toHaveURL(/\/login/, { timeout: T(8_000) });
+    await expect(page).toHaveURL(/\/[a-z0-9-]+\/[a-z0-9-]+/, { timeout: T(8_000) });
   });
 
   test("login with valid credentials redirects to app", async ({ page }) => {
@@ -61,14 +61,14 @@ test.describe.serial("Registration form", () => {
     await page.goto("/register");
     await page.locator("#email").fill("new-user@tyto.test");
     await page.locator('button[type="submit"]').click();
-    await expect(page.locator("#displayName")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("#displayName")).toBeVisible({ timeout: T(8_000) });
   });
 
   test("display name under 4 characters shows validation error", async ({ page }) => {
     await page.goto("/register");
     await page.locator("#email").fill("new-user@tyto.test");
     await page.locator('button[type="submit"]').click();
-    await expect(page.locator("#displayName")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("#displayName")).toBeVisible({ timeout: T(8_000) });
     await page.locator("#displayName").fill("Abc");
     await page.locator("#displayName").blur();
     await expect(page.getByText("Display name must be at least 4 characters.")).toBeVisible();
@@ -78,7 +78,7 @@ test.describe.serial("Registration form", () => {
     await page.goto("/register");
     await page.locator("#email").fill("new-user@tyto.test");
     await page.locator('button[type="submit"]').click();
-    await expect(page.locator("#displayName")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("#displayName")).toBeVisible({ timeout: T(8_000) });
     await page.locator("#displayName").fill("Abc");
     await page.locator("#displayName").blur();
     await expect(page.getByText("Display name must be at least 4 characters.")).toBeVisible();
@@ -91,12 +91,12 @@ test.describe.serial("Registration form", () => {
 test.describe.serial("Authenticated session", () => {
   test("app shell is visible after login", async ({ adminPage: page }) => {
     await page.goto("/");
-    await expect(page.locator("nav").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("nav").first()).toBeVisible({ timeout: T(10_000) });
   });
 
   test("logout clears session and shows login modal", async ({ adminPage: page }) => {
     await page.goto("/");
-    await expect(page.locator("nav").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("nav").first()).toBeVisible({ timeout: T(10_000) });
     // The profile button's title is the user's display name ("Admin User" in E2E fixtures)
     await page.getByTestId(testIds.profileMenuButton).click();
     // First click shows "Sign Out"; second click (confirmation) finalises logout
@@ -106,6 +106,6 @@ test.describe.serial("Authenticated session", () => {
       .click();
     await page.getByRole("button", { name: "Sign Out" }).click();
     // After logout the login modal opens over the app shell
-    await expect(page.locator("#email")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("#email")).toBeVisible({ timeout: T(8_000) });
   });
 });

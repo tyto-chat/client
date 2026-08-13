@@ -1,5 +1,6 @@
 import type { Page, Locator } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { T } from "../e2e/fixtures";
 
 export class ConversationPage {
   readonly messageEditor: Locator;
@@ -13,18 +14,18 @@ export class ConversationPage {
 
   async gotoIndex(): Promise<void> {
     await this.page.goto("/dm");
-    await expect(this.page.locator("aside")).toBeVisible({ timeout: 10_000 });
+    await expect(this.page.locator("aside")).toBeVisible({ timeout: T(10_000) });
   }
 
   async goto(conversationIdentifier: string, { waitForMercure = false } = {}): Promise<void> {
     const mercureReady = waitForMercure
       ? this.page.waitForResponse(
           (res) => res.url().includes("mercure") && res.url().includes("topic="),
-          { timeout: 10_000 },
+          { timeout: T(10_000) },
         )
       : null;
     await this.page.goto(`/dm/${conversationIdentifier}`);
-    await expect(this.page.locator("main h1:visible").first()).toBeVisible({ timeout: 15_000 });
+    await expect(this.page.locator("main h1:visible").first()).toBeVisible({ timeout: T(15_000) });
     if (mercureReady) await mercureReady;
   }
 

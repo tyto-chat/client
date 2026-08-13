@@ -3,13 +3,14 @@ import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
 import { GroupsModal } from "../pages/GroupsModal";
+import { T } from "./fixtures";
 
 test.describe.serial("Groups management — admin", () => {
   test("admin sees the manage-community button in sidebar", async ({ adminPage: page, world }) => {
     const shell = new AppShell(page, world.communityId);
     await shell.gotoChannel(world.textChannelId);
     await page.getByTestId(testIds.communityActionsBtn).click();
-    await expect(page.getByTestId(testIds.manageCommunity)).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTestId(testIds.manageCommunity)).toBeVisible({ timeout: T(6_000) });
   });
 
   test("admin can create a group", async ({ adminPage: page, world }) => {
@@ -71,7 +72,7 @@ test.describe.serial("Groups management — admin", () => {
     await modal.openDetail("Perms Group");
     await modal.openChannelPermissions();
 
-    await expect(modal.dialog.getByText(world.textChannelId)).toBeVisible({ timeout: 6_000 });
+    await expect(modal.dialog.getByText(world.textChannelId)).toBeVisible({ timeout: T(6_000) });
     await modal.setChannelPermission(world.textChannelId, "moderator");
 
     // Navigate away and back — cache (staleTime: Infinity) must retain the value
@@ -109,9 +110,9 @@ test.describe.serial("Group badges in chat", () => {
 
       // Admin reloads — community members data is refreshed, badge should appear
       await page.reload();
-      await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
-      await expect(page.locator("main").getByText(msgText)).toBeVisible({ timeout: 8_000 });
-      await expect(page.getByTitle("Badge Group")).toBeVisible({ timeout: 6_000 });
+      await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
+      await expect(page.locator("main").getByText(msgText)).toBeVisible({ timeout: T(8_000) });
+      await expect(page.getByTitle("Badge Group")).toBeVisible({ timeout: T(6_000) });
     } finally {
       await userPage.context().close();
     }

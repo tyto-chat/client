@@ -2,6 +2,7 @@ import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
+import { T } from "./fixtures";
 
 /**
  * Channel archiving — admin freezes a text channel from the sidebar row menu.
@@ -30,7 +31,7 @@ async function openChannelMenu(
   });
   await row.hover();
   const moreBtn = row.getByTestId(testIds.channelMoreActionsBtn);
-  await expect(moreBtn).toBeAttached({ timeout: 6_000 });
+  await expect(moreBtn).toBeAttached({ timeout: T(6_000) });
   await moreBtn.click({ force: true });
 }
 
@@ -43,9 +44,9 @@ test.describe.serial("Channel archiving", () => {
     const channel = new ChannelPage(page);
     await shell.gotoChannel(world.textChannelId);
 
-    await expect(channel.messageEditor).toBeVisible({ timeout: 8_000 });
+    await expect(channel.messageEditor).toBeVisible({ timeout: T(8_000) });
     await expect(page.getByTestId(testIds.sidebarArchivedSection)).not.toBeVisible({
-      timeout: 5_000,
+      timeout: T(5_000),
     });
 
     // Seed a message so the archived channel has content to browse afterwards.
@@ -55,25 +56,25 @@ test.describe.serial("Channel archiving", () => {
 
     await openChannelMenu(page, world.textChannelId, world.communityId);
     const archiveBtn = page.getByTestId(testIds.channelArchiveBtn);
-    await expect(archiveBtn).toBeVisible({ timeout: 4_000 });
+    await expect(archiveBtn).toBeVisible({ timeout: T(4_000) });
     await archiveBtn.click();
 
     await page.getByTestId(testIds.confirmDialogConfirm).click();
 
-    await expect(page.getByTestId(testIds.archivedNotice)).toBeVisible({ timeout: 8_000 });
-    await expect(channel.messageEditor).not.toBeVisible({ timeout: 8_000 });
+    await expect(page.getByTestId(testIds.archivedNotice)).toBeVisible({ timeout: T(8_000) });
+    await expect(channel.messageEditor).not.toBeVisible({ timeout: T(8_000) });
 
     // Archived channels stay browsable: read-side actions (copy link) remain on
     // the message hover bar, but mutating actions (reply) are gone.
     const lastContent = page.locator("main .message-content").last();
     await lastContent.hover();
     await expect(page.getByTestId(testIds.msgActionCopyLink).last()).toBeVisible({
-      timeout: 8_000,
+      timeout: T(8_000),
     });
     await expect(page.getByTestId(testIds.msgActionReply)).toHaveCount(0);
 
     const archivedSection = page.getByTestId(testIds.sidebarArchivedSection);
-    await expect(archivedSection).toBeVisible({ timeout: 8_000 });
+    await expect(archivedSection).toBeVisible({ timeout: T(8_000) });
 
     const channelInArchived = archivedSection.locator(
       `a[href$="/${world.communityId}/${world.textChannelId}"]`,
@@ -82,18 +83,18 @@ test.describe.serial("Channel archiving", () => {
     if (!(await channelInArchived.isVisible())) {
       await archivedSection.locator("button").first().click();
     }
-    await expect(channelInArchived).toBeVisible({ timeout: 8_000 });
+    await expect(channelInArchived).toBeVisible({ timeout: T(8_000) });
 
     // --- Unarchive: single click, no confirmation dialog ---
     await openChannelMenu(page, world.textChannelId, world.communityId);
     const unarchiveBtn = page.getByTestId(testIds.channelUnarchiveBtn);
-    await expect(unarchiveBtn).toBeVisible({ timeout: 4_000 });
+    await expect(unarchiveBtn).toBeVisible({ timeout: T(4_000) });
     await unarchiveBtn.click();
 
     await expect(page.getByTestId(testIds.sidebarArchivedSection)).not.toBeVisible({
-      timeout: 8_000,
+      timeout: T(8_000),
     });
-    await expect(page.getByTestId(testIds.archivedNotice)).not.toBeVisible({ timeout: 8_000 });
-    await expect(channel.messageEditor).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByTestId(testIds.archivedNotice)).not.toBeVisible({ timeout: T(8_000) });
+    await expect(channel.messageEditor).toBeVisible({ timeout: T(8_000) });
   });
 });

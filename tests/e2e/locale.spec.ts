@@ -5,13 +5,13 @@
  */
 import { request } from "@playwright/test";
 import { test, expect } from "./worldFixtures";
-import { E2E_API_URL } from "./fixtures";
+import { E2E_API_URL, T } from "./fixtures";
 import { testIds } from "./testIds";
 
 async function openPreferencesModal(page: import("@playwright/test").Page) {
   await page.getByTestId(testIds.profileMenuButton).click();
   await page.getByRole("button", { name: "Preferences" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByRole("dialog")).toBeVisible({ timeout: T(6_000) });
 }
 
 test.describe.serial("Accept-Language header", () => {
@@ -32,7 +32,7 @@ test.describe.serial("Accept-Language header", () => {
     });
 
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("nav").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("nav").first()).toBeVisible({ timeout: T(10_000) });
 
     // At least one apiClient call (e.g. communities) must carry Accept-Language: pl
     expect(capturedLocales).toContain("pl");
@@ -56,7 +56,7 @@ test.describe.serial("Accept-Language header", () => {
     });
 
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("nav").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("nav").first()).toBeVisible({ timeout: T(10_000) });
 
     // Some Accept-Language value must be sent; exact value depends on browser locale
     expect(capturedLocales.length).toBeGreaterThan(0);
@@ -85,7 +85,7 @@ test.describe.serial("Polish backend error messages", () => {
     await page.locator('button[type="submit"]').click();
 
     // Step 2 form appears (display name input)
-    await expect(page.locator("#displayName")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("#displayName")).toBeVisible({ timeout: T(8_000) });
 
     await page.locator("#displayName").fill("Test User");
     await page.locator("#code").fill("000000");
@@ -95,7 +95,7 @@ test.describe.serial("Polish backend error messages", () => {
 
     // Polish EmailAvailable violation from the backend
     await expect(page.getByText("Ten adres e-mail jest już zarejestrowany.")).toBeVisible({
-      timeout: 8_000,
+      timeout: T(8_000),
     });
   });
 
@@ -111,7 +111,7 @@ test.describe.serial("Polish backend error messages", () => {
     await page.locator("#email").fill("admin@tyto.test");
     await page.locator('button[type="submit"]').click();
 
-    await expect(page.locator("#displayName")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("#displayName")).toBeVisible({ timeout: T(8_000) });
 
     await page.locator("#displayName").fill("Test User");
     await page.locator("#code").fill("000000");
@@ -120,7 +120,7 @@ test.describe.serial("Polish backend error messages", () => {
     await page.locator('button[type="submit"]').click();
 
     await expect(page.getByText("This email address is already registered.")).toBeVisible({
-      timeout: 8_000,
+      timeout: T(8_000),
     });
   });
 });
@@ -149,7 +149,7 @@ test.describe.serial("Language switcher → header update", () => {
     });
 
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openPreferencesModal(page);
     const modal = page.getByRole("dialog");
@@ -157,7 +157,7 @@ test.describe.serial("Language switcher → header update", () => {
     await modal.getByTestId(testIds.langPl).click();
     await expect(modal.getByTestId(testIds.langPl)).toHaveClass(/bg-accent-gradient/);
     await modal.getByRole("button", { name: "Zamknij" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
     // Capture locale on the next API call
     let capturedLocale: string | null = null;
@@ -169,7 +169,7 @@ test.describe.serial("Language switcher → header update", () => {
     // Client-side navigation (click a channel link) so addInitScript does NOT
     // re-run and reset the locale back to "en".
     await page.locator("aside").getByRole("link", { name: world.textChannelId }).first().click();
-    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
 
     expect(capturedLocale).toBe("pl");
   });

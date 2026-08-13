@@ -2,6 +2,7 @@ import { test, expect, authedPage } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { ChannelSidebar } from "../pages/ChannelSidebar";
 import { AppShell } from "../pages/AppShell";
+import { T } from "./fixtures";
 
 /**
  * Notification tests rely on the `channel_access` notification type which is
@@ -31,39 +32,39 @@ test.describe.serial("Notifications", () => {
     await shell.openManageChannelAccess();
 
     const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 6_000 });
+    await expect(modal).toBeVisible({ timeout: T(6_000) });
     await modal.getByRole("textbox").nth(1).fill(world.userName);
-    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: 6_000 });
+    await expect(modal.getByText(world.userName)).toBeVisible({ timeout: T(6_000) });
     await modal.getByRole("button", { name: "Add" }).click();
 
     await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 6_000 });
+    await expect(modal).not.toBeVisible({ timeout: T(6_000) });
 
     // Open user context — notification should already exist in DB
     const userPage = await authedPage(browser, world.userJwt);
     try {
       await userPage.goto(`/${world.communityId}`);
-      await expect(userPage.locator("aside")).toBeVisible({ timeout: 8_000 });
+      await expect(userPage.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
       // Unread count badge should be visible on the bell.
       // Exact match: per-channel hover bells carry titles like "Notifications:
       // Mentions only" which substring-match a bare "Notifications" (→ 18 hits).
       const bell = userPage.getByTestId(testIds.notificationBell);
       await expect(userPage.getByTestId(testIds.notificationUnreadBadge)).toBeVisible({
-        timeout: 6_000,
+        timeout: T(6_000),
       });
 
       await bell.click();
       const panel = userPage.getByText("Notifications").first();
-      await expect(panel).toBeVisible({ timeout: 6_000 });
+      await expect(panel).toBeVisible({ timeout: T(6_000) });
 
       await expect(
         userPage.getByText(new RegExp(`you now have access to.*#${channelName}`, "i")),
-      ).toBeVisible({ timeout: 6_000 });
+      ).toBeVisible({ timeout: T(6_000) });
 
       await userPage.getByRole("button", { name: "Mark all as read" }).click();
       await expect(userPage.getByTestId(testIds.notificationUnreadBadge)).not.toBeVisible({
-        timeout: 6_000,
+        timeout: T(6_000),
       });
     } finally {
       await userPage.context().close();
@@ -93,17 +94,17 @@ test.describe.serial("Notification preferences", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     await openChannelNotifMenu(page, world.textChannelId);
 
-    await expect(page.getByTestId(testIds.notifLevelAll)).toBeVisible({ timeout: 6_000 });
-    await expect(page.getByTestId(testIds.notifLevelMentions)).toBeVisible({ timeout: 6_000 });
-    await expect(page.getByTestId(testIds.notifLevelNone)).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByTestId(testIds.notifLevelAll)).toBeVisible({ timeout: T(6_000) });
+    await expect(page.getByTestId(testIds.notifLevelMentions)).toBeVisible({ timeout: T(6_000) });
+    await expect(page.getByTestId(testIds.notifLevelNone)).toBeVisible({ timeout: T(6_000) });
 
     // Default is "mentions" — the mentions button should have the check icon (svg)
     await expect(page.getByTestId(testIds.notifLevelMentions).locator("svg")).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     await page.getByTestId(testIds.notifLevelNone).click();
@@ -112,26 +113,26 @@ test.describe.serial("Notification preferences", () => {
     // Re-open the menu to confirm "none" is selected.
     await openChannelNotifMenu(page, world.textChannelId);
     await expect(page.getByTestId(testIds.notifLevelNone).locator("svg")).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
     await expect(page.getByTestId(testIds.notifLevelMentions).locator("svg")).not.toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     await page.keyboard.press("Escape");
 
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
     await openChannelNotifMenu(page, world.textChannelId);
     await expect(page.getByTestId(testIds.notifLevelNone).locator("svg")).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
 
     // Restore to default ("mentions") so this test leaves no side-effects
     await page.getByTestId(testIds.notifLevelMentions).click();
     await openChannelNotifMenu(page, world.textChannelId);
     await expect(page.getByTestId(testIds.notifLevelMentions).locator("svg")).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
     await page.keyboard.press("Escape");
   });
@@ -141,34 +142,34 @@ test.describe.serial("Notification preferences", () => {
     world,
   }) => {
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
 
     const bell = page.getByTestId(testIds.notificationBell);
     await bell.click();
 
     // Community mute toggle is visible (user is a real member)
     const muteToggle = page.getByTestId(testIds.communityMuteToggle);
-    await expect(muteToggle).toBeVisible({ timeout: 6_000 });
+    await expect(muteToggle).toBeVisible({ timeout: T(6_000) });
 
     // Default is not muted — the toggle track should NOT have the red class
     const track = muteToggle.locator(".rounded-full").first();
-    await expect(track).not.toHaveClass(/bg-red-500/, { timeout: 6_000 });
+    await expect(track).not.toHaveClass(/bg-red-500/, { timeout: T(6_000) });
 
     await muteToggle.click();
-    await expect(track).toHaveClass(/bg-red-500/, { timeout: 6_000 });
+    await expect(track).toHaveClass(/bg-red-500/, { timeout: T(6_000) });
 
     await page.keyboard.press("Escape");
 
     await page.goto(`/${world.communityId}`);
-    await expect(page.locator("aside")).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("aside")).toBeVisible({ timeout: T(8_000) });
     await page.getByTestId(testIds.notificationBell).click();
     const muteToggleAfterReload = page.getByTestId(testIds.communityMuteToggle);
-    await expect(muteToggleAfterReload).toBeVisible({ timeout: 6_000 });
+    await expect(muteToggleAfterReload).toBeVisible({ timeout: T(6_000) });
     const trackAfterReload = muteToggleAfterReload.locator(".rounded-full").first();
-    await expect(trackAfterReload).toHaveClass(/bg-red-500/, { timeout: 6_000 });
+    await expect(trackAfterReload).toHaveClass(/bg-red-500/, { timeout: T(6_000) });
 
     // Restore: toggle mute OFF
     await muteToggleAfterReload.click();
-    await expect(trackAfterReload).not.toHaveClass(/bg-red-500/, { timeout: 6_000 });
+    await expect(trackAfterReload).not.toHaveClass(/bg-red-500/, { timeout: T(6_000) });
   });
 });

@@ -21,7 +21,7 @@
  */
 
 import { test, expect } from "./worldFixtures";
-import { E2E_API_URL, E2E_BASE_URL } from "./fixtures";
+import { E2E_API_URL, E2E_BASE_URL, T } from "./fixtures";
 import { AppShell } from "../pages/AppShell";
 import { WorldBuilder } from "./world/builder";
 import { testIds } from "./testIds";
@@ -70,7 +70,9 @@ test.describe.serial("Message pagination — channel timeline", () => {
     const shell = new AppShell(page, world.communityId);
     await shell.gotoChannel(channelId);
 
-    await expect(page.getByText(NEWEST, { exact: false }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(NEWEST, { exact: false }).first()).toBeVisible({
+      timeout: T(10_000),
+    });
     await expect(page.getByText(label(PAGE_SIZE + 1), { exact: false }).first()).toBeVisible();
 
     await expect(page.getByText(OLDEST, { exact: false })).toHaveCount(0);
@@ -86,7 +88,7 @@ test.describe.serial("Message pagination — channel timeline", () => {
     await shell.gotoChannel(channelId);
 
     const newest = page.getByText(NEWEST, { exact: false }).first();
-    await expect(newest).toBeVisible({ timeout: 10_000 });
+    await expect(newest).toBeVisible({ timeout: T(10_000) });
 
     const scroller = page.getByTestId(testIds.messageScroll);
     await scroller.evaluate((el) => {
@@ -94,8 +96,8 @@ test.describe.serial("Message pagination — channel timeline", () => {
     });
 
     const oldest = page.getByText(OLDEST, { exact: false }).first();
-    await expect(oldest).toBeAttached({ timeout: 10_000 });
-    await expect(page.getByText(BEGINNING_LABEL)).toBeVisible({ timeout: 10_000 });
+    await expect(oldest).toBeAttached({ timeout: T(10_000) });
+    await expect(page.getByText(BEGINNING_LABEL)).toBeVisible({ timeout: T(10_000) });
 
     // Both pages stay in the cache — paging back must not evict the latest page.
     await expect(newest).toBeAttached();
@@ -125,9 +127,11 @@ test.describe.serial("Message pagination — channel timeline", () => {
     await page.goto(`/m/${uuid}`);
 
     await expect(page).toHaveURL(new RegExp(`/${world.communityId}/${channelId}`), {
-      timeout: 10_000,
+      timeout: T(10_000),
     });
-    await expect(page.getByText(OLDEST, { exact: false }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(OLDEST, { exact: false }).first()).toBeVisible({
+      timeout: T(10_000),
+    });
     await expect(page.getByText(NEWEST, { exact: false })).toHaveCount(0);
 
     const scroller = page.getByTestId(testIds.messageScroll);
@@ -136,7 +140,7 @@ test.describe.serial("Message pagination — channel timeline", () => {
     });
 
     await expect(page.getByText(NEWEST, { exact: false }).first()).toBeAttached({
-      timeout: 10_000,
+      timeout: T(10_000),
     });
   });
 });

@@ -2,13 +2,14 @@ import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
+import { T } from "./fixtures";
 
 async function clickReplyInThread(page: import("@playwright/test").Page): Promise<void> {
   const lastContent = page.locator("main .message-content").last();
   const replyBtn = page.getByTestId(testIds.msgActionReply).last();
   await lastContent.hover();
-  await expect(replyBtn).toBeAttached({ timeout: 8_000 });
-  await expect(replyBtn).toBeVisible({ timeout: 5_000 });
+  await expect(replyBtn).toBeAttached({ timeout: T(8_000) });
+  await expect(replyBtn).toBeVisible({ timeout: T(5_000) });
   await replyBtn.hover();
   await replyBtn.click();
 }
@@ -35,8 +36,8 @@ test.describe.serial("Threads", () => {
     await clickReplyInThread(page);
 
     const panel = page.getByTestId(testIds.threadPanel);
-    await expect(panel).toBeVisible({ timeout: 8_000 });
-    await expect(panel.getByText(rootText, { exact: false })).toBeVisible({ timeout: 6_000 });
+    await expect(panel).toBeVisible({ timeout: T(8_000) });
+    await expect(panel.getByText(rootText, { exact: false })).toBeVisible({ timeout: T(6_000) });
   });
 
   test("post a reply — reply appears in the thread panel", async ({ adminPage: page, world }) => {
@@ -51,12 +52,12 @@ test.describe.serial("Threads", () => {
     await clickReplyInThread(page);
 
     const panel = page.getByTestId(testIds.threadPanel);
-    await expect(panel).toBeVisible({ timeout: 8_000 });
+    await expect(panel).toBeVisible({ timeout: T(8_000) });
 
     const replyText = `Thread reply ${Date.now()}`;
     await sendThreadReply(page, replyText);
 
-    await expect(panel.getByText(replyText, { exact: false })).toBeVisible({ timeout: 8_000 });
+    await expect(panel.getByText(replyText, { exact: false })).toBeVisible({ timeout: T(8_000) });
   });
 
   test("replies footer on root — persists after reload", async ({ adminPage: page, world }) => {
@@ -70,17 +71,17 @@ test.describe.serial("Threads", () => {
 
     await clickReplyInThread(page);
     const panel = page.getByTestId(testIds.threadPanel);
-    await expect(panel).toBeVisible({ timeout: 8_000 });
+    await expect(panel).toBeVisible({ timeout: T(8_000) });
 
     const replyText = `Footer reply ${Date.now()}`;
     await sendThreadReply(page, replyText);
-    await expect(panel.getByText(replyText, { exact: false })).toBeVisible({ timeout: 8_000 });
+    await expect(panel.getByText(replyText, { exact: false })).toBeVisible({ timeout: T(8_000) });
 
     await shell.gotoChannel(world.textChannelId);
     await channel.expectMessage(rootText);
 
     await expect(page.getByTestId(testIds.threadRepliesFooter).first()).toBeVisible({
-      timeout: 8_000,
+      timeout: T(8_000),
     });
   });
 
@@ -95,17 +96,17 @@ test.describe.serial("Threads", () => {
 
     await clickReplyInThread(page);
     const panel = page.getByTestId(testIds.threadPanel);
-    await expect(panel).toBeVisible({ timeout: 8_000 });
+    await expect(panel).toBeVisible({ timeout: T(8_000) });
 
     const replyText = `Timeline-hidden reply ${Date.now()}`;
     await sendThreadReply(page, replyText);
-    await expect(panel.getByText(replyText, { exact: false })).toBeVisible({ timeout: 8_000 });
+    await expect(panel.getByText(replyText, { exact: false })).toBeVisible({ timeout: T(8_000) });
 
     // The reply must NOT appear in the main channel timeline (the <main> element
     // that hosts the message list, excluding the thread panel which is an <aside>).
     const mainTimeline = page.locator("main");
     await expect(mainTimeline.getByText(replyText, { exact: false })).not.toBeVisible({
-      timeout: 4_000,
+      timeout: T(4_000),
     });
   });
 });

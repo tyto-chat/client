@@ -1,6 +1,7 @@
 import type { Page, Locator } from "@playwright/test";
 import { testIds } from "../e2e/testIds";
 import { expect } from "@playwright/test";
+import { T } from "../e2e/fixtures";
 
 export class AppShell {
   readonly communitySidebar: Locator;
@@ -19,14 +20,14 @@ export class AppShell {
     const mercureReady = waitForMercure
       ? this.page.waitForResponse(
           (res) => res.url().includes("mercure") && res.url().includes("topic="),
-          { timeout: 10_000 },
+          { timeout: T(10_000) },
         )
       : null;
 
     await this.page.goto(`/${this.communityId}/${channelId}`);
     // Wait for the channel heading — confirms the channel component has mounted.
     // (networkidle never fires because the SSE connection keeps the network active.)
-    await expect(this.page.locator("main h1:visible").first()).toBeVisible({ timeout: 15_000 });
+    await expect(this.page.locator("main h1:visible").first()).toBeVisible({ timeout: T(15_000) });
 
     // If requested, wait until the Mercure hub has accepted the SSE subscription
     // (HTTP 200 response received). This guarantees events published after this

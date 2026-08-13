@@ -6,21 +6,22 @@
  */
 import { test, expect } from "./worldFixtures";
 import { AppShell } from "../pages/AppShell";
+import { T } from "./fixtures";
 
 test.describe.serial("Anonymous browsing", () => {
   // `world` is unused but requested: it seeds the public community this asserts on.
   test("anonymous user lands on public community, not /login", async ({ page, world }) => {
     void world;
     await page.goto("/");
-    await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
+    await expect(page).not.toHaveURL(/\/login/, { timeout: T(8_000) });
     // App redirects to the first public community (not necessarily the per-worker one)
-    await expect(page).toHaveURL(/\/[a-z0-9-]+\/[a-z0-9-]+/, { timeout: 8_000 });
+    await expect(page).toHaveURL(/\/[a-z0-9-]+\/[a-z0-9-]+/, { timeout: T(8_000) });
   });
 
   test("community sidebar is visible to anonymous users", async ({ page, world }) => {
     void world;
     await page.goto("/");
-    await expect(page.locator("nav").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("nav").first()).toBeVisible({ timeout: T(10_000) });
   });
 
   test("anonymous user can navigate directly to a text channel", async ({ page, world }) => {
@@ -39,7 +40,7 @@ test.describe.serial("Anonymous browsing", () => {
     const shell = new AppShell(page, world.communityId);
     await shell.gotoChannel(world.textChannelId);
     await expect(page.getByText(/log in or create an account/i).first()).toBeVisible({
-      timeout: 8_000,
+      timeout: T(8_000),
     });
   });
 
@@ -47,7 +48,7 @@ test.describe.serial("Anonymous browsing", () => {
     const shell = new AppShell(page, world.communityId);
     await shell.gotoChannel(world.textChannelId);
     // Wait for channel to load before asserting absence
-    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
     await expect(page.locator('[contenteditable="true"]')).toBeHidden();
   });
 
@@ -58,9 +59,9 @@ test.describe.serial("Anonymous browsing", () => {
     const shell = new AppShell(page, world.communityId);
     await shell.gotoChannel(world.textChannelId);
     const signInBtn = page.getByRole("button", { name: /sign in/i }).first();
-    await expect(signInBtn).toBeVisible({ timeout: 8_000 });
+    await expect(signInBtn).toBeVisible({ timeout: T(8_000) });
     await signInBtn.click();
-    await expect(page.locator("#email")).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator("#email")).toBeVisible({ timeout: T(5_000) });
     await expect(page).toHaveURL(new RegExp(world.textChannelId));
   });
 
@@ -71,9 +72,9 @@ test.describe.serial("Anonymous browsing", () => {
     const shell = new AppShell(page, world.communityId);
     await shell.gotoChannel(world.textChannelId);
     const createBtn = page.getByRole("button", { name: /create account/i }).first();
-    await expect(createBtn).toBeVisible({ timeout: 8_000 });
+    await expect(createBtn).toBeVisible({ timeout: T(8_000) });
     await createBtn.click();
-    await expect(page.locator("#email")).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator("#email")).toBeVisible({ timeout: T(5_000) });
     await expect(page).toHaveURL(new RegExp(world.textChannelId));
   });
 
@@ -82,13 +83,13 @@ test.describe.serial("Anonymous browsing", () => {
     await shell.gotoChannel(world.audioChannelId);
     await expect(
       page.getByText(/log in or create an account to join this voice channel/i),
-    ).toBeVisible({ timeout: 8_000 });
+    ).toBeVisible({ timeout: T(8_000) });
   });
 
   test("Join Voice button is hidden for anonymous user", async ({ page, world }) => {
     const shell = new AppShell(page, world.communityId);
     await shell.gotoChannel(world.audioChannelId);
-    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
     await expect(page.getByRole("button", { name: /join voice/i })).toBeHidden();
   });
 
@@ -100,9 +101,9 @@ test.describe.serial("Anonymous browsing", () => {
     await shell.gotoChannel(world.audioChannelId);
     // Both text channel and voice channel share auth buttons; pick the one in main
     const signInBtn = page.locator("main").getByRole("button", { name: /sign in/i });
-    await expect(signInBtn).toBeVisible({ timeout: 8_000 });
+    await expect(signInBtn).toBeVisible({ timeout: T(8_000) });
     await signInBtn.click();
-    await expect(page.locator("#email")).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator("#email")).toBeVisible({ timeout: T(5_000) });
   });
 
   test("/login has a close button that navigates to / when a public community exists", async ({
@@ -114,11 +115,11 @@ test.describe.serial("Anonymous browsing", () => {
     await expect(page).toHaveURL(/\/login/);
 
     const closeButton = page.getByTitle("Close");
-    await expect(closeButton).toBeVisible({ timeout: 5_000 });
+    await expect(closeButton).toBeVisible({ timeout: T(5_000) });
     await closeButton.click();
 
     // / redirects to the first public community, so we just verify we left /login
-    await expect(page).not.toHaveURL(/\/login/, { timeout: 8_000 });
+    await expect(page).not.toHaveURL(/\/login/, { timeout: T(8_000) });
   });
 
   test("/register has a close button that navigates away", async ({ page }) => {
@@ -126,9 +127,9 @@ test.describe.serial("Anonymous browsing", () => {
     await expect(page).toHaveURL(/\/register/);
 
     const closeButton = page.getByTitle("Close");
-    await expect(closeButton).toBeVisible({ timeout: 5_000 });
+    await expect(closeButton).toBeVisible({ timeout: T(5_000) });
     await closeButton.click();
 
-    await expect(page).not.toHaveURL(/\/register/, { timeout: 8_000 });
+    await expect(page).not.toHaveURL(/\/register/, { timeout: T(8_000) });
   });
 });

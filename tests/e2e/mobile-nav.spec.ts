@@ -1,6 +1,7 @@
 import { test, expect } from "./worldFixtures";
 import { MobilePage } from "../pages/MobilePage";
 import { testIds } from "./testIds";
+import { T } from "./fixtures";
 
 /**
  * M1 mobile shell-drawer behaviour at a phone viewport. The community rail
@@ -56,7 +57,7 @@ test.describe.serial("Mobile nav drawer (390px)", () => {
     // changes from the current text channel).
     await page.locator("aside a").filter({ hasText: world.audioChannelId }).first().click();
 
-    await expect(page).toHaveURL(new RegExp(world.audioChannelId), { timeout: 8_000 });
+    await expect(page).toHaveURL(new RegExp(world.audioChannelId), { timeout: T(8_000) });
     // Route change auto-closes the drawer.
     await expect(page.getByTestId(testIds.mobileNavScrim)).toHaveCount(0);
     await expect(page.locator("aside a").first()).not.toBeInViewport();
@@ -69,7 +70,7 @@ test.describe.serial("Mobile nav drawer (390px)", () => {
     userPage: page,
   }) => {
     await page.goto(`/dm`);
-    await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: T(15_000) });
     await expect(page.getByTestId(testIds.mobileNavToggle)).toBeInViewport();
 
     await page.getByTestId(testIds.mobileNavToggle).click();

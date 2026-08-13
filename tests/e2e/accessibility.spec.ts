@@ -3,6 +3,7 @@ import { test, expect } from "./worldFixtures";
 import { LoginPage } from "../pages/LoginPage";
 import { AppShell } from "../pages/AppShell";
 import type { Page, TestInfo } from "@playwright/test";
+import { T } from "./fixtures";
 
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
@@ -52,13 +53,13 @@ test.describe("Accessibility (axe-core WCAG 2.1 AA)", () => {
 
   test("direct-messages view has no violations", async ({ adminPage: page }, testInfo) => {
     await page.goto("/dm");
-    await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading").first()).toBeVisible({ timeout: T(10_000) });
     expect(await scan(page, testInfo)).toEqual([]);
   });
 
   test("admin panel has no violations", async ({ adminPage: page }, testInfo) => {
     await page.goto("/admin");
-    await expect(page.locator("main")).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main")).toBeVisible({ timeout: T(10_000) });
     expect(await scan(page, testInfo)).toEqual([]);
   });
 });

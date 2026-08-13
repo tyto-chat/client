@@ -1,6 +1,7 @@
 import type { Page, Locator } from "@playwright/test";
 import { testIds } from "../e2e/testIds";
 import { expect } from "@playwright/test";
+import { T } from "../e2e/fixtures";
 
 /**
  * Page object for the "Roles" tab of the Manage community modal. Each role
@@ -20,13 +21,13 @@ export class CommunityRolesPanel {
   async openFromSidebar(): Promise<void> {
     await this.page.getByTestId(testIds.communityActionsBtn).click();
     await this.page.getByTestId(testIds.manageCommunity).click();
-    await expect(this.dialog).toBeVisible({ timeout: 6_000 });
+    await expect(this.dialog).toBeVisible({ timeout: T(6_000) });
     await this.dialog.getByRole("button", { name: "Roles", exact: true }).click();
   }
 
   async close(): Promise<void> {
     await this.dialog.getByRole("button", { name: "Close" }).first().dispatchEvent("click");
-    await expect(this.dialog).not.toBeVisible({ timeout: 6_000 });
+    await expect(this.dialog).not.toBeVisible({ timeout: T(6_000) });
   }
 
   /**
@@ -43,7 +44,7 @@ export class CommunityRolesPanel {
       .filter({ hasText: memberName })
       .filter({ has: this.page.getByRole("button", { name: buttonLabel, exact: true }) })
       .first();
-    await expect(row).toBeVisible({ timeout: 6_000 });
+    await expect(row).toBeVisible({ timeout: T(6_000) });
     await row.getByRole("button", { name: buttonLabel, exact: true }).click();
   }
 
@@ -56,14 +57,14 @@ export class CommunityRolesPanel {
   async expectInRole(target: "admin" | "moderator", memberName: string): Promise<void> {
     const section = this.sectionFor(target);
     await expect(section.locator("li").filter({ hasText: memberName }).first()).toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   }
 
   async expectNotInRole(target: "admin" | "moderator", memberName: string): Promise<void> {
     const section = this.sectionFor(target);
     await expect(section.locator("li").filter({ hasText: memberName }).first()).not.toBeVisible({
-      timeout: 6_000,
+      timeout: T(6_000),
     });
   }
 

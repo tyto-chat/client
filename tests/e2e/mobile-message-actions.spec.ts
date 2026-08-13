@@ -1,7 +1,7 @@
 import { expect, devices } from "@playwright/test";
 import { test as worldTest } from "./worldFixtures";
 import { testIds } from "./testIds";
-import { setupServerInfoRoute, attachPageDiagnostics } from "./fixtures";
+import { setupServerInfoRoute, attachPageDiagnostics, T } from "./fixtures";
 import type { Page } from "@playwright/test";
 
 /**
@@ -54,7 +54,7 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
         await page.goto(`/${world.communityId}/${world.textChannelId}`);
 
         // Wait for the mobile top bar (present at Pixel 7's 412px viewport).
-        await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: T(15_000) });
 
         const editor = page.locator("main").locator('[contenteditable="true"]');
         await editor.tap();
@@ -62,12 +62,12 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
         await editor.press("Enter");
 
         const lastContent = page.locator("main .message-content").last();
-        await expect(lastContent).toBeAttached({ timeout: 8_000 });
+        await expect(lastContent).toBeAttached({ timeout: T(8_000) });
 
         // The ⋯ trigger must be present (rendered because hover:none=true).
         const trigger = page.getByTestId(testIds.msgTouchActionsBtn).last();
-        await expect(trigger).toBeAttached({ timeout: 5_000 });
-        await expect(trigger).toBeVisible({ timeout: 5_000 });
+        await expect(trigger).toBeAttached({ timeout: T(5_000) });
+        await expect(trigger).toBeVisible({ timeout: T(5_000) });
 
         // Minimum 44 × 44 px touch target.
         const box = await trigger.boundingBox();
@@ -85,7 +85,7 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
     async ({ adminPage: page, world }) => {
       await page.goto(`/${world.communityId}/${world.textChannelId}`);
       await expect(page.locator("main .message-content").last()).toBeAttached({
-        timeout: 15_000,
+        timeout: T(15_000),
       });
       await expect(page.getByTestId(testIds.msgTouchActionsBtn)).toHaveCount(0);
     },
@@ -97,7 +97,7 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
       const page = await touchAuthedPage(browser, world.adminJwt, testInfo);
       try {
         await page.goto(`/${world.communityId}/${world.textChannelId}`);
-        await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: T(15_000) });
 
         const uniqueText = `M4 actions open ${Date.now()}`;
         const editor = page.locator("main").locator('[contenteditable="true"]');
@@ -106,11 +106,11 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
         await editor.press("Enter");
 
         const ourMsg = page.locator("main").getByText(uniqueText, { exact: false });
-        await expect(ourMsg).toBeVisible({ timeout: 8_000 });
+        await expect(ourMsg).toBeVisible({ timeout: T(8_000) });
 
         // The ⋯ trigger for our message — use the last one in main (our freshly sent msg).
         const trigger = page.locator("main").getByTestId(testIds.msgTouchActionsBtn).last();
-        await expect(trigger).toBeVisible({ timeout: 5_000 });
+        await expect(trigger).toBeVisible({ timeout: T(5_000) });
 
         await trigger.tap();
 
@@ -118,14 +118,14 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
         // are expected. Use .filter({ visible:true }) to find the now-visible ones.
         await expect(
           page.locator("main").getByTestId(testIds.msgActionEdit).filter({ visible: true }).last(),
-        ).toBeVisible({ timeout: 5_000 });
+        ).toBeVisible({ timeout: T(5_000) });
         await expect(
           page
             .locator("main")
             .getByTestId(testIds.msgActionDelete)
             .filter({ visible: true })
             .last(),
-        ).toBeVisible({ timeout: 5_000 });
+        ).toBeVisible({ timeout: T(5_000) });
       } finally {
         await page.context().close();
       }
@@ -138,7 +138,7 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
       const page = await touchAuthedPage(browser, world.adminJwt, testInfo);
       try {
         await page.goto(`/${world.communityId}/${world.textChannelId}`);
-        await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: T(15_000) });
 
         const uniqueText = `M4 actions close ${Date.now()}`;
         const editor = page.locator("main").locator('[contenteditable="true"]');
@@ -149,21 +149,21 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
         // Pin the row by its own text. Other messages keep their triggers, so a
         // bare .last() would both miss this row and drift as new rows arrive.
         const row = page.locator("main [data-message-id]").filter({ hasText: uniqueText }).last();
-        await expect(row).toBeVisible({ timeout: 8_000 });
+        await expect(row).toBeVisible({ timeout: T(8_000) });
         const trigger = row.getByTestId(testIds.msgTouchActionsBtn);
-        await expect(trigger).toBeVisible({ timeout: 5_000 });
+        await expect(trigger).toBeVisible({ timeout: T(5_000) });
 
         await trigger.tap();
-        await expect(row.getByTestId(testIds.msgActionEdit)).toBeVisible({ timeout: 5_000 });
+        await expect(row.getByTestId(testIds.msgActionEdit)).toBeVisible({ timeout: T(5_000) });
 
         // The bar occupies the trigger's slot, so the trigger stands down while
         // it is open — no second tap on it, and no overlap to mis-hit.
-        await expect(trigger).toHaveCount(0, { timeout: 3_000 });
+        await expect(trigger).toHaveCount(0, { timeout: T(3_000) });
 
         // Tapping anywhere outside dismisses it and the trigger comes back.
         await page.mouse.click(10, 10);
-        await expect(row.getByTestId(testIds.msgActionEdit)).toBeHidden({ timeout: 3_000 });
-        await expect(trigger).toBeVisible({ timeout: 3_000 });
+        await expect(row.getByTestId(testIds.msgActionEdit)).toBeHidden({ timeout: T(3_000) });
+        await expect(trigger).toBeVisible({ timeout: T(3_000) });
       } finally {
         await page.context().close();
       }
@@ -176,7 +176,7 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
       const page = await touchAuthedPage(browser, world.adminJwt, testInfo);
       try {
         await page.goto(`/${world.communityId}/${world.textChannelId}`);
-        await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: T(15_000) });
 
         const editor = page.locator("main").locator('[contenteditable="true"]');
         await editor.tap();
@@ -184,7 +184,7 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
         await editor.press("Enter");
 
         const trigger = page.locator("main").getByTestId(testIds.msgTouchActionsBtn).last();
-        await expect(trigger).toBeVisible({ timeout: 8_000 });
+        await expect(trigger).toBeVisible({ timeout: T(8_000) });
         await trigger.tap();
 
         // Admin's own message exposes the fullest action set (react, reply,
@@ -195,7 +195,7 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
           .getByTestId(testIds.msgActionsRow)
           .filter({ visible: true })
           .last();
-        await expect(row).toBeVisible({ timeout: 5_000 });
+        await expect(row).toBeVisible({ timeout: T(5_000) });
 
         // The scroll container itself must fit within the viewport width.
         const vw = page.viewportSize()?.width ?? 412;
@@ -227,7 +227,7 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
       const page = await touchAuthedPage(browser, world.adminJwt, testInfo);
       try {
         await page.goto(`/${world.communityId}/${world.textChannelId}`);
-        await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByTestId(testIds.mobileNavToggle)).toBeVisible({ timeout: T(15_000) });
 
         const editor = page.locator("main").locator('[contenteditable="true"]');
         await editor.tap();
@@ -235,7 +235,7 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
         await editor.press("Enter");
 
         const lastContent = page.locator("main .message-content").last();
-        await expect(lastContent).toBeAttached({ timeout: 8_000 });
+        await expect(lastContent).toBeAttached({ timeout: T(8_000) });
 
         const trigger = page.getByTestId(testIds.msgTouchActionsBtn).last();
         await trigger.tap();
@@ -244,7 +244,7 @@ worldTest.describe.serial("M4 — touch message-actions trigger (Pixel 7 emulati
         // visible ones — a bare .last() can resolve to a closed row's button.
         await expect(
           page.locator("main").getByTestId(testIds.msgActionReact).filter({ visible: true }).last(),
-        ).toBeVisible({ timeout: 5_000 });
+        ).toBeVisible({ timeout: T(5_000) });
       } finally {
         await page.context().close();
       }
