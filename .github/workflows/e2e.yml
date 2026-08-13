@@ -108,6 +108,7 @@ jobs:
         run: |
           mysql -uroot -proot -h127.0.0.1 -e "CREATE DATABASE IF NOT EXISTS db_test; GRANT ALL PRIVILEGES ON db_test.* TO 'db'@'%'; FLUSH PRIVILEGES;"
           php bin/console lexik:jwt:generate-keypair --env=test --skip-if-exists
+          APP_ENV=test php bin/console cache:warmup
           APP_ENV=test php bin/console doctrine:migrations:migrate --no-interaction
           APP_ENV=test php bin/console doctrine:fixtures:load --no-interaction
 
@@ -116,10 +117,19 @@ jobs:
         run: |
           APP_ENV=test PHP_CLI_SERVER_WORKERS=8 nohup php -S 127.0.0.1:8000 -t public public/index.php > /tmp/core-server.log 2>&1 &
           for i in $(seq 1 30); do
-            curl -sf http://localhost:8000/api/v1/server-info > /dev/null && break
+            curl -sf http://127.0.0.1:8000/api/v1/server-info > /dev/null && break
             sleep 1
           done
-          curl -sf http://localhost:8000/api/v1/server-info > /dev/null
+          if ! curl -sf http://127.0.0.1:8000/api/v1/server-info > /dev/null; then
+            echo "=== response body ==="
+            curl -s http://127.0.0.1:8000/api/v1/server-info | head -c 3000 || true
+            echo
+            echo "=== core server log ==="
+            tail -80 /tmp/core-server.log || true
+            echo "=== symfony test log ==="
+            tail -80 var/log/test.log || true
+            exit 1
+          fi
 
       - name: Install client dependencies
         run: npm ci
