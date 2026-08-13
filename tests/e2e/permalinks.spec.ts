@@ -31,6 +31,11 @@ async function clipboardAuthedPage(
 }
 
 async function copyPermalinkOfLastMessage(page: Page): Promise<string> {
+  await expect(page.locator("[data-message-id]").last()).not.toHaveAttribute(
+    "data-message-id",
+    /optimistic/,
+    { timeout: 10_000 },
+  );
   await page.locator("main .message-content").last().hover();
   const copyBtn = page.getByTestId(testIds.msgActionCopyLink).last();
   await expect(copyBtn).toBeVisible({ timeout: 5_000 });

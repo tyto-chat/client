@@ -43,6 +43,13 @@ test.describe.serial("Embeddable message card", () => {
       await channel.sendMessage(messageText);
       await channel.expectMessage(messageText);
 
+      // Wait for the Mercure echo to swap the optimistic id for the real IRI —
+      // copying earlier yields a dead /m/optimistic-… link.
+      await expect(page.locator("[data-message-id]").last()).not.toHaveAttribute(
+        "data-message-id",
+        /optimistic/,
+        { timeout: 10_000 },
+      );
       await page.locator("main .message-content").last().hover();
       const copyBtn = page.getByTestId(testIds.msgActionCopyLink).last();
       await expect(copyBtn).toBeVisible({ timeout: 5_000 });
