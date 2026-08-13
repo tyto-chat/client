@@ -88,6 +88,7 @@ jobs:
       - name: Configure core test env
         working-directory: core
         run: |
+          echo "APP_ENV=test" > .env.local
           cat > .env.test.local <<EOF
           SERVER_API_URL=http://localhost:8000
           MERCURE_URL=http://localhost:3000/.well-known/mercure
@@ -119,7 +120,7 @@ jobs:
       - name: Serve core (test env)
         working-directory: core
         run: |
-          APP_ENV=test PHP_CLI_SERVER_WORKERS=8 nohup php -S 127.0.0.1:8000 -t public public/index.php > /tmp/core-server.log 2>&1 &
+          APP_ENV=test PHP_CLI_SERVER_WORKERS=8 nohup php -d variables_order=EGPCS -S 127.0.0.1:8000 -t public public/index.php > /tmp/core-server.log 2>&1 &
           for i in $(seq 1 30); do
             curl -sf http://127.0.0.1:8000/api/v1/server-info > /dev/null && break
             sleep 1
