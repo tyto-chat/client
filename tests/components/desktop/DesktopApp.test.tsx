@@ -3,8 +3,13 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { server } from "../../mocks/server";
+import { router } from "@/appShell";
 import { DesktopApp } from "@/desktop/DesktopApp";
-import { useAgentRegistry, useAgentsSnapshot } from "@/desktop/agents/AgentsContext";
+import {
+  useAgentRegistry,
+  useAgentsSnapshot,
+  useSwitchIdentity,
+} from "@/desktop/agents/AgentsContext";
 import type { AgentRegistry } from "@/desktop/agents/AgentRegistry";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { setPlatformBridgeForTests } from "@/platform/bridge";
@@ -18,6 +23,7 @@ import {
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { __resetRefreshStateForTests, refreshAccessToken } from "@/api/auth";
 import { _resetNegotiationForTests } from "@/api/apiVersion";
+import { getBaseUrl } from "@/api/client";
 
 const ORIGIN_A = "https://a.example";
 const ORIGIN_B = "https://b.example";
@@ -49,6 +55,7 @@ interface ProbeInfo {
   activeIdentityId: string;
   registry: AgentRegistry;
   queryClient: QueryClient;
+  switchTo: ReturnType<typeof useSwitchIdentity>;
 }
 
 function Probe({
@@ -61,7 +68,8 @@ function Probe({
   const registry = useAgentRegistry();
   const snapshot = useAgentsSnapshot();
   const queryClient = useQueryClient();
-  onRender({ activeIdentityId, registry, queryClient });
+  const switchTo = useSwitchIdentity();
+  onRender({ activeIdentityId, registry, queryClient, switchTo });
   return (
     <div data-testid="probe" data-active={snapshot.activeIdentityId ?? ""}>
       {snapshot.agents.length}
@@ -233,5 +241,101 @@ describe("DesktopApp", () => {
     render(<DesktopApp />);
     expect(await screen.findByTestId("wizard-server-input")).toBeInTheDocument();
     expect(screen.queryByTestId("probe")).not.toBeInTheDocument();
+  });
+
+  it("switchTo re-invokes renderApp with the new identity and a different QueryClient, then navigates", async () => {
+    stubHealthyServer(ORIGIN_A, "Alpha");
+    stubHealthyServer(ORIGIN_B, "Beta");
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    await seedTwoIdentities(bridge);
+
+    const renders: ProbeInfo[] = [];
+    render(
+      <DesktopApp
+        renderApp={(activeIdentityId) => (
+          <Probe activeIdentityId={activeIdentityId} onRender={(info) => renders.push(info)} />
+        )}
+      />,
+    );
+
+    await screen.findByTestId("probe");
+    await waitFor(() => {
+      expect(renders.at(-1)?.registry.getSnapshot().agents).toHaveLength(2);
+    });
+    await waitFor(() => {
+      expect(
+        renders
+          .at(-1)
+          ?.registry.getSnapshot()
+          .agents.map((a) => a.status),
+      ).toEqual(["healthy", "healthy"]);
+    });
+
+    const clientForA = renders.at(-1)!.queryClient;
+    const navigateSpy = vi.spyOn(router, "navigate").mockResolvedValue(undefined);
+
+    await act(async () => {
+      await renders.at(-1)!.switchTo("ib");
+    });
+
+    await waitFor(() => {
+      expect(renders.at(-1)?.activeIdentityId).toBe("ib");
+    });
+
+    expect(renders.at(-1)!.queryClient).not.toBe(clientForA);
+    expect(getBaseUrl()).toBe(`${ORIGIN_B}/api`);
+    expect(getAccessToken()).toBe("jwt-live");
+
+    await waitFor(() => {
+      expect(navigateSpy).toHaveBeenCalledWith({ to: "/" });
+    });
+
+    navigateSpy.mockRestore();
+  });
+
+  it("switchTo navigates to the caller-supplied target once the new identity is active", async () => {
+    stubHealthyServer(ORIGIN_A, "Alpha");
+    stubHealthyServer(ORIGIN_B, "Beta");
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    await seedTwoIdentities(bridge);
+
+    const renders: ProbeInfo[] = [];
+    render(
+      <DesktopApp
+        renderApp={(activeIdentityId) => (
+          <Probe activeIdentityId={activeIdentityId} onRender={(info) => renders.push(info)} />
+        )}
+      />,
+    );
+
+    await screen.findByTestId("probe");
+    await waitFor(() => {
+      expect(
+        renders
+          .at(-1)
+          ?.registry.getSnapshot()
+          .agents.map((a) => a.status),
+      ).toEqual(["healthy", "healthy"]);
+    });
+
+    const navigateSpy = vi.spyOn(router, "navigate").mockResolvedValue(undefined);
+
+    await act(async () => {
+      await renders.at(-1)!.switchTo("ib", { to: "/$communityId", params: { communityId: "x" } });
+    });
+
+    await waitFor(() => {
+      expect(renders.at(-1)?.activeIdentityId).toBe("ib");
+    });
+    await waitFor(() => {
+      expect(navigateSpy).toHaveBeenCalledWith({
+        to: "/$communityId",
+        params: { communityId: "x" },
+      });
+    });
+
+    navigateSpy.mockRestore();
   });
 });

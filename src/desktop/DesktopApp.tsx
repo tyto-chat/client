@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppShell, router } from "@/appShell";
@@ -7,6 +7,7 @@ import { getPlatformBridge } from "@/platform/bridge";
 import { AgentRegistry } from "./agents/AgentRegistry";
 import { AgentsContext, type AgentsContextValue } from "./agents/AgentsContext";
 import { DesktopBootstrap, type DesktopSession } from "./DesktopBootstrap";
+import { performIdentitySwitch, type SwitchTarget } from "./switchIdentity";
 
 export interface DesktopAppProps {
   renderApp?: (activeIdentityId: string) => ReactNode;
@@ -42,12 +43,23 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
     [registry],
   );
 
+  const pendingNavigationRef = useRef<{
+    identityId: string;
+    navigateTo: NonNullable<SwitchTarget["navigateTo"]>;
+  } | null>(null);
+
   const switchTo = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async (_identityId: string): Promise<void> => {
-      throw new Error("not implemented");
+    async (identityId: string, navigateTo?: SwitchTarget["navigateTo"]): Promise<void> => {
+      const pending = { identityId, navigateTo: navigateTo ?? { to: "/" } };
+      pendingNavigationRef.current = pending;
+      try {
+        await performIdentitySwitch(registry, getPlatformBridge(), { identityId, navigateTo });
+      } catch (error) {
+        if (pendingNavigationRef.current === pending) pendingNavigationRef.current = null;
+        throw error;
+      }
     },
-    [],
+    [registry],
   );
 
   const contextValue = useMemo<AgentsContextValue>(
@@ -56,6 +68,14 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
   );
 
   const activeIdentityId = snapshot.activeIdentityId;
+
+  useEffect(() => {
+    const pending = pendingNavigationRef.current;
+    if (pending && pending.identityId === activeIdentityId) {
+      pendingNavigationRef.current = null;
+      void router.navigate(pending.navigateTo);
+    }
+  }, [activeIdentityId]);
 
   return (
     <DesktopBootstrap onSession={handleSession}>

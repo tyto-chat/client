@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useSyncExternalStore } from "react";
+import type { SwitchTarget } from "@/desktop/switchIdentity";
 import { AgentRegistry, type RegistrySnapshot } from "./AgentRegistry";
 
 export interface AgentsContextValue {
   registry: AgentRegistry;
-  switchTo: (identityId: string) => Promise<void>;
+  switchTo: (identityId: string, navigateTo?: SwitchTarget["navigateTo"]) => Promise<void>;
 }
 
 export const AgentsContext = createContext<AgentsContextValue | null>(null);
@@ -18,7 +19,10 @@ export function useAgentRegistry(): AgentRegistry {
   return useAgentsContext().registry;
 }
 
-export function useSwitchIdentity(): (identityId: string) => Promise<void> {
+export function useSwitchIdentity(): (
+  identityId: string,
+  navigateTo?: SwitchTarget["navigateTo"],
+) => Promise<void> {
   return useAgentsContext().switchTo;
 }
 
