@@ -5,7 +5,6 @@
   "server_url_invalid": "Це не схоже на дійсну адресу сервера.",
   "server_unreachable": "Не вдалося з'єднатися із цим сервером. Перевір адресу і спробуй ще раз.",
   "server_continue": "Продовжити",
-  "credentials_title": "Увійти на {{server}}",
   "change_server": "Використати інший сервер",
   "email_label": "Електронна пошта",
   "password_label": "Пароль",

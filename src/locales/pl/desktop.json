@@ -5,7 +5,6 @@
   "server_url_invalid": "To nie wygląda na prawidłowy adres serwera.",
   "server_unreachable": "Nie udało się połączyć z tym serwerem. Sprawdź adres i spróbuj ponownie.",
   "server_continue": "Dalej",
-  "credentials_title": "Zaloguj się do {{server}}",
   "change_server": "Użyj innego serwera",
   "email_label": "E-mail",
   "password_label": "Hasło",

@@ -5,7 +5,6 @@
   "server_url_invalid": "Eso no parece una dirección de servidor válida.",
   "server_unreachable": "No se pudo conectar con este servidor. Comprueba la dirección e inténtalo de nuevo.",
   "server_continue": "Continuar",
-  "credentials_title": "Inicia sesión en {{server}}",
   "change_server": "Usar otro servidor",
   "email_label": "Correo electrónico",
   "password_label": "Contraseña",

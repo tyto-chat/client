@@ -5,7 +5,6 @@
   "server_url_invalid": "That doesn't look like a valid server address.",
   "server_unreachable": "Could not reach this server. Check the address and try again.",
   "server_continue": "Continue",
-  "credentials_title": "Sign in to {{server}}",
   "change_server": "Use a different server",
   "email_label": "Email",
   "password_label": "Password",
