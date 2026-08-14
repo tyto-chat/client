@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,17 +7,15 @@ import type { PlatformBridge } from "@/platform/PlatformBridge";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { Spinner } from "@/components/icons";
 import { AddIdentityWizard, ErrorBanner, type AddIdentityResult } from "./AddIdentityWizard";
-import { connectIdentity, installRefreshExecutor } from "./connectIdentity";
+import { connectIdentity } from "./connectIdentity";
 import {
-  addIdentity,
   loadDesktopConfig,
-  normalizeServerUrl,
   saveDesktopConfig,
-  secretKey,
   setLastActiveIdentity,
   type DesktopConfig,
   type DesktopIdentity,
 } from "./desktopConfig";
+import { persistWizardResult } from "./identitySetup";
 
 type BootState =
   | { kind: "loading" }
@@ -26,57 +23,8 @@ type BootState =
   | { kind: "relogin"; identity: DesktopIdentity }
   | { kind: "unreachable"; identity: DesktopIdentity; error: unknown }
   | { kind: "incompatible"; identity: DesktopIdentity; direction: string }
+  | { kind: "boot-error"; error: unknown }
   | { kind: "ready" };
-
-export async function persistWizardResult(
-  bridge: PlatformBridge,
-  config: DesktopConfig,
-  profileId: string,
-  result: AddIdentityResult,
-): Promise<DesktopConfig> {
-  const origin = normalizeServerUrl(result.serverUrl);
-  const profile = config.profiles.find((p) => p.id === profileId);
-  const existing = profile?.identities.find((i) => i.serverUrl === origin);
-
-  let next = config;
-  let identityId: string;
-  if (existing) {
-    identityId = existing.id;
-    next = {
-      ...next,
-      profiles: next.profiles.map((p) =>
-        p.id === profileId
-          ? {
-              ...p,
-              identities: p.identities.map((i) =>
-                i.id === identityId ? { ...i, email: result.email } : i,
-              ),
-            }
-          : p,
-      ),
-    };
-  } else {
-    identityId = crypto.randomUUID();
-    next = addIdentity(next, profileId, {
-      id: identityId,
-      serverUrl: origin,
-      email: result.email,
-      userId: null,
-      displayName: null,
-    });
-  }
-  next = setLastActiveIdentity(next, profileId, identityId);
-  await saveDesktopConfig(bridge, next);
-
-  await bridge.secrets.set(secretKey(profileId, identityId, "password"), result.password);
-  const refreshKey = secretKey(profileId, identityId, "refreshToken");
-  if (result.refreshToken) {
-    await bridge.secrets.set(refreshKey, result.refreshToken);
-  }
-  installRefreshExecutor(bridge, refreshKey);
-
-  return next;
-}
 
 function FullScreenWizard({ children }: { children: ReactNode }) {
   return (
@@ -108,14 +56,15 @@ export function DesktopBootstrap({
   onSession?: (session: DesktopSession) => void;
 }) {
   const { t } = useTranslation("desktop");
-  const bridgeRef = useRef<PlatformBridge>(getPlatformBridge());
+  const bridgeRef = useRef<PlatformBridge | null>(null);
   const configRef = useRef<DesktopConfig | null>(null);
   const profileIdRef = useRef<string | null>(null);
   const startedRef = useRef(false);
   const [state, setState] = useState<BootState>({ kind: "loading" });
+  const [bootGeneration, setBootGeneration] = useState(0);
 
   async function finishConnected(profileId: string, identityId: string, token: string) {
-    const bridge = bridgeRef.current;
+    const bridge = bridgeRef.current!;
     const current = configRef.current;
     let identities: DesktopIdentity[] = [];
     if (current) {
@@ -132,7 +81,7 @@ export function DesktopBootstrap({
   }
 
   async function tryConnect(profileId: string, identity: DesktopIdentity) {
-    const bridge = bridgeRef.current;
+    const bridge = bridgeRef.current!;
     const outcome = await connectIdentity(bridge, profileId, identity);
     if (outcome.status === "connected") {
       await finishConnected(profileId, identity.id, outcome.token);
@@ -148,33 +97,38 @@ export function DesktopBootstrap({
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
-    beginAuthRestore();
 
     void (async () => {
-      const bridge = bridgeRef.current;
-      const config = await loadDesktopConfig(bridge);
-      configRef.current = config;
+      try {
+        beginAuthRestore();
+        const bridge = getPlatformBridge();
+        bridgeRef.current = bridge;
+        const config = await loadDesktopConfig(bridge);
+        configRef.current = config;
 
-      const profileId = config.lastActiveProfileId ?? config.profiles[0]?.id ?? null;
-      profileIdRef.current = profileId;
-      const profile = profileId ? config.profiles.find((p) => p.id === profileId) : undefined;
+        const profileId = config.lastActiveProfileId ?? config.profiles[0]?.id ?? null;
+        profileIdRef.current = profileId;
+        const profile = profileId ? config.profiles.find((p) => p.id === profileId) : undefined;
 
-      if (!profile || profile.identities.length === 0) {
-        setState({ kind: "first-run" });
-        return;
+        if (!profile || profile.identities.length === 0) {
+          setState({ kind: "first-run" });
+          return;
+        }
+
+        const identity =
+          profile.identities.find((i) => i.id === profile.lastActiveIdentityId) ??
+          profile.identities[0]!;
+
+        await tryConnect(profile.id, identity);
+      } catch (error) {
+        setState({ kind: "boot-error", error });
       }
-
-      const identity =
-        profile.identities.find((i) => i.id === profile.lastActiveIdentityId) ??
-        profile.identities[0]!;
-
-      await tryConnect(profile.id, identity);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [bootGeneration]);
 
   async function handleWizardComplete(result: AddIdentityResult) {
-    const bridge = bridgeRef.current;
+    const bridge = bridgeRef.current!;
     let profileId = profileIdRef.current;
     let config = configRef.current;
     if (!config) {
@@ -201,6 +155,32 @@ export function DesktopBootstrap({
       <div className="flex h-screen w-screen items-center justify-center bg-canvas">
         <Spinner size={28} />
       </div>
+    );
+  }
+
+  if (state.kind === "boot-error") {
+    const bootError = state;
+    return (
+      <FullScreenWizard>
+        <div className="space-y-4">
+          <h3 className="text-center text-[19px] font-semibold tracking-tight text-fg">
+            {t("boot_error_title")}
+          </h3>
+          <ErrorBanner message={String(bootError.error)} />
+          <button
+            type="button"
+            onClick={() => {
+              startedRef.current = false;
+              setState({ kind: "loading" });
+              setBootGeneration((n) => n + 1);
+            }}
+            className="w-full rounded-md bg-accent-gradient py-2.5 font-semibold text-on-accent shadow-soft-sm transition hover:opacity-90"
+            data-testid="desktop-boot-retry"
+          >
+            {t("retry")}
+          </button>
+        </div>
+      </FullScreenWizard>
     );
   }
 

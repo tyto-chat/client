@@ -10,8 +10,8 @@ import { AgentsContext, type AgentsContextValue } from "./agents/AgentsContext";
 import type { AgentRegistry, RegistrySnapshot } from "./agents/AgentRegistry";
 import type { AgentCommunity, AgentSnapshot } from "./agents/IdentityAgent";
 import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
-import { ReloginModal } from "./DesktopApp";
-import { persistWizardResult } from "./DesktopBootstrap";
+import { ReloginModal } from "./ReloginModal";
+import { persistWizardResult } from "./identitySetup";
 import { loadDesktopConfig } from "./desktopConfig";
 import { ServerTile } from "./ServerTile";
 

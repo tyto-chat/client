@@ -18,7 +18,6 @@ import { i18nReady } from "@/i18n";
 import { negotiateApiVersion, getApiVersion } from "@/api/apiVersion";
 import { VersionMismatchScreen } from "@/components/VersionMismatchScreen";
 import { getAppMode } from "@/platform/appMode";
-import { DesktopApp } from "@/desktop/DesktopApp";
 import { createAppQueryClient } from "@/queryClientFactory";
 
 const queryClient = createAppQueryClient(router);
@@ -44,7 +43,7 @@ function Providers({ children }: { children: ReactNode }) {
 
 (async () => {
   if (getAppMode() === "desktop") {
-    await i18nReady;
+    const [{ DesktopApp }] = await Promise.all([import("@/desktop/DesktopApp"), i18nReady]);
     createRoot(document.getElementById("root")!).render(
       <Providers>
         <DesktopApp />

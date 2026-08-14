@@ -33,5 +33,6 @@
   "server_incompatible": "Questo server utilizza una versione incompatibile di tyto. Aggiorna l'app desktop o il server.",
   "server_status_auth_failed": "Sessione scaduta. Fai clic per riconnetterti.",
   "server_status_unreachable": "riconnessione…",
-  "relogin_title": "Accedi di nuovo"
+  "relogin_title": "Accedi di nuovo",
+  "boot_error_title": "Impossibile avviare tyto desktop"
 }

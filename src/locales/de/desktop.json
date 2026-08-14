@@ -33,5 +33,6 @@
   "server_incompatible": "Dieser Server verwendet eine inkompatible Version von tyto. Aktualisiere die Desktop-App oder den Server.",
   "server_status_auth_failed": "Sitzung abgelaufen. Klicken, um erneut zu verbinden.",
   "server_status_unreachable": "Verbindung wird wiederhergestellt…",
-  "relogin_title": "Erneut anmelden"
+  "relogin_title": "Erneut anmelden",
+  "boot_error_title": "tyto desktop konnte nicht gestartet werden"
 }

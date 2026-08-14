@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useSyncExternalStore } from "react";
 import type { SwitchTarget } from "@/desktop/switchIdentity";
-import { AgentRegistry, type RegistrySnapshot } from "./AgentRegistry";
+import type { AgentRegistry, RegistrySnapshot } from "./AgentRegistry";
 
 export interface AgentsContextValue {
   registry: AgentRegistry;

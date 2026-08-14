@@ -33,5 +33,6 @@
   "server_incompatible": "Bu sunucu tyto'nun uyumsuz bir sürümünü çalıştırıyor. Masaüstü uygulamasını veya sunucuyu güncelle.",
   "server_status_auth_failed": "Oturum süresi doldu. Yeniden bağlanmak için tıkla.",
   "server_status_unreachable": "yeniden bağlanıyor…",
-  "relogin_title": "Tekrar giriş yap"
+  "relogin_title": "Tekrar giriş yap",
+  "boot_error_title": "tyto desktop başlatılamadı"
 }

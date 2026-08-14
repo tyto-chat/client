@@ -33,5 +33,6 @@
   "server_incompatible": "Цей сервер використовує несумісну версію tyto. Онови десктопний застосунок або сервер.",
   "server_status_auth_failed": "Сеанс закінчився. Натисни, щоб перепідключитися.",
   "server_status_unreachable": "повторне підключення…",
-  "relogin_title": "Увійти знову"
+  "relogin_title": "Увійти знову",
+  "boot_error_title": "Не вдалося запустити tyto desktop"
 }

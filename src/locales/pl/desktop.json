@@ -33,5 +33,6 @@
   "server_incompatible": "Ten serwer używa niezgodnej wersji tyto. Zaktualizuj aplikację desktopową lub serwer.",
   "server_status_auth_failed": "Sesja wygasła. Kliknij, aby połączyć się ponownie.",
   "server_status_unreachable": "ponowne łączenie…",
-  "relogin_title": "Zaloguj się ponownie"
+  "relogin_title": "Zaloguj się ponownie",
+  "boot_error_title": "Nie udało się uruchomić tyto desktop"
 }

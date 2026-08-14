@@ -6,6 +6,7 @@ import { server } from "../../mocks/server";
 import { DesktopBootstrap } from "@/desktop/DesktopBootstrap";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { setPlatformBridgeForTests } from "@/platform/bridge";
+import type { PlatformBridge } from "@/platform/PlatformBridge";
 import {
   addIdentity,
   createDefaultConfig,
@@ -184,5 +185,35 @@ describe("DesktopBootstrap", () => {
     expect(await screen.findByTestId("desktop-retry")).toBeInTheDocument();
     expect(screen.getByText("This server isn't compatible")).toBeInTheDocument();
     expect(screen.queryByTestId("app")).not.toBeInTheDocument();
+  });
+
+  it("shows a boot-error screen when the bridge fails to load config, and retries", async () => {
+    const workingBridge = createFakePlatformBridge();
+    const brokenBridge: PlatformBridge = {
+      ...workingBridge,
+      config: {
+        ...workingBridge.config,
+        get: async () => {
+          throw new Error("config read failed");
+        },
+      },
+    };
+    setPlatformBridgeForTests(brokenBridge);
+
+    render(
+      <DesktopBootstrap>
+        <div data-testid="app" />
+      </DesktopBootstrap>,
+    );
+
+    expect(await screen.findByTestId("desktop-boot-retry")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't start tyto desktop")).toBeInTheDocument();
+    expect(screen.queryByTestId("app")).not.toBeInTheDocument();
+
+    setPlatformBridgeForTests(workingBridge);
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("desktop-boot-retry"));
+
+    expect(await screen.findByTestId("wizard-server-input")).toBeInTheDocument();
   });
 });
