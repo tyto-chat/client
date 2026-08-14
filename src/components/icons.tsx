@@ -71,6 +71,8 @@ import {
   Sun,
   Moon,
   Eye,
+  CloudOff,
+  AlertTriangle,
 } from "lucide-react";
 import type { LucideProps } from "lucide-react";
 
@@ -165,6 +167,8 @@ export const VideoIcon = make(Video, 18);
 export const VideoOffIcon = make(VideoOff, 18);
 export const ScreenShareIcon = make(ScreenShare, 18);
 export const ScreenShareOffIcon = make(ScreenShareOff, 18);
+export const CloudOffIcon = make(CloudOff, 11);
+export const AlertTriangleIcon = make(AlertTriangle, 11);
 
 export const Spinner = ({ size = 20, className }: IconProps) => (
   <LoaderCircle size={size} className={`animate-spin${className ? ` ${className}` : ""}`} />

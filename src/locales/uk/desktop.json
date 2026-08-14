@@ -30,5 +30,8 @@
   "signing_in_as": "Вхід як {{email}}",
   "try_again": "Спробуй ще раз",
   "server_incompatible_title": "Цей сервер несумісний",
-  "server_incompatible": "Цей сервер використовує несумісну версію tyto. Онови десктопний застосунок або сервер."
+  "server_incompatible": "Цей сервер використовує несумісну версію tyto. Онови десктопний застосунок або сервер.",
+  "server_status_auth_failed": "Сеанс закінчився. Натисни, щоб перепідключитися.",
+  "server_status_unreachable": "повторне підключення…",
+  "relogin_title": "Увійти знову"
 }

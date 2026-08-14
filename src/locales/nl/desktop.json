@@ -30,5 +30,8 @@
   "signing_in_as": "Inloggen als {{email}}",
   "try_again": "Opnieuw proberen",
   "server_incompatible_title": "Deze server is niet compatibel",
-  "server_incompatible": "Deze server gebruikt een incompatibele versie van tyto. Werk de desktopapp of de server bij."
+  "server_incompatible": "Deze server gebruikt een incompatibele versie van tyto. Werk de desktopapp of de server bij.",
+  "server_status_auth_failed": "Sessie verlopen. Klik om opnieuw te verbinden.",
+  "server_status_unreachable": "opnieuw verbinden…",
+  "relogin_title": "Opnieuw inloggen"
 }

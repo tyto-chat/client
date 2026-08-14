@@ -30,5 +30,8 @@
   "signing_in_as": "{{email}} olarak giriş yapılıyor",
   "try_again": "Tekrar dene",
   "server_incompatible_title": "Bu sunucu uyumlu değil",
-  "server_incompatible": "Bu sunucu tyto'nun uyumsuz bir sürümünü çalıştırıyor. Masaüstü uygulamasını veya sunucuyu güncelle."
+  "server_incompatible": "Bu sunucu tyto'nun uyumsuz bir sürümünü çalıştırıyor. Masaüstü uygulamasını veya sunucuyu güncelle.",
+  "server_status_auth_failed": "Oturum süresi doldu. Yeniden bağlanmak için tıkla.",
+  "server_status_unreachable": "yeniden bağlanıyor…",
+  "relogin_title": "Tekrar giriş yap"
 }

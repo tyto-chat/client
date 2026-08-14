@@ -30,5 +30,8 @@
   "signing_in_as": "Anmeldung als {{email}}",
   "try_again": "Erneut versuchen",
   "server_incompatible_title": "Dieser Server ist nicht kompatibel",
-  "server_incompatible": "Dieser Server verwendet eine inkompatible Version von tyto. Aktualisiere die Desktop-App oder den Server."
+  "server_incompatible": "Dieser Server verwendet eine inkompatible Version von tyto. Aktualisiere die Desktop-App oder den Server.",
+  "server_status_auth_failed": "Sitzung abgelaufen. Klicken, um erneut zu verbinden.",
+  "server_status_unreachable": "Verbindung wird wiederhergestellt…",
+  "relogin_title": "Erneut anmelden"
 }

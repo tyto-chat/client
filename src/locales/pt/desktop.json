@@ -30,5 +30,8 @@
   "signing_in_as": "Entrando como {{email}}",
   "try_again": "Tentar novamente",
   "server_incompatible_title": "Este servidor não é compatível",
-  "server_incompatible": "Este servidor executa uma versão incompatível do tyto. Atualize o aplicativo de desktop ou o servidor."
+  "server_incompatible": "Este servidor executa uma versão incompatível do tyto. Atualize o aplicativo de desktop ou o servidor.",
+  "server_status_auth_failed": "Sessão expirada. Clique para reconectar.",
+  "server_status_unreachable": "reconectando…",
+  "relogin_title": "Entrar novamente"
 }

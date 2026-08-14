@@ -30,5 +30,8 @@
   "signing_in_as": "Logowanie jako {{email}}",
   "try_again": "Spróbuj ponownie",
   "server_incompatible_title": "Ten serwer jest niezgodny",
-  "server_incompatible": "Ten serwer używa niezgodnej wersji tyto. Zaktualizuj aplikację desktopową lub serwer."
+  "server_incompatible": "Ten serwer używa niezgodnej wersji tyto. Zaktualizuj aplikację desktopową lub serwer.",
+  "server_status_auth_failed": "Sesja wygasła. Kliknij, aby połączyć się ponownie.",
+  "server_status_unreachable": "ponowne łączenie…",
+  "relogin_title": "Zaloguj się ponownie"
 }

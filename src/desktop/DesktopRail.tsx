@@ -1,7 +1,7 @@
 import { useCallback, useContext, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/Modal";
-import { PlusIcon } from "@/components/icons";
+import { AlertTriangleIcon, CloudOffIcon, LockIcon, PlusIcon } from "@/components/icons";
 import { isManagedIdentityMode } from "@/platform/appMode";
 import { getPlatformBridge } from "@/platform/bridge";
 import { gradientEnd, onAccentColor } from "@/utils/accentGradient";
@@ -10,9 +10,42 @@ import { AgentsContext, type AgentsContextValue } from "./agents/AgentsContext";
 import type { AgentRegistry, RegistrySnapshot } from "./agents/AgentRegistry";
 import type { AgentCommunity, AgentSnapshot } from "./agents/IdentityAgent";
 import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
+import { ReloginModal } from "./DesktopApp";
 import { persistWizardResult } from "./DesktopBootstrap";
 import { loadDesktopConfig } from "./desktopConfig";
 import { ServerTile } from "./ServerTile";
+
+const DEFAULT_HEALTHY_TIMEOUT_MS = 15_000;
+
+function waitForHealthy(
+  registry: AgentRegistry,
+  identityId: string,
+  timeoutMs: number,
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    let settled = false;
+    let unsubscribe: () => void = () => undefined;
+
+    function settle(result: boolean) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      unsubscribe();
+      resolve(result);
+    }
+
+    function check() {
+      const agent = registry.getSnapshot().agents.find((a) => a.identityId === identityId);
+      if (!agent) return;
+      if (agent.status === "healthy") settle(true);
+      else if (agent.status === "auth-failed" || agent.status === "version-mismatch") settle(false);
+    }
+
+    const timer = setTimeout(() => settle(false), timeoutMs);
+    unsubscribe = registry.subscribe(check);
+    check();
+  });
+}
 
 function useOptionalAgentsContext(): AgentsContextValue | null {
   return useContext(AgentsContext);
@@ -48,7 +81,75 @@ function agentCommunityTileStyle(community: AgentCommunity): React.CSSProperties
   };
 }
 
-function ServerHeaderTile({ agent }: { agent: AgentSnapshot }) {
+function ServerStatusOverlay({
+  agent,
+  registry,
+  onLockClick,
+}: {
+  agent: AgentSnapshot;
+  registry: AgentRegistry;
+  onLockClick: () => void;
+}) {
+  const { t } = useTranslation("desktop");
+
+  if (agent.status === "auth-failed") {
+    return (
+      <button
+        type="button"
+        data-testid="desktop-server-lock"
+        title={t("server_status_auth_failed")}
+        onClick={(e) => {
+          e.stopPropagation();
+          onLockClick();
+        }}
+        className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rail text-warning ring-2 ring-rail"
+      >
+        <LockIcon size={10} />
+      </button>
+    );
+  }
+
+  if (agent.status === "unreachable") {
+    return (
+      <button
+        type="button"
+        data-testid="desktop-server-retry"
+        title={t("server_status_unreachable")}
+        onClick={(e) => {
+          e.stopPropagation();
+          registry.getAgent(agent.identityId)?.retry();
+        }}
+        className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rail text-fg-subtle ring-2 ring-rail"
+      >
+        <CloudOffIcon size={10} />
+      </button>
+    );
+  }
+
+  if (agent.status === "version-mismatch") {
+    return (
+      <span
+        data-testid="desktop-server-incompatible"
+        title={t("server_incompatible")}
+        className="pointer-events-none absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rail text-danger ring-2 ring-rail"
+      >
+        <AlertTriangleIcon size={10} />
+      </span>
+    );
+  }
+
+  return null;
+}
+
+function ServerHeaderTile({
+  agent,
+  registry,
+  onLockClick,
+}: {
+  agent: AgentSnapshot;
+  registry: AgentRegistry;
+  onLockClick: (identityId: string) => void;
+}) {
   const name = agent.serverName ?? agent.origin;
   const total = totalUnread(agent.unreadCounts);
   const dmUnread = agent.unreadCounts["dm"] ?? 0;
@@ -56,7 +157,7 @@ function ServerHeaderTile({ agent }: { agent: AgentSnapshot }) {
     <div className="flex flex-col items-center gap-1.5">
       <div aria-hidden className="h-px w-8 bg-line" />
       <div
-        className="relative"
+        className={`relative ${agent.status === "connecting" ? "animate-pulse" : ""}`}
         role="group"
         aria-label={name}
         title={name}
@@ -74,6 +175,11 @@ function ServerHeaderTile({ agent }: { agent: AgentSnapshot }) {
             className="pointer-events-none absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-accent ring-2 ring-rail"
           />
         )}
+        <ServerStatusOverlay
+          agent={agent}
+          registry={registry}
+          onLockClick={() => onLockClick(agent.identityId)}
+        />
       </div>
     </div>
   );
@@ -132,21 +238,43 @@ function AgentCommunityTile({
 export function DesktopRailActiveHeader() {
   const contextValue = useOptionalAgentsContext();
   const snapshot = useOptionalRegistrySnapshot(contextValue);
+  const [reloginIdentityId, setReloginIdentityId] = useState<string | null>(null);
   if (!isManagedIdentityMode() || !contextValue || !snapshot) return null;
 
   const active = snapshot.agents.find((a) => a.identityId === snapshot.activeIdentityId);
   if (!active) return null;
 
-  return <ServerHeaderTile agent={active} />;
+  return (
+    <>
+      <ServerHeaderTile
+        agent={active}
+        registry={contextValue.registry}
+        onLockClick={setReloginIdentityId}
+      />
+      {reloginIdentityId && (
+        <ReloginModal
+          registry={contextValue.registry}
+          identityId={reloginIdentityId}
+          onClose={() => setReloginIdentityId(null)}
+        />
+      )}
+    </>
+  );
 }
 
 export interface AddServerModalProps {
   registry: AgentRegistry;
   switchTo: AgentsContextValue["switchTo"];
   onClose: () => void;
+  healthyTimeoutMs?: number;
 }
 
-export function AddServerModal({ registry, switchTo, onClose }: AddServerModalProps) {
+export function AddServerModal({
+  registry,
+  switchTo,
+  onClose,
+  healthyTimeoutMs = DEFAULT_HEALTHY_TIMEOUT_MS,
+}: AddServerModalProps) {
   const { t } = useTranslation("desktop");
 
   async function handleComplete(result: AddIdentityResult, close: () => void) {
@@ -167,8 +295,13 @@ export function AddServerModal({ registry, switchTo, onClose }: AddServerModalPr
       if (identity) registry.addIdentity(identity);
     }
 
+    if (identityId && (await waitForHealthy(registry, identityId, healthyTimeoutMs))) {
+      close();
+      switchTo(identityId).catch(() => undefined);
+      return;
+    }
+
     close();
-    if (identityId) switchTo(identityId).catch(() => undefined);
   }
 
   return (
@@ -183,6 +316,7 @@ export function DesktopRailOthers() {
   const contextValue = useOptionalAgentsContext();
   const snapshot = useOptionalRegistrySnapshot(contextValue);
   const [modalOpen, setModalOpen] = useState(false);
+  const [reloginIdentityId, setReloginIdentityId] = useState<string | null>(null);
   if (!isManagedIdentityMode() || !contextValue || !snapshot) return null;
 
   const others = snapshot.agents.filter((a) => a.identityId !== snapshot.activeIdentityId);
@@ -191,7 +325,11 @@ export function DesktopRailOthers() {
     <>
       {others.map((agent) => (
         <div key={agent.identityId} className="flex w-full flex-col items-center gap-2.5">
-          <ServerHeaderTile agent={agent} />
+          <ServerHeaderTile
+            agent={agent}
+            registry={contextValue.registry}
+            onLockClick={setReloginIdentityId}
+          />
           {agent.communities.map((community) => (
             <AgentCommunityTile
               key={community.id}
@@ -216,6 +354,13 @@ export function DesktopRailOthers() {
           registry={contextValue.registry}
           switchTo={contextValue.switchTo}
           onClose={() => setModalOpen(false)}
+        />
+      )}
+      {reloginIdentityId && (
+        <ReloginModal
+          registry={contextValue.registry}
+          identityId={reloginIdentityId}
+          onClose={() => setReloginIdentityId(null)}
         />
       )}
     </>

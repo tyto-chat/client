@@ -336,9 +336,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setMercureToken(null);
       setToken(null);
       setUser(null);
-      setSessionExpired(true);
       queryClient.clear();
       void unsubscribeFromPush().catch(() => {});
+      if (isManagedIdentityMode()) {
+        window.location.replace("/");
+        return;
+      }
+      setSessionExpired(true);
     }
     window.addEventListener("session:expired", handleSessionExpired);
     return () => window.removeEventListener("session:expired", handleSessionExpired);
@@ -377,7 +381,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               <button
                 onClick={() => {
                   setSessionExpired(false);
-                  window.location.replace("/login");
+                  window.location.replace(isManagedIdentityMode() ? "/" : "/login");
                 }}
                 className="rounded-lg bg-[var(--accent-strong)] px-4 py-2 text-sm font-semibold text-[var(--accent-on)] transition hover:opacity-90"
               >
