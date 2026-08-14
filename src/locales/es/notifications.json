@@ -36,6 +36,7 @@
   "joined_for_notifications": "Te has unido. Recibirás notificaciones de esta comunidad.",
   "join_failed": "No se pudo unir a la comunidad.",
   "desktop_title": "tyto.chat",
+  "from_server": "{{server}} — {{text}}",
   "realtime_error": "No se pudo conectar a las notificaciones en tiempo real. Actualiza la página.",
   "report_filed": "Una nueva denuncia necesita revisión",
   "report_escalated": "Se te ha escalado una denuncia",

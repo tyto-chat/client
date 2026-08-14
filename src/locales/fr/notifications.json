@@ -36,6 +36,7 @@
   "joined_for_notifications": "Rejoint. Tu recevras les notifications de cette communauté.",
   "join_failed": "Impossible de rejoindre la communauté.",
   "desktop_title": "tyto.chat",
+  "from_server": "{{server}} — {{text}}",
   "realtime_error": "Connexion aux notifications en temps réel impossible. Actualise la page.",
   "report_filed": "Un nouveau signalement doit être examiné",
   "report_escalated": "Un signalement vous a été transmis",

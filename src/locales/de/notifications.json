@@ -36,6 +36,7 @@
   "joined_for_notifications": "Beigetreten. Du erhältst jetzt Benachrichtigungen aus dieser Community.",
   "join_failed": "Der Community konnte nicht beigetreten werden.",
   "desktop_title": "tyto.chat",
+  "from_server": "{{server}} — {{text}}",
   "realtime_error": "Verbindung zu Echtzeit-Benachrichtigungen fehlgeschlagen. Bitte lade die Seite neu.",
   "report_filed": "Eine neue Meldung muss geprüft werden",
   "report_escalated": "Eine Meldung wurde an dich eskaliert",

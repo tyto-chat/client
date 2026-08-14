@@ -36,6 +36,7 @@
   "joined_for_notifications": "Lid geworden. Je ontvangt meldingen van deze community.",
   "join_failed": "Kon geen lid worden van de community.",
   "desktop_title": "tyto.chat",
+  "from_server": "{{server}} — {{text}}",
   "realtime_error": "Kon geen verbinding maken met realtime meldingen. Ververs de pagina.",
   "report_filed": "Een nieuwe melding wacht op beoordeling",
   "report_escalated": "Een melding is naar jou geëscaleerd",

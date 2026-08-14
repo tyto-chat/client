@@ -36,6 +36,7 @@
   "joined_for_notifications": "Katıldın. Bu topluluktan bildirim alacaksın.",
   "join_failed": "Topluluğa katılınamadı.",
   "desktop_title": "tyto.chat",
+  "from_server": "{{server}} — {{text}}",
   "realtime_error": "Gerçek zamanlı bildirimlere bağlanılamadı. Lütfen sayfayı yenile.",
   "report_filed": "Yeni bir şikâyet inceleme bekliyor",
   "report_escalated": "Bir şikâyet sana yükseltildi",

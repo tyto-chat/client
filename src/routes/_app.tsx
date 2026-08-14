@@ -8,6 +8,7 @@ import { AccountPendingDeletionGate } from "@/components/AccountPendingDeletionG
 import { useAccountDeletionStatus } from "@/queries/accountDeletionQueries";
 import { CommunityRail } from "@/components/CommunityRail";
 import { DesktopRailActiveHeader, DesktopRailOthers } from "@/desktop/DesktopRail";
+import { AgentNotificationBridge } from "@/desktop/AgentNotificationBridge";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerInfo } from "@/hooks/useServerInfo";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
@@ -292,6 +293,7 @@ function AppShell() {
                       )}
                     />
                     <DesktopRailOthers />
+                    <AgentNotificationBridge />
                     <div className="mt-auto" />
                     <ActiveVoiceButton />
                     <UserProfileButton />
