@@ -3,10 +3,9 @@ import { useTranslation } from "react-i18next";
 import { loginAt, verifyTwoFactorAt } from "@/api/auth";
 import { isRateLimited, ApiError, configureApiClient } from "@/api/client";
 import type { ServerInfo } from "@/types/api";
-import { gradientEnd, onAccentColor } from "@/utils/accentGradient";
-import { getUserColor } from "@/utils/userColor";
 import { normalizeServerUrl, InvalidServerUrlError } from "./desktopConfig";
 import { resolveServer } from "./connectIdentity";
+import { ServerTile } from "./ServerTile";
 
 type Step = "server" | "credentials" | "totp";
 
@@ -89,21 +88,9 @@ function ServerChip({
   isSubmitting?: boolean;
 }) {
   const { t } = useTranslation("desktop");
-  const base = getUserColor(origin);
-  const dotStyle = {
-    backgroundImage: `linear-gradient(135deg, ${base}, ${gradientEnd(base)})`,
-    color: onAccentColor(base),
-  };
   return (
     <div className="flex items-center gap-2.5 rounded-md border border-line bg-raised px-3 py-2.5">
-      <span
-        style={dotStyle}
-        className="flex h-[26px] w-[26px] shrink-0 items-center justify-center overflow-hidden rounded-[8px] text-xs font-bold"
-      >
-        <span className="block cap-trim" data-testid="wizard-server-chip-initial">
-          {name.charAt(0).toUpperCase()}
-        </span>
-      </span>
+      <ServerTile name={name} colorSeed={origin} testId="wizard-server-chip-initial" />
       <span className="min-w-0">
         <b className="block truncate text-[13.5px] font-semibold text-fg">{name}</b>
         <span

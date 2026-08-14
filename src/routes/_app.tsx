@@ -7,6 +7,7 @@ import { UserProfileButton } from "@/components/UserProfileButton";
 import { AccountPendingDeletionGate } from "@/components/AccountPendingDeletionGate";
 import { useAccountDeletionStatus } from "@/queries/accountDeletionQueries";
 import { CommunityRail } from "@/components/CommunityRail";
+import { DesktopRailActiveHeader, DesktopRailOthers } from "@/desktop/DesktopRail";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerInfo } from "@/hooks/useServerInfo";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
@@ -283,12 +284,14 @@ function AppShell() {
                         })()}
                       </Link>
                     )}
+                    <DesktopRailActiveHeader />
                     <CommunityRail
                       unreadCounts={unreadCounts}
                       renderTileExtra={(c) => (
                         <CommunityVoiceIndicator communityIdentifier={c.identifier} />
                       )}
                     />
+                    <DesktopRailOthers />
                     <div className="mt-auto" />
                     <ActiveVoiceButton />
                     <UserProfileButton />
