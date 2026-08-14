@@ -1,6 +1,5 @@
 import type { PlatformBridge } from "@/platform/PlatformBridge";
 import type { AddIdentityResult } from "./AddIdentityWizard";
-import { installRefreshExecutor } from "./connectIdentity";
 import {
   addIdentity,
   normalizeServerUrl,
@@ -55,7 +54,6 @@ export async function persistWizardResult(
   if (result.refreshToken) {
     await bridge.secrets.set(refreshKey, result.refreshToken);
   }
-  installRefreshExecutor(bridge, refreshKey);
 
   return next;
 }

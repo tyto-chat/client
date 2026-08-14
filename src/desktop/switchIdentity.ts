@@ -17,6 +17,7 @@ export async function performIdentitySwitch(
   bridge: PlatformBridge,
   target: SwitchTarget,
 ): Promise<{ token: string; serverInfo: ServerInfo }> {
+  const previousActiveIdentityId = registry.getSnapshot().activeIdentityId;
   const agent = registry.getAgent(target.identityId);
   const agentSnapshot = agent?.getSnapshot();
   if (!agent || agentSnapshot?.status !== "healthy") {
@@ -41,6 +42,13 @@ export async function performIdentitySwitch(
     const next = setLastActiveIdentity(config, profileId, target.identityId);
     await saveDesktopConfig(bridge, next);
   }
+
+  const unreadRefreshes = [agent.refreshUnreadCounts()];
+  if (previousActiveIdentityId && previousActiveIdentityId !== target.identityId) {
+    const previousAgent = registry.getAgent(previousActiveIdentityId);
+    if (previousAgent) unreadRefreshes.push(previousAgent.refreshUnreadCounts());
+  }
+  await Promise.allSettled(unreadRefreshes);
 
   return { token, serverInfo };
 }

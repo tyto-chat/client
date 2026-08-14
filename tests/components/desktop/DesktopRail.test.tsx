@@ -4,7 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { AddServerModal, DesktopRailActiveHeader, DesktopRailOthers } from "@/desktop/DesktopRail";
+import { ReloginModal } from "@/desktop/ReloginModal";
 import { AgentsContext, type AgentsContextValue } from "@/desktop/agents/AgentsContext";
+import { AgentRegistry as RealAgentRegistry } from "@/desktop/agents/AgentRegistry";
 import type { AgentRegistry, RegistrySnapshot } from "@/desktop/agents/AgentRegistry";
 import type { AgentSnapshot, IdentityAgent } from "@/desktop/agents/IdentityAgent";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
@@ -14,9 +16,52 @@ import {
   createDefaultConfig,
   loadDesktopConfig,
   saveDesktopConfig,
+  secretKey,
   setLastActiveIdentity,
   type DesktopIdentity,
 } from "@/desktop/desktopConfig";
+import { _resetNegotiationForTests } from "@/api/apiVersion";
+import { __resetRefreshStateForTests, refreshAccessToken } from "@/api/auth";
+import { setAccessToken } from "@/api/tokenStore";
+
+function makeToken(exp: number): string {
+  const header = btoa(JSON.stringify({ alg: "none" }));
+  const payload = btoa(JSON.stringify({ exp }));
+  return `${header}.${payload}.sig`;
+}
+
+function farFutureToken(): string {
+  return makeToken(Math.floor(Date.now() / 1000) + 3600);
+}
+
+function stubOriginFull(
+  origin: string,
+  name: string,
+  userId: number,
+  refreshCounter: { count: number },
+) {
+  server.use(
+    http.get(`${origin}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+    http.get(`${origin}/api/v1/server-info`, () =>
+      HttpResponse.json({ apiUrl: `${origin}/api`, name }),
+    ),
+    http.post(`${origin}/api/token/refresh`, () => {
+      refreshCounter.count += 1;
+      return HttpResponse.json({ token: farFutureToken(), refresh_token: `rotated-${name}` });
+    }),
+    http.get(`${origin}/api/v1/me`, () => HttpResponse.json({ id: userId })),
+    http.get(`${origin}/api/v1/me/community-memberships`, () =>
+      HttpResponse.json({ "hydra:member": [] }),
+    ),
+    http.get(`${origin}/api/v1/communities`, () => HttpResponse.json({ "hydra:member": [] })),
+    http.get(`${origin}/api/v1/notifications/unread-counts`, () =>
+      HttpResponse.json({ counts: {} }),
+    ),
+    http.get(`${origin}/api/v1/realtime/token`, () =>
+      HttpResponse.json({ token: `rt-${name}`, expiresAt: Math.floor(Date.now() / 1000) + 3600 }),
+    ),
+  );
+}
 
 function makeAgent(overrides: Partial<AgentSnapshot>): AgentSnapshot {
   return {
@@ -109,11 +154,27 @@ describe("DesktopRail", () => {
     const snapshot: RegistrySnapshot = { agents: [active], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
-    renderWithContext(<DesktopRailActiveHeader />, { registry });
+    renderWithContext(<DesktopRailActiveHeader unreadCounts={{}} />, { registry });
 
     const headers = screen.getAllByTestId("desktop-server-header");
     expect(headers).toHaveLength(1);
     expect(headers[0]).toHaveAccessibleName("Alpha");
+  });
+
+  it("sources the active header's badge from the unreadCounts prop, not the agent snapshot", () => {
+    const active = makeAgent({
+      identityId: "ia",
+      serverName: "Alpha",
+      unreadCounts: { "10": 9 },
+    });
+    const snapshot: RegistrySnapshot = { agents: [active], activeIdentityId: "ia" };
+    const registry = makeRegistryStub(snapshot);
+
+    renderWithContext(<DesktopRailActiveHeader unreadCounts={{ "10": 2, dm: 1 }} />, { registry });
+
+    const header = screen.getByTestId("desktop-server-header");
+    expect(within(header).getByText("3")).toBeInTheDocument();
+    expect(within(header).queryByText("9")).not.toBeInTheDocument();
   });
 
   it("lists the non-active group's communities with unread badges and does not repeat the active group", () => {
@@ -223,7 +284,7 @@ describe("DesktopRail", () => {
 
     const { container } = renderWithContext(
       <>
-        <DesktopRailActiveHeader />
+        <DesktopRailActiveHeader unreadCounts={{}} />
         <DesktopRailOthers />
       </>,
       { registry },
@@ -235,7 +296,7 @@ describe("DesktopRail", () => {
   it("renders null for both rail sections outside AgentsContext, even in desktop mode", () => {
     const { container } = render(
       <>
-        <DesktopRailActiveHeader />
+        <DesktopRailActiveHeader unreadCounts={{}} />
         <DesktopRailOthers />
       </>,
     );
@@ -296,7 +357,17 @@ describe("DesktopRail", () => {
     );
     const bridge = createFakePlatformBridge();
     setPlatformBridgeForTests(bridge);
-    await saveDesktopConfig(bridge, createDefaultConfig());
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ia",
+      serverUrl: "https://already-active.example",
+      email: "active@b.c",
+      userId: null,
+      displayName: null,
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ia");
+    await saveDesktopConfig(bridge, cfg);
 
     const registry = makeLiveRegistryStub({ neverHealthy: true });
     const switchTo = vi.fn().mockResolvedValue(undefined);
@@ -321,6 +392,78 @@ describe("DesktopRail", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(switchTo).not.toHaveBeenCalled();
 
+    const persisted = await loadDesktopConfig(bridge);
+    const persistedProfile = persisted.profiles.find((p) => p.id === pid);
+    expect(persistedProfile?.lastActiveIdentityId).toBe("ia");
+
+    setPlatformBridgeForTests(null);
+  });
+
+  it("keeps the global refresh executor pointed at the ACTIVE agent through the AddServerModal flow", async () => {
+    _resetNegotiationForTests();
+    __resetRefreshStateForTests();
+    setAccessToken(null);
+
+    const ORIGIN_A = "https://addserver-exec-active.example";
+    const ORIGIN_NEW = "https://addserver-exec-new.example";
+    const refreshCounterA = { count: 0 };
+    const refreshCounterNew = { count: 0 };
+    stubOriginFull(ORIGIN_A, "Active", 1, refreshCounterA);
+    stubOriginFull(ORIGIN_NEW, "New", 2, refreshCounterNew);
+    server.use(
+      http.post(`${ORIGIN_NEW}/api/auth`, () =>
+        HttpResponse.json({ token: "jwt-new", refresh_token: "refresh-new" }),
+      ),
+    );
+
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ia",
+      serverUrl: ORIGIN_A,
+      email: "active@b.c",
+      userId: null,
+      displayName: null,
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ia");
+    await saveDesktopConfig(bridge, cfg);
+    await bridge.secrets.set(secretKey(pid, "ia", "refreshToken"), "old-a");
+
+    const registry = new RealAgentRegistry(bridge);
+    await registry.boot(
+      pid,
+      [{ id: "ia", serverUrl: ORIGIN_A, email: "active@b.c", userId: null, displayName: null }],
+      "ia",
+    );
+    await vi.waitFor(() => expect(registry.getSnapshot().agents[0]?.status).toBe("healthy"));
+
+    const switchTo = vi.fn().mockResolvedValue(undefined);
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+
+    render(<AddServerModal registry={registry} switchTo={switchTo} onClose={onClose} />);
+
+    await user.type(screen.getByTestId("wizard-server-input"), "addserver-exec-new.example");
+    await user.click(screen.getByTestId("wizard-server-submit"));
+    await user.type(await screen.findByTestId("wizard-email-input"), "a@b.c");
+    await user.type(screen.getByTestId("wizard-password-input"), "pw");
+    await user.click(screen.getByTestId("wizard-credentials-submit"));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+
+    const hitsBeforeA = refreshCounterA.count;
+    const hitsBeforeNew = refreshCounterNew.count;
+    setAccessToken("stale");
+    const refreshed = await refreshAccessToken();
+
+    expect(refreshCounterA.count).toBe(hitsBeforeA + 1);
+    expect(refreshCounterNew.count).toBe(hitsBeforeNew);
+    expect(refreshed).not.toBe("stale");
+
+    registry.stopAll();
     setPlatformBridgeForTests(null);
   });
 
@@ -447,6 +590,86 @@ describe("DesktopRail", () => {
     setPlatformBridgeForTests(null);
   });
 
+  it("keeps the global refresh executor pointed at the ACTIVE agent after relogging a BACKGROUND identity", async () => {
+    _resetNegotiationForTests();
+    __resetRefreshStateForTests();
+    setAccessToken(null);
+
+    const ORIGIN_A = "https://relogin-exec-active.example";
+    const ORIGIN_B = "https://relogin-exec-bg.example";
+    const refreshCounterA = { count: 0 };
+    const refreshCounterB = { count: 0 };
+    stubOriginFull(ORIGIN_A, "Active", 1, refreshCounterA);
+    stubOriginFull(ORIGIN_B, "Background", 2, refreshCounterB);
+    server.use(
+      http.post(`${ORIGIN_B}/api/auth`, () =>
+        HttpResponse.json({ token: "jwt-relogin-bg", refresh_token: "refresh-relogin-bg" }),
+      ),
+    );
+
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ia",
+      serverUrl: ORIGIN_A,
+      email: "active@b.c",
+      userId: null,
+      displayName: null,
+    });
+    cfg = addIdentity(cfg, pid, {
+      id: "ib",
+      serverUrl: ORIGIN_B,
+      email: "bg@b.c",
+      userId: null,
+      displayName: null,
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ia");
+    await saveDesktopConfig(bridge, cfg);
+    await bridge.secrets.set(secretKey(pid, "ia", "refreshToken"), "old-a");
+    await bridge.secrets.set(secretKey(pid, "ib", "refreshToken"), "old-b");
+
+    const registry = new RealAgentRegistry(bridge);
+    await registry.boot(
+      pid,
+      [
+        { id: "ia", serverUrl: ORIGIN_A, email: "active@b.c", userId: null, displayName: null },
+        { id: "ib", serverUrl: ORIGIN_B, email: "bg@b.c", userId: null, displayName: null },
+      ],
+      "ia",
+    );
+    await vi.waitFor(() => {
+      expect(registry.getSnapshot().agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
+    });
+
+    const user = userEvent.setup();
+    render(<ReloginModal registry={registry} identityId="ib" onClose={() => {}} />);
+
+    await screen.findByTestId("wizard-email-input");
+    await user.type(screen.getByTestId("wizard-password-input"), "pw");
+    await user.click(screen.getByTestId("wizard-credentials-submit"));
+
+    await waitFor(async () => {
+      const persisted = await loadDesktopConfig(bridge);
+      const profile = persisted.profiles.find((p) => p.id === pid);
+      expect(profile?.lastActiveIdentityId).toBe("ia");
+    });
+
+    const hitsBeforeA = refreshCounterA.count;
+    const hitsBeforeB = refreshCounterB.count;
+    setAccessToken("stale");
+    const refreshed = await refreshAccessToken();
+
+    expect(refreshCounterA.count).toBe(hitsBeforeA + 1);
+    expect(refreshCounterB.count).toBe(hitsBeforeB);
+    expect(refreshed).not.toBe("stale");
+
+    registry.stopAll();
+    setPlatformBridgeForTests(null);
+  });
+
   it("leaves lastActiveIdentityId unchanged when relogging the ACTIVE identity", async () => {
     const ORIGIN = "https://relogin-active.example";
     server.use(
@@ -489,7 +712,7 @@ describe("DesktopRail", () => {
     });
     const user = userEvent.setup();
 
-    renderWithContext(<DesktopRailActiveHeader />, { registry });
+    renderWithContext(<DesktopRailActiveHeader unreadCounts={{}} />, { registry });
 
     await user.click(screen.getByTestId("desktop-server-lock"));
     await screen.findByTestId("wizard-email-input");

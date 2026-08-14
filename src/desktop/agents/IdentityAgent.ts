@@ -187,6 +187,10 @@ export class IdentityAgent {
     return this.serverInfoValue;
   }
 
+  refreshUnreadCounts(): Promise<void> {
+    return this.refetchUnreadCounts(this.connectionId);
+  }
+
   private async connect(): Promise<void> {
     if (this.stopped) return;
     const myId = ++this.connectionId;

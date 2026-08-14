@@ -7,10 +7,11 @@ import type { PlatformBridge } from "@/platform/PlatformBridge";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { Spinner } from "@/components/icons";
 import { AddIdentityWizard, ErrorBanner, type AddIdentityResult } from "./AddIdentityWizard";
-import { connectIdentity } from "./connectIdentity";
+import { connectIdentity, installRefreshExecutor } from "./connectIdentity";
 import {
   loadDesktopConfig,
   saveDesktopConfig,
+  secretKey,
   setLastActiveIdentity,
   type DesktopConfig,
   type DesktopIdentity,
@@ -145,6 +146,7 @@ export function DesktopBootstrap({
     configRef.current = nextConfig;
     const profile = nextConfig.profiles.find((p) => p.id === profileId)!;
     const identityId = profile.lastActiveIdentityId!;
+    installRefreshExecutor(bridge, secretKey(profileId, identityId, "refreshToken"));
     await finishConnected(profileId, identityId, result.token);
   }
 

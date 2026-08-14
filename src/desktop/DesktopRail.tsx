@@ -12,7 +12,7 @@ import type { AgentCommunity, AgentSnapshot } from "./agents/IdentityAgent";
 import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
 import { ReloginModal } from "./ReloginModal";
 import { persistWizardResult } from "./identitySetup";
-import { loadDesktopConfig } from "./desktopConfig";
+import { loadDesktopConfig, saveDesktopConfig, setLastActiveIdentity } from "./desktopConfig";
 import { ServerTile } from "./ServerTile";
 
 const DEFAULT_HEALTHY_TIMEOUT_MS = 15_000;
@@ -145,14 +145,17 @@ function ServerHeaderTile({
   agent,
   registry,
   onLockClick,
+  unreadCounts,
 }: {
   agent: AgentSnapshot;
   registry: AgentRegistry;
   onLockClick: (identityId: string) => void;
+  unreadCounts?: Record<string, number>;
 }) {
   const name = agent.serverName ?? agent.origin;
-  const total = totalUnread(agent.unreadCounts);
-  const dmUnread = agent.unreadCounts["dm"] ?? 0;
+  const counts = unreadCounts ?? agent.unreadCounts;
+  const total = totalUnread(counts);
+  const dmUnread = counts["dm"] ?? 0;
   return (
     <div className="flex flex-col items-center gap-1.5">
       <div aria-hidden className="h-px w-8 bg-line" />
@@ -235,7 +238,11 @@ function AgentCommunityTile({
   );
 }
 
-export function DesktopRailActiveHeader() {
+export function DesktopRailActiveHeader({
+  unreadCounts,
+}: {
+  unreadCounts: Record<string, number>;
+}) {
   const contextValue = useOptionalAgentsContext();
   const snapshot = useOptionalRegistrySnapshot(contextValue);
   const [reloginIdentityId, setReloginIdentityId] = useState<string | null>(null);
@@ -250,6 +257,7 @@ export function DesktopRailActiveHeader() {
         agent={active}
         registry={contextValue.registry}
         onLockClick={setReloginIdentityId}
+        unreadCounts={unreadCounts}
       />
       {reloginIdentityId && (
         <ReloginModal
@@ -285,6 +293,8 @@ export function AddServerModal({
       close();
       return;
     }
+    const previousActiveIdentityId =
+      config.profiles.find((p) => p.id === profileId)?.lastActiveIdentityId ?? null;
 
     const nextConfig = await persistWizardResult(bridge, config, profileId, result);
     const profile = nextConfig.profiles.find((p) => p.id === profileId);
@@ -299,6 +309,11 @@ export function AddServerModal({
       close();
       switchTo(identityId).catch(() => undefined);
       return;
+    }
+
+    if (previousActiveIdentityId && previousActiveIdentityId !== identityId) {
+      const restored = setLastActiveIdentity(nextConfig, profileId, previousActiveIdentityId);
+      await saveDesktopConfig(bridge, restored);
     }
 
     close();

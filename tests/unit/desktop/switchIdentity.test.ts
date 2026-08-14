@@ -234,4 +234,32 @@ describe("performIdentitySwitch", () => {
     getAccessTokenSpy.mockRestore();
     registry.stopAll();
   });
+
+  it("refetches unread counts for both the previous and the newly-active agent after a switch", async () => {
+    stubServerInfo(ORIGIN_A, "Alpha");
+    stubServerInfo(ORIGIN_B, "Beta");
+    stubData(ORIGIN_A, 1);
+    stubData(ORIGIN_B, 2);
+    server.use(stubRefresh(ORIGIN_A, "rotated-a"), stubRefresh(ORIGIN_B, "rotated-b"));
+
+    const identityA = makeIdentity("ia", ORIGIN_A);
+    const identityB = makeIdentity("ib", ORIGIN_B);
+
+    const { registry, bridge } = await bootWithFakeBridge([identityA, identityB], "ia");
+    await vi.waitFor(() => {
+      expect(registry.getSnapshot().agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
+    });
+
+    const agentA = registry.getAgent("ia")!;
+    const agentB = registry.getAgent("ib")!;
+    const refreshA = vi.spyOn(agentA, "refreshUnreadCounts").mockResolvedValue(undefined);
+    const refreshB = vi.spyOn(agentB, "refreshUnreadCounts").mockResolvedValue(undefined);
+
+    await performIdentitySwitch(registry, bridge, { identityId: "ib" });
+
+    expect(refreshA).toHaveBeenCalledTimes(1);
+    expect(refreshB).toHaveBeenCalledTimes(1);
+
+    registry.stopAll();
+  });
 });

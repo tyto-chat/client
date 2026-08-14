@@ -137,10 +137,9 @@ describe("AgentRegistry active-identity refresh delegation", () => {
       expect(registry.getSnapshot().agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
     });
 
-    const activeToken = registry.getAgent("ia")!.getAccessToken();
     setAccessToken("stale");
     const refreshed = await refreshAccessToken();
-    expect(refreshed).toBe(activeToken);
+    expect(refreshed).toBe(registry.getAgent("ia")!.getAccessToken());
 
     registry.stopAll();
   });
@@ -161,10 +160,9 @@ describe("AgentRegistry active-identity refresh delegation", () => {
     registry.setActiveIdentity("ib");
     expect(registry.getSnapshot().activeIdentityId).toBe("ib");
 
-    const activeToken = registry.getAgent("ib")!.getAccessToken();
     setAccessToken("stale");
     const refreshed = await refreshAccessToken();
-    expect(refreshed).toBe(activeToken);
+    expect(refreshed).toBe(registry.getAgent("ib")!.getAccessToken());
 
     registry.stopAll();
   });

@@ -285,7 +285,7 @@ function AppShell() {
                         })()}
                       </Link>
                     )}
-                    <DesktopRailActiveHeader />
+                    <DesktopRailActiveHeader unreadCounts={unreadCounts} />
                     <CommunityRail
                       unreadCounts={unreadCounts}
                       renderTileExtra={(c) => (
