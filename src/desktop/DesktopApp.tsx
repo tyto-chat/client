@@ -5,8 +5,8 @@ import { AppShell, router } from "@/appShell";
 import { createAppQueryClient } from "@/queryClientFactory";
 import { queryKeys } from "@/queries/queryKeys";
 import { getPlatformBridge } from "@/platform/bridge";
-import { AgentRegistry } from "./agents/AgentRegistry";
-import { AgentsContext, type AgentsContextValue } from "./agents/AgentsContext";
+import { ConnectionRegistry } from "./connections/ConnectionRegistry";
+import { ConnectionsContext, type ConnectionsContextValue } from "./connections/ConnectionsContext";
 import { DesktopBootstrap, type DesktopSession } from "./DesktopBootstrap";
 import { performIdentitySwitch, type SwitchTarget } from "./switchIdentity";
 
@@ -24,7 +24,7 @@ function clientFor(clients: Map<string, QueryClient>, identityId: string): Query
 }
 
 export function DesktopApp({ renderApp }: DesktopAppProps) {
-  const [registry] = useState(() => new AgentRegistry(getPlatformBridge()));
+  const [registry] = useState(() => new ConnectionRegistry(getPlatformBridge()));
   const [queryClients] = useState(() => new Map<string, QueryClient>());
 
   const subscribe = useCallback((listener: () => void) => registry.subscribe(listener), [registry]);
@@ -51,7 +51,7 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
 
   const switchTo = useCallback(
     async (identityId: string, navigateTo?: SwitchTarget["navigateTo"]): Promise<void> => {
-      const seed = registry.getAgent(identityId)?.railSeed();
+      const seed = registry.getConnection(identityId)?.railSeed();
       if (seed) {
         const client = clientFor(queryClients, identityId);
         if (!client.getQueryData(queryKeys.communities())) {
@@ -76,7 +76,7 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
     [registry, queryClients],
   );
 
-  const contextValue = useMemo<AgentsContextValue>(
+  const contextValue = useMemo<ConnectionsContextValue>(
     () => ({ registry, switchTo }),
     [registry, switchTo],
   );
@@ -94,11 +94,11 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
   return (
     <DesktopBootstrap onSession={handleSession}>
       {activeIdentityId && (
-        <AgentsContext.Provider value={contextValue}>
+        <ConnectionsContext.Provider value={contextValue}>
           <QueryClientProvider client={clientFor(queryClients, activeIdentityId)}>
             {renderApp ? renderApp(activeIdentityId) : <AppShell />}
           </QueryClientProvider>
-        </AgentsContext.Provider>
+        </ConnectionsContext.Provider>
       )}
     </DesktopBootstrap>
   );

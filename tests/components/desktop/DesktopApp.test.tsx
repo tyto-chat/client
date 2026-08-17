@@ -6,11 +6,11 @@ import { server } from "../../mocks/server";
 import { router } from "@/appShell";
 import { DesktopApp } from "@/desktop/DesktopApp";
 import {
-  useAgentRegistry,
-  useAgentsSnapshot,
+  useConnectionRegistry,
+  useConnectionsSnapshot,
   useSwitchIdentity,
-} from "@/desktop/agents/AgentsContext";
-import type { AgentRegistry } from "@/desktop/agents/AgentRegistry";
+} from "@/desktop/connections/ConnectionsContext";
+import type { ConnectionRegistry } from "@/desktop/connections/ConnectionRegistry";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { setPlatformBridgeForTests } from "@/platform/bridge";
 import {
@@ -56,7 +56,7 @@ function stubHealthyServer(origin: string, name: string) {
 
 interface ProbeInfo {
   activeIdentityId: string;
-  registry: AgentRegistry;
+  registry: ConnectionRegistry;
   queryClient: QueryClient;
   switchTo: ReturnType<typeof useSwitchIdentity>;
 }
@@ -68,14 +68,14 @@ function Probe({
   activeIdentityId: string;
   onRender: (info: ProbeInfo) => void;
 }) {
-  const registry = useAgentRegistry();
-  const snapshot = useAgentsSnapshot();
+  const registry = useConnectionRegistry();
+  const snapshot = useConnectionsSnapshot();
   const queryClient = useQueryClient();
   const switchTo = useSwitchIdentity();
   onRender({ activeIdentityId, registry, queryClient, switchTo });
   return (
     <div data-testid="probe" data-active={snapshot.activeIdentityId ?? ""}>
-      {snapshot.agents.length}
+      {snapshot.connections.length}
     </div>
   );
 }
@@ -154,7 +154,7 @@ describe("DesktopApp", () => {
     expect(getAccessToken()).toBe("jwt-live");
 
     await waitFor(() => {
-      expect(renders.at(-1)?.registry.getSnapshot().agents).toHaveLength(2);
+      expect(renders.at(-1)?.registry.getSnapshot().connections).toHaveLength(2);
     });
 
     expect(renders[0]?.activeIdentityId).toBe("ia");
@@ -187,7 +187,7 @@ describe("DesktopApp", () => {
     setPlatformBridgeForTests(bridge);
     await seedOneIdentity(bridge);
 
-    let capturedRegistry: AgentRegistry | null = null;
+    let capturedRegistry: ConnectionRegistry | null = null;
     const { unmount } = render(
       <DesktopApp
         renderApp={(activeIdentityId) => (
@@ -202,7 +202,9 @@ describe("DesktopApp", () => {
     );
 
     await screen.findByTestId("probe");
-    await waitFor(() => expect(capturedRegistry?.getSnapshot().agents[0]?.status).toBe("healthy"));
+    await waitFor(() =>
+      expect(capturedRegistry?.getSnapshot().connections[0]?.status).toBe("healthy"),
+    );
 
     const stopAllSpy = vi.spyOn(capturedRegistry!, "stopAll");
     unmount();
@@ -215,7 +217,7 @@ describe("DesktopApp", () => {
     setPlatformBridgeForTests(bridge);
     await seedOneIdentity(bridge);
 
-    let capturedRegistry: AgentRegistry | null = null;
+    let capturedRegistry: ConnectionRegistry | null = null;
     render(
       <DesktopApp
         renderApp={(activeIdentityId) => (
@@ -230,10 +232,12 @@ describe("DesktopApp", () => {
     );
 
     await screen.findByTestId("probe");
-    await waitFor(() => expect(capturedRegistry?.getSnapshot().agents[0]?.status).toBe("healthy"));
+    await waitFor(() =>
+      expect(capturedRegistry?.getSnapshot().connections[0]?.status).toBe("healthy"),
+    );
 
-    const agent = capturedRegistry!.getAgent("ia")!;
-    const refreshSpy = vi.spyOn(agent, "refreshNow");
+    const connection = capturedRegistry!.getConnection("ia")!;
+    const refreshSpy = vi.spyOn(connection, "refreshNow");
 
     setAccessToken("stale");
     await refreshAccessToken();
@@ -264,14 +268,14 @@ describe("DesktopApp", () => {
 
     await screen.findByTestId("probe");
     await waitFor(() => {
-      expect(renders.at(-1)?.registry.getSnapshot().agents).toHaveLength(2);
+      expect(renders.at(-1)?.registry.getSnapshot().connections).toHaveLength(2);
     });
     await waitFor(() => {
       expect(
         renders
           .at(-1)
           ?.registry.getSnapshot()
-          .agents.map((a) => a.status),
+          .connections.map((a) => a.status),
       ).toEqual(["healthy", "healthy"]);
     });
 
@@ -319,7 +323,7 @@ describe("DesktopApp", () => {
         renders
           .at(-1)
           ?.registry.getSnapshot()
-          .agents.map((a) => a.status),
+          .connections.map((a) => a.status),
       ).toEqual(["healthy", "healthy"]);
     });
 

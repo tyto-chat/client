@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/Modal";
 import { getPlatformBridge } from "@/platform/bridge";
-import type { AgentRegistry } from "./agents/AgentRegistry";
+import type { ConnectionRegistry } from "./connections/ConnectionRegistry";
 import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
 import {
   loadDesktopConfig,
@@ -13,7 +13,7 @@ import {
 import { persistWizardResult } from "./identitySetup";
 
 export interface ReloginModalProps {
-  registry: AgentRegistry;
+  registry: ConnectionRegistry;
   identityId: string;
   onClose: () => void;
 }
@@ -54,7 +54,7 @@ export function ReloginModal({ registry, identityId, onClose }: ReloginModalProp
       await saveDesktopConfig(bridge, nextConfig);
     }
 
-    registry.getAgent(identityId)?.retry();
+    registry.getConnection(identityId)?.retry();
     close();
   }
 

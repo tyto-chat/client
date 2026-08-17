@@ -5,16 +5,16 @@ import { navigationFromNotification } from "@/utils/notificationLink";
 import { notificationText } from "@/utils/notificationText";
 import { showDesktopNotification } from "@/utils/desktopNotifications";
 import { isManagedIdentityMode } from "@/platform/appMode";
-import { AgentsContext, type AgentsContextValue } from "./agents/AgentsContext";
-import type { AgentNotificationEvent } from "./agents/IdentityAgent";
+import { ConnectionsContext, type ConnectionsContextValue } from "./connections/ConnectionsContext";
+import type { ConnectionNotificationEvent } from "./connections/IdentityConnection";
 import type { AppNotification } from "@/types/api";
 
-function useOptionalAgentsContext(): AgentsContextValue | null {
-  return useContext(AgentsContext);
+function useOptionalConnectionsContext(): ConnectionsContextValue | null {
+  return useContext(ConnectionsContext);
 }
 
-export function AgentNotificationBridge() {
-  const contextValue = useOptionalAgentsContext();
+export function ConnectionNotificationBridge() {
+  const contextValue = useOptionalConnectionsContext();
   const { notify } = useNotification();
   const { t } = useTranslation("notifications");
 
@@ -22,7 +22,7 @@ export function AgentNotificationBridge() {
     if (!isManagedIdentityMode() || !contextValue) return undefined;
     const { registry, switchTo } = contextValue;
 
-    return registry.onNotification((event: AgentNotificationEvent) => {
+    return registry.onNotification((event: ConnectionNotificationEvent) => {
       const activeIdentityId = registry.getSnapshot().activeIdentityId;
       if (event.identityId === activeIdentityId) return;
 

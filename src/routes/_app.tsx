@@ -9,7 +9,7 @@ import { useAccountDeletionStatus } from "@/queries/accountDeletionQueries";
 import { CommunityRail } from "@/components/CommunityRail";
 import { DesktopRailGroups } from "@/desktop/DesktopRail";
 import { isManagedIdentityMode } from "@/platform/appMode";
-import { AgentNotificationBridge } from "@/desktop/AgentNotificationBridge";
+import { ConnectionNotificationBridge } from "@/desktop/ConnectionNotificationBridge";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerInfo } from "@/hooks/useServerInfo";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
@@ -294,7 +294,7 @@ function AppShell() {
                         )}
                       />
                     </DesktopRailGroups>
-                    <AgentNotificationBridge />
+                    <ConnectionNotificationBridge />
                     <div className="mt-auto" />
                     <ActiveVoiceButton />
                     <UserProfileButton />

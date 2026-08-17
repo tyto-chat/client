@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
-import { IdentityAgent } from "@/desktop/agents/IdentityAgent";
+import { IdentityConnection } from "@/desktop/connections/IdentityConnection";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { secretKey, type DesktopIdentity } from "@/desktop/desktopConfig";
 import { _resetNegotiationForTests, getApiVersionForOrigin } from "@/api/apiVersion";
@@ -58,7 +58,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("IdentityAgent", () => {
+describe("IdentityConnection", () => {
   it("refreshes the stored token, persists rotation, and reports healthy", async () => {
     stubServerInfo();
     server.use(
@@ -69,14 +69,14 @@ describe("IdentityAgent", () => {
     const bridge = createFakePlatformBridge();
     await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "old");
     const callbacks = makeCallbacks();
-    const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), callbacks);
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
 
-    agent.start();
-    await vi.waitFor(() => expect(agent.getSnapshot().status).toBe("healthy"));
+    connection.start();
+    await vi.waitFor(() => expect(connection.getSnapshot().status).toBe("healthy"));
 
-    expect(agent.getAccessToken()).not.toBeNull();
+    expect(connection.getAccessToken()).not.toBeNull();
     expect(callbacks.persistRotatedToken).toHaveBeenCalledWith("rotated");
-    expect(agent.getSnapshot()).toMatchObject({
+    expect(connection.getSnapshot()).toMatchObject({
       identityId: IDENTITY_ID,
       status: "healthy",
       serverName: "Srv",
@@ -84,12 +84,12 @@ describe("IdentityAgent", () => {
       communities: [],
       unreadCounts: {},
     });
-    expect(callbacks.onChange).toHaveBeenLastCalledWith(agent.getSnapshot());
+    expect(callbacks.onChange).toHaveBeenLastCalledWith(connection.getSnapshot());
 
-    agent.stop();
+    connection.stop();
   });
 
-  it("captures each agent's own negotiated api version even when negotiations interleave", async () => {
+  it("captures each connection's own negotiated api version even when negotiations interleave", async () => {
     const ORIGIN_A = "https://alpha.example";
     const ORIGIN_B = "https://beta.example";
     let releaseA: () => void = () => {};
@@ -110,35 +110,35 @@ describe("IdentityAgent", () => {
 
     const spy = vi.spyOn(apiVersionModule, "getApiVersionForOrigin");
     const bridge = createFakePlatformBridge();
-    const agentA = new IdentityAgent(
+    const connectionA = new IdentityConnection(
       bridge,
       PROFILE_ID,
       makeIdentity({ id: "ia", serverUrl: ORIGIN_A }),
       makeCallbacks(),
     );
-    const agentB = new IdentityAgent(
+    const connectionB = new IdentityConnection(
       bridge,
       PROFILE_ID,
       makeIdentity({ id: "ib", serverUrl: ORIGIN_B }),
       makeCallbacks(),
     );
 
-    agentA.start();
-    await vi.waitFor(() => expect(agentA.getSnapshot().status).toBe("connecting"));
+    connectionA.start();
+    await vi.waitFor(() => expect(connectionA.getSnapshot().status).toBe("connecting"));
 
-    agentB.start();
-    await vi.waitFor(() => expect(agentB.serverInfo()).not.toBeNull());
-    expect(agentB.serverContext().apiVersion).toBe(getApiVersionForOrigin(ORIGIN_B));
+    connectionB.start();
+    await vi.waitFor(() => expect(connectionB.serverInfo()).not.toBeNull());
+    expect(connectionB.serverContext().apiVersion).toBe(getApiVersionForOrigin(ORIGIN_B));
 
     releaseA();
-    await vi.waitFor(() => expect(agentA.serverInfo()).not.toBeNull());
-    expect(agentA.serverContext().apiVersion).toBe(getApiVersionForOrigin(ORIGIN_A));
+    await vi.waitFor(() => expect(connectionA.serverInfo()).not.toBeNull());
+    expect(connectionA.serverContext().apiVersion).toBe(getApiVersionForOrigin(ORIGIN_A));
 
     expect(spy).toHaveBeenCalledWith(ORIGIN_A);
     expect(spy).toHaveBeenCalledWith(ORIGIN_B);
 
-    agentA.stop();
-    agentB.stop();
+    connectionA.stop();
+    connectionB.stop();
     spy.mockRestore();
   });
 
@@ -156,15 +156,15 @@ describe("IdentityAgent", () => {
     await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "dead");
     await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "password"), "secret-pw");
     const callbacks = makeCallbacks();
-    const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), callbacks);
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
 
-    agent.start();
-    await vi.waitFor(() => expect(agent.getSnapshot().status).toBe("healthy"));
+    connection.start();
+    await vi.waitFor(() => expect(connection.getSnapshot().status).toBe("healthy"));
 
     expect(callbacks.persistRotatedToken).toHaveBeenCalledWith("new-refresh");
-    expect(agent.getAccessToken()).not.toBeNull();
+    expect(connection.getAccessToken()).not.toBeNull();
 
-    agent.stop();
+    connection.stop();
   });
 
   it("flags auth-failed when the password login requires 2FA", async () => {
@@ -181,27 +181,27 @@ describe("IdentityAgent", () => {
     await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "dead");
     await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "password"), "secret-pw");
     const callbacks = makeCallbacks();
-    const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), callbacks);
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
 
-    agent.start();
-    await vi.waitFor(() => expect(agent.getSnapshot().status).toBe("auth-failed"));
+    connection.start();
+    await vi.waitFor(() => expect(connection.getSnapshot().status).toBe("auth-failed"));
 
-    expect(agent.getAccessToken()).toBeNull();
+    expect(connection.getAccessToken()).toBeNull();
     expect(callbacks.persistRotatedToken).not.toHaveBeenCalled();
 
-    agent.stop();
+    connection.stop();
   });
 
   it("flags auth-failed when neither a refresh token nor a password secret is stored", async () => {
     stubServerInfo();
     const bridge = createFakePlatformBridge();
     const callbacks = makeCallbacks();
-    const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), callbacks);
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
 
-    agent.start();
-    await vi.waitFor(() => expect(agent.getSnapshot().status).toBe("auth-failed"));
+    connection.start();
+    await vi.waitFor(() => expect(connection.getSnapshot().status).toBe("auth-failed"));
 
-    agent.stop();
+    connection.stop();
   });
 
   it("goes unreachable on a network failure and retries with backoff", async () => {
@@ -215,18 +215,18 @@ describe("IdentityAgent", () => {
     );
     const bridge = createFakePlatformBridge();
     const callbacks = makeCallbacks();
-    const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), callbacks);
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
 
-    agent.start();
+    connection.start();
     await vi.advanceTimersByTimeAsync(0);
-    expect(agent.getSnapshot().status).toBe("unreachable");
+    expect(connection.getSnapshot().status).toBe("unreachable");
     expect(versionsHits).toBe(1);
 
     await vi.advanceTimersByTimeAsync(15_000);
     expect(versionsHits).toBe(2);
-    expect(agent.getSnapshot().status).toBe("unreachable");
+    expect(connection.getSnapshot().status).toBe("unreachable");
 
-    agent.stop();
+    connection.stop();
   });
 
   it("stays version-mismatch with no auto-retry, and recovers via retry()", async () => {
@@ -241,16 +241,16 @@ describe("IdentityAgent", () => {
     const bridge = createFakePlatformBridge();
     await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "old");
     const callbacks = makeCallbacks();
-    const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), callbacks);
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
 
-    agent.start();
+    connection.start();
     await vi.advanceTimersByTimeAsync(0);
-    expect(agent.getSnapshot().status).toBe("version-mismatch");
+    expect(connection.getSnapshot().status).toBe("version-mismatch");
     expect(versionsHits).toBe(1);
 
     await vi.advanceTimersByTimeAsync(600_000);
     expect(versionsHits).toBe(1);
-    expect(agent.getSnapshot().status).toBe("version-mismatch");
+    expect(connection.getSnapshot().status).toBe("version-mismatch");
 
     server.use(
       http.get(`${ORIGIN}/api/versions`, () => {
@@ -264,11 +264,11 @@ describe("IdentityAgent", () => {
         HttpResponse.json({ token: farFutureToken(), refresh_token: "rotated" }),
       ),
     );
-    agent.retry();
+    connection.retry();
     await vi.advanceTimersByTimeAsync(0);
-    expect(agent.getSnapshot().status).toBe("healthy");
+    expect(connection.getSnapshot().status).toBe("healthy");
 
-    agent.stop();
+    connection.stop();
   });
 
   it("shares a single in-flight refresh across concurrent refreshNow() calls", async () => {
@@ -283,17 +283,17 @@ describe("IdentityAgent", () => {
     const bridge = createFakePlatformBridge();
     await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "old");
     const callbacks = makeCallbacks();
-    const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), callbacks);
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
 
-    agent.start();
-    await vi.waitFor(() => expect(agent.getSnapshot().status).toBe("healthy"));
+    connection.start();
+    await vi.waitFor(() => expect(connection.getSnapshot().status).toBe("healthy"));
     expect(refreshHits).toBe(1);
 
-    const [a, b] = await Promise.all([agent.refreshNow(), agent.refreshNow()]);
+    const [a, b] = await Promise.all([connection.refreshNow(), connection.refreshNow()]);
     expect(a).toBe(b);
     expect(refreshHits).toBe(2);
 
-    agent.stop();
+    connection.stop();
   });
 
   it("flips to auth-failed and rejects when refreshNow's fallback has no password", async () => {
@@ -306,15 +306,15 @@ describe("IdentityAgent", () => {
     const bridge = createFakePlatformBridge();
     await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "dead");
     const callbacks = makeCallbacks();
-    const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), callbacks);
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
 
-    agent.start();
-    await vi.waitFor(() => expect(agent.getSnapshot().status).toBe("auth-failed"));
+    connection.start();
+    await vi.waitFor(() => expect(connection.getSnapshot().status).toBe("auth-failed"));
 
-    await expect(agent.refreshNow()).rejects.toThrow();
-    expect(agent.getSnapshot().status).toBe("auth-failed");
+    await expect(connection.refreshNow()).rejects.toThrow();
+    expect(connection.getSnapshot().status).toBe("auth-failed");
 
-    agent.stop();
+    connection.stop();
   });
 
   it("stop() cancels a pending retry timer", async () => {
@@ -328,14 +328,14 @@ describe("IdentityAgent", () => {
     );
     const bridge = createFakePlatformBridge();
     const callbacks = makeCallbacks();
-    const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), callbacks);
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
 
-    agent.start();
+    connection.start();
     await vi.advanceTimersByTimeAsync(0);
-    expect(agent.getSnapshot().status).toBe("unreachable");
+    expect(connection.getSnapshot().status).toBe("unreachable");
     expect(versionsHits).toBe(1);
 
-    agent.stop();
+    connection.stop();
     await vi.advanceTimersByTimeAsync(600_000);
     expect(versionsHits).toBe(1);
   });

@@ -1,19 +1,23 @@
 import { setRefreshExecutor } from "@/api/auth";
 import { secretKey, type DesktopIdentity } from "@/desktop/desktopConfig";
 import type { PlatformBridge } from "@/platform/PlatformBridge";
-import { IdentityAgent, type AgentNotificationEvent, type AgentSnapshot } from "./IdentityAgent";
+import {
+  IdentityConnection,
+  type ConnectionNotificationEvent,
+  type ConnectionSnapshot,
+} from "./IdentityConnection";
 
 export interface RegistrySnapshot {
-  agents: AgentSnapshot[];
+  connections: ConnectionSnapshot[];
   activeIdentityId: string | null;
 }
 
-type NotificationListener = (event: AgentNotificationEvent) => void;
+type NotificationListener = (event: ConnectionNotificationEvent) => void;
 
-export class AgentRegistry {
+export class ConnectionRegistry {
   private bridge: PlatformBridge;
   private profileId: string | null = null;
-  private agents = new Map<string, IdentityAgent>();
+  private connections = new Map<string, IdentityConnection>();
   private activeIdentityId: string | null = null;
   private listeners = new Set<() => void>();
   private notificationListeners = new Set<NotificationListener>();
@@ -21,7 +25,7 @@ export class AgentRegistry {
 
   constructor(bridge: PlatformBridge) {
     this.bridge = bridge;
-    this.snapshot = { agents: [], activeIdentityId: null };
+    this.snapshot = { connections: [], activeIdentityId: null };
   }
 
   async boot(
@@ -31,11 +35,11 @@ export class AgentRegistry {
   ): Promise<void> {
     this.profileId = profileId;
     for (const identity of identities) {
-      this.spawnAgent(identity);
+      this.spawnConnection(identity);
     }
     this.setActiveIdentity(activeIdentityId);
-    for (const agent of this.agents.values()) {
-      agent.start();
+    for (const connection of this.connections.values()) {
+      connection.start();
     }
     this.rebuildSnapshot();
   }
@@ -43,15 +47,15 @@ export class AgentRegistry {
   setActiveIdentity(id: string): void {
     this.activeIdentityId = id;
     setRefreshExecutor(async () => {
-      const agent = this.agents.get(id);
-      if (!agent) throw new Error("agent_registry_no_active_agent");
-      return agent.refreshNow();
+      const connection = this.connections.get(id);
+      if (!connection) throw new Error("connection_registry_no_active_connection");
+      return connection.refreshNow();
     });
     this.rebuildSnapshot();
   }
 
-  getAgent(id: string): IdentityAgent | undefined {
-    return this.agents.get(id);
+  getConnection(id: string): IdentityConnection | undefined {
+    return this.connections.get(id);
   }
 
   getSnapshot(): RegistrySnapshot {
@@ -73,24 +77,24 @@ export class AgentRegistry {
   }
 
   addIdentity(identity: DesktopIdentity): void {
-    const agent = this.spawnAgent(identity);
-    agent.start();
+    const connection = this.spawnConnection(identity);
+    connection.start();
     this.rebuildSnapshot();
   }
 
   stopAll(): void {
-    for (const agent of this.agents.values()) {
-      agent.stop();
+    for (const connection of this.connections.values()) {
+      connection.stop();
     }
-    this.agents.clear();
+    this.connections.clear();
     setRefreshExecutor(null);
     this.rebuildSnapshot();
   }
 
-  private spawnAgent(identity: DesktopIdentity): IdentityAgent {
+  private spawnConnection(identity: DesktopIdentity): IdentityConnection {
     const profileId = this.profileId;
-    if (!profileId) throw new Error("agent_registry_not_booted");
-    const agent = new IdentityAgent(this.bridge, profileId, identity, {
+    if (!profileId) throw new Error("connection_registry_not_booted");
+    const connection = new IdentityConnection(this.bridge, profileId, identity, {
       onChange: () => this.rebuildSnapshot(),
       onNotification: (event) => this.emitNotification(event),
       persistRotatedToken: async (refreshToken) => {
@@ -100,17 +104,17 @@ export class AgentRegistry {
         );
       },
     });
-    this.agents.set(identity.id, agent);
-    return agent;
+    this.connections.set(identity.id, connection);
+    return connection;
   }
 
-  private emitNotification(event: AgentNotificationEvent): void {
+  private emitNotification(event: ConnectionNotificationEvent): void {
     for (const listener of this.notificationListeners) listener(event);
   }
 
   private rebuildSnapshot(): void {
     this.snapshot = {
-      agents: Array.from(this.agents.values(), (agent) => agent.getSnapshot()),
+      connections: Array.from(this.connections.values(), (connection) => connection.getSnapshot()),
       activeIdentityId: this.activeIdentityId,
     };
     for (const listener of this.listeners) listener();

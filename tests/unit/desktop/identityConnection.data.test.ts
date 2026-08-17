@@ -1,10 +1,10 @@
 /**
- * IdentityAgent data sync + notification stream (Task 4).
+ * IdentityConnection data sync + notification stream (Task 4).
  *
  * Reconnect-refetch coverage note: the fake EventSource in tests/mocks/EventSource.ts has
  * no `onopen` (see its header comment), so `subscribeMercure`'s real onopen->onReconnect path
  * can't be exercised end-to-end here. Per the task brief this is an accepted compromise: the
- * "reconnect drift-heal" test below invokes the agent's internal `refetchUnreadCounts` method
+ * "reconnect drift-heal" test below invokes the connection's internal `refetchUnreadCounts` method
  * directly (via a narrow private-access cast) instead of driving it through a simulated
  * reconnect. Full onopen/onReconnect wiring stays covered at the `subscribeMercure`/
  * `useMercureSubscription` layer plus integration/e2e.
@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { getFakeEventSourceInstances, getLastFakeEventSource } from "../../mocks/EventSource";
-import { IdentityAgent } from "@/desktop/agents/IdentityAgent";
+import { IdentityConnection } from "@/desktop/connections/IdentityConnection";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { secretKey, type DesktopIdentity } from "@/desktop/desktopConfig";
 import { _resetNegotiationForTests } from "@/api/apiVersion";
@@ -109,18 +109,18 @@ function stubData(overrides: StubDataOverrides = {}) {
   );
 }
 
-async function startHealthyAgentWithData(callbacks = makeCallbacks()) {
+async function startHealthyConnectionWithData(callbacks = makeCallbacks()) {
   stubHealthyServer();
   stubData();
   const bridge = createFakePlatformBridge();
   await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "old");
-  const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), callbacks);
+  const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
 
-  agent.start();
-  await vi.waitFor(() => expect(agent.getSnapshot().status).toBe("healthy"));
-  await vi.waitFor(() => expect(agent.getSnapshot().userId).toBe(42));
+  connection.start();
+  await vi.waitFor(() => expect(connection.getSnapshot().status).toBe("healthy"));
+  await vi.waitFor(() => expect(connection.getSnapshot().userId).toBe(42));
 
-  return { agent, callbacks };
+  return { connection, callbacks };
 }
 
 beforeEach(() => {
@@ -132,11 +132,11 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("IdentityAgent data sync", () => {
+describe("IdentityConnection data sync", () => {
   it("loads userId, all visible communities with member/pinned flags, and unread counts after reaching healthy", async () => {
-    const { agent } = await startHealthyAgentWithData();
+    const { connection } = await startHealthyConnectionWithData();
 
-    const snapshot = agent.getSnapshot();
+    const snapshot = connection.getSnapshot();
     expect(snapshot.userId).toBe(42);
     expect(snapshot.communities).toEqual([
       {
@@ -162,11 +162,11 @@ describe("IdentityAgent data sync", () => {
     ]);
     expect(snapshot.unreadCounts).toEqual({ "5": 2 });
 
-    agent.stop();
+    connection.stop();
   });
 
   it("subscribes to the notifications and conversation-activity topics for the loaded user", async () => {
-    const { agent } = await startHealthyAgentWithData();
+    const { connection } = await startHealthyConnectionWithData();
 
     await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBeGreaterThan(0));
     const es = getLastFakeEventSource()!;
@@ -174,11 +174,11 @@ describe("IdentityAgent data sync", () => {
     expect(es.url).toContain(encodeURIComponent("/api/users/42/conversation-activity"));
     expect(es.url).toContain("rt-token");
 
-    agent.stop();
+    connection.stop();
   });
 
   it("bumps the dm unread count and fires onNotification for a dm_message notification", async () => {
-    const { agent, callbacks } = await startHealthyAgentWithData();
+    const { connection, callbacks } = await startHealthyConnectionWithData();
     await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBeGreaterThan(0));
     const es = getLastFakeEventSource()!;
 
@@ -201,7 +201,7 @@ describe("IdentityAgent data sync", () => {
     };
     es.dispatch(JSON.stringify(raw));
 
-    await vi.waitFor(() => expect(agent.getSnapshot().unreadCounts.dm).toBe(1));
+    await vi.waitFor(() => expect(connection.getSnapshot().unreadCounts.dm).toBe(1));
     expect(callbacks.onNotification).toHaveBeenCalledWith({
       identityId: IDENTITY_ID,
       origin: ORIGIN,
@@ -209,11 +209,11 @@ describe("IdentityAgent data sync", () => {
       raw,
     });
 
-    agent.stop();
+    connection.stop();
   });
 
   it("bumps the per-community unread count for a non-dm notification", async () => {
-    const { agent, callbacks } = await startHealthyAgentWithData();
+    const { connection, callbacks } = await startHealthyConnectionWithData();
     await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBeGreaterThan(0));
     const es = getLastFakeEventSource()!;
 
@@ -236,14 +236,14 @@ describe("IdentityAgent data sync", () => {
     };
     es.dispatch(JSON.stringify(raw));
 
-    await vi.waitFor(() => expect(agent.getSnapshot().unreadCounts["5"]).toBe(3));
+    await vi.waitFor(() => expect(connection.getSnapshot().unreadCounts["5"]).toBe(3));
     expect(callbacks.onNotification).toHaveBeenCalledTimes(1);
 
-    agent.stop();
+    connection.stop();
   });
 
   it("ignores notification.update: no unread bump and no onNotification callback", async () => {
-    const { agent, callbacks } = await startHealthyAgentWithData();
+    const { connection, callbacks } = await startHealthyConnectionWithData();
     await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBeGreaterThan(0));
     const es = getLastFakeEventSource()!;
 
@@ -267,54 +267,54 @@ describe("IdentityAgent data sync", () => {
     es.dispatch(JSON.stringify(update));
 
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(agent.getSnapshot().unreadCounts).toEqual({ "5": 2 });
+    expect(connection.getSnapshot().unreadCounts).toEqual({ "5": 2 });
     expect(callbacks.onNotification).not.toHaveBeenCalled();
 
-    agent.stop();
+    connection.stop();
   });
 
   it("reconnect drift-heal refetches unread counts (direct call — see file header)", async () => {
-    const { agent } = await startHealthyAgentWithData();
+    const { connection } = await startHealthyConnectionWithData();
     server.use(
       http.get(`${ORIGIN}/api/v1/notifications/unread-counts`, () =>
         HttpResponse.json({ counts: { "5": 9 } }),
       ),
     );
 
-    const internals = agent as unknown as {
+    const internals = connection as unknown as {
       connectionId: number;
       refetchUnreadCounts(myId: number): Promise<void>;
     };
     await internals.refetchUnreadCounts(internals.connectionId);
 
-    expect(agent.getSnapshot().unreadCounts).toEqual({ "5": 9 });
+    expect(connection.getSnapshot().unreadCounts).toEqual({ "5": 9 });
 
-    agent.stop();
+    connection.stop();
   });
 
   it("stop() closes the SSE subscription", async () => {
-    const { agent } = await startHealthyAgentWithData();
+    const { connection } = await startHealthyConnectionWithData();
     await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBeGreaterThan(0));
     const es = getLastFakeEventSource()!;
     const closeSpy = vi.spyOn(es, "close");
 
-    agent.stop();
+    connection.stop();
 
     expect(closeSpy).toHaveBeenCalled();
   });
 
   it("stop() cancels the realtime token re-mint timer", async () => {
-    const { agent } = await startHealthyAgentWithData();
-    const internals = agent as unknown as { realtimeRemintTimer: unknown };
+    const { connection } = await startHealthyConnectionWithData();
+    const internals = connection as unknown as { realtimeRemintTimer: unknown };
     await vi.waitFor(() => expect(internals.realtimeRemintTimer).not.toBeNull());
 
-    agent.stop();
+    connection.stop();
 
     expect(internals.realtimeRemintTimer).toBeNull();
   });
 });
 
-describe("IdentityAgent data-load retry", () => {
+describe("IdentityConnection data-load retry", () => {
   it("surfaces the error and stays healthy when the initial data load fails, then recovers on retry", async () => {
     vi.useFakeTimers();
     stubHealthyServer();
@@ -348,27 +348,27 @@ describe("IdentityAgent data-load retry", () => {
 
     const bridge = createFakePlatformBridge();
     await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "old");
-    const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), makeCallbacks());
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), makeCallbacks());
 
-    agent.start();
+    connection.start();
     await vi.advanceTimersByTimeAsync(0);
-    expect(agent.getSnapshot().status).toBe("healthy");
+    expect(connection.getSnapshot().status).toBe("healthy");
 
     await vi.advanceTimersByTimeAsync(0);
     expect(countsHits).toBe(1);
-    expect(agent.getSnapshot().status).toBe("healthy");
-    expect(agent.getSnapshot().error).not.toBeNull();
-    expect(agent.getSnapshot().unreadCounts).toEqual({});
+    expect(connection.getSnapshot().status).toBe("healthy");
+    expect(connection.getSnapshot().error).not.toBeNull();
+    expect(connection.getSnapshot().unreadCounts).toEqual({});
     expect(getFakeEventSourceInstances().length).toBe(0);
 
     await vi.advanceTimersByTimeAsync(15_000);
     expect(countsHits).toBe(2);
-    expect(agent.getSnapshot().status).toBe("healthy");
-    expect(agent.getSnapshot().error).toBeNull();
-    expect(agent.getSnapshot().unreadCounts).toEqual({ "5": 4 });
+    expect(connection.getSnapshot().status).toBe("healthy");
+    expect(connection.getSnapshot().error).toBeNull();
+    expect(connection.getSnapshot().unreadCounts).toEqual({ "5": 4 });
     expect(getFakeEventSourceInstances().length).toBe(1);
 
-    agent.stop();
+    connection.stop();
   });
 
   it("stop() cancels a pending data-load retry", async () => {
@@ -395,15 +395,15 @@ describe("IdentityAgent data-load retry", () => {
 
     const bridge = createFakePlatformBridge();
     await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "old");
-    const agent = new IdentityAgent(bridge, PROFILE_ID, makeIdentity(), makeCallbacks());
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), makeCallbacks());
 
-    agent.start();
+    connection.start();
     await vi.advanceTimersByTimeAsync(0);
-    expect(agent.getSnapshot().status).toBe("healthy");
+    expect(connection.getSnapshot().status).toBe("healthy");
     await vi.advanceTimersByTimeAsync(0);
     expect(countsHits).toBe(1);
 
-    agent.stop();
+    connection.stop();
     await vi.advanceTimersByTimeAsync(600_000);
     expect(countsHits).toBe(1);
   });

@@ -5,10 +5,19 @@ import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { AddServerModal, DesktopRailGroups } from "@/desktop/DesktopRail";
 import { ReloginModal } from "@/desktop/ReloginModal";
-import { AgentsContext, type AgentsContextValue } from "@/desktop/agents/AgentsContext";
-import { AgentRegistry as RealAgentRegistry } from "@/desktop/agents/AgentRegistry";
-import type { AgentRegistry, RegistrySnapshot } from "@/desktop/agents/AgentRegistry";
-import type { AgentSnapshot, IdentityAgent } from "@/desktop/agents/IdentityAgent";
+import {
+  ConnectionsContext,
+  type ConnectionsContextValue,
+} from "@/desktop/connections/ConnectionsContext";
+import { ConnectionRegistry as RealConnectionRegistry } from "@/desktop/connections/ConnectionRegistry";
+import type {
+  ConnectionRegistry,
+  RegistrySnapshot,
+} from "@/desktop/connections/ConnectionRegistry";
+import type {
+  ConnectionSnapshot,
+  IdentityConnection,
+} from "@/desktop/connections/IdentityConnection";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { setPlatformBridgeForTests } from "@/platform/bridge";
 import {
@@ -66,7 +75,7 @@ function stubOriginFull(
   );
 }
 
-function makeAgent(overrides: Partial<AgentSnapshot>): AgentSnapshot {
+function makeConnection(overrides: Partial<ConnectionSnapshot>): ConnectionSnapshot {
   return {
     identityId: "ia",
     status: "healthy",
@@ -82,8 +91,8 @@ function makeAgent(overrides: Partial<AgentSnapshot>): AgentSnapshot {
 
 function makeRegistryStub(
   snapshot: RegistrySnapshot,
-  overrides?: Partial<Pick<AgentRegistry, "getAgent" | "addIdentity">>,
-): AgentRegistry {
+  overrides?: Partial<Pick<ConnectionRegistry, "getConnection" | "addIdentity">>,
+): ConnectionRegistry {
   const listeners = new Set<() => void>();
   return {
     getSnapshot: () => snapshot,
@@ -91,55 +100,64 @@ function makeRegistryStub(
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    getAgent: overrides?.getAgent ?? vi.fn(() => undefined),
+    getConnection: overrides?.getConnection ?? vi.fn(() => undefined),
     addIdentity: overrides?.addIdentity ?? vi.fn(),
-  } as unknown as AgentRegistry;
+  } as unknown as ConnectionRegistry;
 }
 
-function makeAgentHandle(retry: () => void): IdentityAgent {
-  return { retry } as unknown as IdentityAgent;
+function makeConnectionHandle(retry: () => void): IdentityConnection {
+  return { retry } as unknown as IdentityConnection;
 }
 
-function makeLiveRegistryStub(options?: { neverHealthy?: boolean }): AgentRegistry {
-  let agents: AgentSnapshot[] = [];
+function makeLiveRegistryStub(options?: { neverHealthy?: boolean }): ConnectionRegistry {
+  let connections: ConnectionSnapshot[] = [];
   const listeners = new Set<() => void>();
   function notify() {
     for (const listener of Array.from(listeners)) listener();
   }
   return {
-    getSnapshot: () => ({ agents, activeIdentityId: null }),
+    getSnapshot: () => ({ connections, activeIdentityId: null }),
     subscribe: (listener: () => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    getAgent: vi.fn(() => undefined),
+    getConnection: vi.fn(() => undefined),
     addIdentity: vi.fn((identity: DesktopIdentity) => {
-      agents = [
-        ...agents,
-        makeAgent({ identityId: identity.id, origin: identity.serverUrl, status: "connecting" }),
+      connections = [
+        ...connections,
+        makeConnection({
+          identityId: identity.id,
+          origin: identity.serverUrl,
+          status: "connecting",
+        }),
       ];
       notify();
       if (!options?.neverHealthy) {
         setTimeout(() => {
-          agents = agents.map((a) =>
+          connections = connections.map((a) =>
             a.identityId === identity.id ? { ...a, status: "healthy" } : a,
           );
           notify();
         }, 0);
       }
     }),
-  } as unknown as AgentRegistry;
+  } as unknown as ConnectionRegistry;
 }
 
 function renderWithContext(
   ui: React.ReactElement,
-  { registry, switchTo }: { registry: AgentRegistry; switchTo?: AgentsContextValue["switchTo"] },
+  {
+    registry,
+    switchTo,
+  }: { registry: ConnectionRegistry; switchTo?: ConnectionsContextValue["switchTo"] },
 ) {
-  const contextValue: AgentsContextValue = {
+  const contextValue: ConnectionsContextValue = {
     registry,
     switchTo: switchTo ?? vi.fn().mockResolvedValue(undefined),
   };
-  return render(<AgentsContext.Provider value={contextValue}>{ui}</AgentsContext.Provider>);
+  return render(
+    <ConnectionsContext.Provider value={contextValue}>{ui}</ConnectionsContext.Provider>,
+  );
 }
 
 describe("DesktopRail", () => {
@@ -153,8 +171,8 @@ describe("DesktopRail", () => {
   });
 
   it("renders a group header for the active identity", () => {
-    const active = makeAgent({ identityId: "ia", serverName: "Alpha" });
-    const snapshot: RegistrySnapshot = { agents: [active], activeIdentityId: "ia" };
+    const active = makeConnection({ identityId: "ia", serverName: "Alpha" });
+    const snapshot: RegistrySnapshot = { connections: [active], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
     renderWithContext(<DesktopRailGroups />, { registry });
@@ -165,12 +183,12 @@ describe("DesktopRail", () => {
   });
 
   it("captions the group with a middle-ellipsized host when the server has no name", () => {
-    const active = makeAgent({
+    const active = makeConnection({
       identityId: "ia",
       serverName: null,
       origin: "https://chat.acme-corp.example.com",
     });
-    const snapshot: RegistrySnapshot = { agents: [active], activeIdentityId: "ia" };
+    const snapshot: RegistrySnapshot = { connections: [active], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
     renderWithContext(<DesktopRailGroups />, { registry });
@@ -181,8 +199,8 @@ describe("DesktopRail", () => {
   });
 
   it("lists the non-active group's communities with unread badges and does not repeat the active group", () => {
-    const active = makeAgent({ identityId: "ia", serverName: "Alpha" });
-    const other = makeAgent({
+    const active = makeConnection({ identityId: "ia", serverName: "Alpha" });
+    const other = makeConnection({
       identityId: "ib",
       serverName: "Beta",
       communities: [
@@ -209,7 +227,7 @@ describe("DesktopRail", () => {
       ],
       unreadCounts: { "10": 3, "11": 0, dm: 2 },
     });
-    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
     renderWithContext(<DesktopRailGroups />, { registry });
@@ -233,7 +251,7 @@ describe("DesktopRail", () => {
   });
 
   it("keeps registry order when the active identity is not first — active well moves, groups do not", () => {
-    const first = makeAgent({
+    const first = makeConnection({
       identityId: "ia",
       serverName: "Alpha",
       communities: [
@@ -249,8 +267,8 @@ describe("DesktopRail", () => {
         },
       ],
     });
-    const second = makeAgent({ identityId: "ib", serverName: "Beta" });
-    const snapshot: RegistrySnapshot = { agents: [first, second], activeIdentityId: "ib" };
+    const second = makeConnection({ identityId: "ib", serverName: "Beta" });
+    const snapshot: RegistrySnapshot = { connections: [first, second], activeIdentityId: "ib" };
     const registry = makeRegistryStub(snapshot);
 
     renderWithContext(
@@ -280,8 +298,8 @@ describe("DesktopRail", () => {
       member: true,
       pinned,
     });
-    const active = makeAgent({ identityId: "ia", serverName: "Alpha" });
-    const other = makeAgent({
+    const active = makeConnection({ identityId: "ia", serverName: "Alpha" });
+    const other = makeConnection({
       identityId: "ib",
       serverName: "Beta",
       communities: [
@@ -292,7 +310,7 @@ describe("DesktopRail", () => {
       ],
       unreadCounts: { "3": 2, "4": 1 },
     });
-    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
     const switchTo = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
@@ -310,8 +328,8 @@ describe("DesktopRail", () => {
   });
 
   it("renders a single unpinned community as a real tile, not a +1 badge, in an inactive well", () => {
-    const active = makeAgent({ identityId: "ia", serverName: "Alpha" });
-    const other = makeAgent({
+    const active = makeConnection({ identityId: "ia", serverName: "Alpha" });
+    const other = makeConnection({
       identityId: "ib",
       serverName: "Beta",
       communities: [
@@ -327,7 +345,7 @@ describe("DesktopRail", () => {
         },
       ],
     });
-    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
     renderWithContext(<DesktopRailGroups />, { registry });
@@ -338,8 +356,8 @@ describe("DesktopRail", () => {
 
   it("fires switchTo with the right identity + navigate target when a community tile is clicked", async () => {
     const user = userEvent.setup();
-    const active = makeAgent({ identityId: "ia" });
-    const other = makeAgent({
+    const active = makeConnection({ identityId: "ia" });
+    const other = makeConnection({
       identityId: "ib",
       serverName: "Beta",
       communities: [
@@ -355,7 +373,7 @@ describe("DesktopRail", () => {
         },
       ],
     });
-    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
     const switchTo = vi.fn().mockResolvedValue(undefined);
 
@@ -369,10 +387,10 @@ describe("DesktopRail", () => {
     });
   });
 
-  it("disables community tiles for a non-healthy agent and fires nothing on click", async () => {
+  it("disables community tiles for a non-healthy connection and fires nothing on click", async () => {
     const user = userEvent.setup();
-    const active = makeAgent({ identityId: "ia" });
-    const other = makeAgent({
+    const active = makeConnection({ identityId: "ia" });
+    const other = makeConnection({
       identityId: "ib",
       serverName: "Beta",
       status: "unreachable",
@@ -389,7 +407,7 @@ describe("DesktopRail", () => {
         },
       ],
     });
-    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
     const switchTo = vi.fn().mockResolvedValue(undefined);
 
@@ -408,8 +426,8 @@ describe("DesktopRail", () => {
 
   it("opens the add-server modal onto the wizard's server step when the + tile is clicked", async () => {
     const user = userEvent.setup();
-    const active = makeAgent({ identityId: "ia" });
-    const snapshot: RegistrySnapshot = { agents: [active], activeIdentityId: "ia" };
+    const active = makeConnection({ identityId: "ia" });
+    const snapshot: RegistrySnapshot = { connections: [active], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
     renderWithContext(<DesktopRailGroups />, { registry });
@@ -422,8 +440,8 @@ describe("DesktopRail", () => {
 
   it("renders null for both rail sections in web mode even inside a provider", () => {
     vi.stubEnv("VITE_APP_MODE", "");
-    const active = makeAgent({ identityId: "ia" });
-    const snapshot: RegistrySnapshot = { agents: [active], activeIdentityId: "ia" };
+    const active = makeConnection({ identityId: "ia" });
+    const snapshot: RegistrySnapshot = { connections: [active], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
     const { container } = renderWithContext(
@@ -437,7 +455,7 @@ describe("DesktopRail", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("renders null for both rail sections outside AgentsContext, even in desktop mode", () => {
+  it("renders null for both rail sections outside ConnectionsContext, even in desktop mode", () => {
     const { container } = render(
       <>
         <DesktopRailGroups />
@@ -448,7 +466,7 @@ describe("DesktopRail", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("AddServerModal persists the wizard result, registers the agent, and switches to it once it becomes healthy", async () => {
+  it("AddServerModal persists the wizard result, registers the connection, and switches to it once it becomes healthy", async () => {
     const ORIGIN = "https://new.example";
     server.use(
       http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
@@ -488,7 +506,7 @@ describe("DesktopRail", () => {
     setPlatformBridgeForTests(null);
   });
 
-  it("AddServerModal closes without switching when the new agent never becomes healthy before the timeout", async () => {
+  it("AddServerModal closes without switching when the new connection never becomes healthy before the timeout", async () => {
     const ORIGIN = "https://stuck.example";
     server.use(
       http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
@@ -543,7 +561,7 @@ describe("DesktopRail", () => {
     setPlatformBridgeForTests(null);
   });
 
-  it("keeps the global refresh executor pointed at the ACTIVE agent through the AddServerModal flow", async () => {
+  it("keeps the global refresh executor pointed at the ACTIVE connection through the AddServerModal flow", async () => {
     _resetNegotiationForTests();
     __resetRefreshStateForTests();
     setAccessToken(null);
@@ -576,13 +594,13 @@ describe("DesktopRail", () => {
     await saveDesktopConfig(bridge, cfg);
     await bridge.secrets.set(secretKey(pid, "ia", "refreshToken"), "old-a");
 
-    const registry = new RealAgentRegistry(bridge);
+    const registry = new RealConnectionRegistry(bridge);
     await registry.boot(
       pid,
       [{ id: "ia", serverUrl: ORIGIN_A, email: "active@b.c", userId: null, displayName: null }],
       "ia",
     );
-    await vi.waitFor(() => expect(registry.getSnapshot().agents[0]?.status).toBe("healthy"));
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
 
     const switchTo = vi.fn().mockResolvedValue(undefined);
     const onClose = vi.fn();
@@ -611,7 +629,7 @@ describe("DesktopRail", () => {
     setPlatformBridgeForTests(null);
   });
 
-  it("shows a lock overlay for an auth-failed agent, opens the relogin wizard prefilled with its email, and retries the identity on completion", async () => {
+  it("shows a lock overlay for an auth-failed connection, opens the relogin wizard prefilled with its email, and retries the identity on completion", async () => {
     const ORIGIN = "https://relogin.example";
     server.use(
       http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
@@ -638,16 +656,18 @@ describe("DesktopRail", () => {
     await saveDesktopConfig(bridge, cfg);
 
     const retrySpy = vi.fn();
-    const active = makeAgent({ identityId: "ia" });
-    const other = makeAgent({
+    const active = makeConnection({ identityId: "ia" });
+    const other = makeConnection({
       identityId: "ib",
       serverName: "Relogin",
       origin: ORIGIN,
       status: "auth-failed",
     });
-    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot, {
-      getAgent: vi.fn((id: string) => (id === "ib" ? makeAgentHandle(retrySpy) : undefined)),
+      getConnection: vi.fn((id: string) =>
+        id === "ib" ? makeConnectionHandle(retrySpy) : undefined,
+      ),
     });
     const user = userEvent.setup();
 
@@ -705,16 +725,18 @@ describe("DesktopRail", () => {
     await saveDesktopConfig(bridge, cfg);
 
     const retrySpy = vi.fn();
-    const active = makeAgent({ identityId: "ia" });
-    const other = makeAgent({
+    const active = makeConnection({ identityId: "ia" });
+    const other = makeConnection({
       identityId: "ib",
       serverName: "Relogin",
       origin: ORIGIN,
       status: "auth-failed",
     });
-    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot, {
-      getAgent: vi.fn((id: string) => (id === "ib" ? makeAgentHandle(retrySpy) : undefined)),
+      getConnection: vi.fn((id: string) =>
+        id === "ib" ? makeConnectionHandle(retrySpy) : undefined,
+      ),
     });
     const user = userEvent.setup();
 
@@ -734,7 +756,7 @@ describe("DesktopRail", () => {
     setPlatformBridgeForTests(null);
   });
 
-  it("keeps the global refresh executor pointed at the ACTIVE agent after relogging a BACKGROUND identity", async () => {
+  it("keeps the global refresh executor pointed at the ACTIVE connection after relogging a BACKGROUND identity", async () => {
     _resetNegotiationForTests();
     __resetRefreshStateForTests();
     setAccessToken(null);
@@ -775,7 +797,7 @@ describe("DesktopRail", () => {
     await bridge.secrets.set(secretKey(pid, "ia", "refreshToken"), "old-a");
     await bridge.secrets.set(secretKey(pid, "ib", "refreshToken"), "old-b");
 
-    const registry = new RealAgentRegistry(bridge);
+    const registry = new RealConnectionRegistry(bridge);
     await registry.boot(
       pid,
       [
@@ -785,7 +807,10 @@ describe("DesktopRail", () => {
       "ia",
     );
     await vi.waitFor(() => {
-      expect(registry.getSnapshot().agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
+      expect(registry.getSnapshot().connections.map((a) => a.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
     });
 
     const user = userEvent.setup();
@@ -844,15 +869,17 @@ describe("DesktopRail", () => {
     await saveDesktopConfig(bridge, cfg);
 
     const retrySpy = vi.fn();
-    const active = makeAgent({
+    const active = makeConnection({
       identityId: "ia",
       serverName: "Active",
       origin: ORIGIN,
       status: "auth-failed",
     });
-    const snapshot: RegistrySnapshot = { agents: [active], activeIdentityId: "ia" };
+    const snapshot: RegistrySnapshot = { connections: [active], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot, {
-      getAgent: vi.fn((id: string) => (id === "ia" ? makeAgentHandle(retrySpy) : undefined)),
+      getConnection: vi.fn((id: string) =>
+        id === "ia" ? makeConnectionHandle(retrySpy) : undefined,
+      ),
     });
     const user = userEvent.setup();
 
@@ -872,13 +899,15 @@ describe("DesktopRail", () => {
     setPlatformBridgeForTests(null);
   });
 
-  it("shows a cloud-off overlay for an unreachable agent and retries immediately on click without opening a modal", async () => {
+  it("shows a cloud-off overlay for an unreachable connection and retries immediately on click without opening a modal", async () => {
     const retrySpy = vi.fn();
-    const active = makeAgent({ identityId: "ia" });
-    const other = makeAgent({ identityId: "ib", serverName: "Beta", status: "unreachable" });
-    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+    const active = makeConnection({ identityId: "ia" });
+    const other = makeConnection({ identityId: "ib", serverName: "Beta", status: "unreachable" });
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot, {
-      getAgent: vi.fn((id: string) => (id === "ib" ? makeAgentHandle(retrySpy) : undefined)),
+      getConnection: vi.fn((id: string) =>
+        id === "ib" ? makeConnectionHandle(retrySpy) : undefined,
+      ),
     });
     const user = userEvent.setup();
 
@@ -892,9 +921,13 @@ describe("DesktopRail", () => {
   });
 
   it("shows a version-mismatch warning overlay and a connecting pulse", () => {
-    const active = makeAgent({ identityId: "ia" });
-    const other = makeAgent({ identityId: "ib", serverName: "Beta", status: "version-mismatch" });
-    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+    const active = makeConnection({ identityId: "ia" });
+    const other = makeConnection({
+      identityId: "ib",
+      serverName: "Beta",
+      status: "version-mismatch",
+    });
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
     renderWithContext(<DesktopRailGroups />, { registry });
@@ -903,10 +936,10 @@ describe("DesktopRail", () => {
     expect(warning.className).toContain("text-danger");
   });
 
-  it("applies a pulse animation to a connecting agent's header tile", () => {
-    const active = makeAgent({ identityId: "ia" });
-    const other = makeAgent({ identityId: "ib", serverName: "Beta", status: "connecting" });
-    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+  it("applies a pulse animation to a connecting connection's header tile", () => {
+    const active = makeConnection({ identityId: "ia" });
+    const other = makeConnection({ identityId: "ib", serverName: "Beta", status: "connecting" });
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
     renderWithContext(<DesktopRailGroups />, { registry });

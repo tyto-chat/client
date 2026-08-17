@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { getFakeEventSourceInstances } from "../../mocks/EventSource";
-import { AgentRegistry } from "@/desktop/agents/AgentRegistry";
+import { ConnectionRegistry } from "@/desktop/connections/ConnectionRegistry";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { secretKey, type DesktopIdentity } from "@/desktop/desktopConfig";
 import { _resetNegotiationForTests } from "@/api/apiVersion";
@@ -68,7 +68,7 @@ async function bootWithFakeBridge(identities: DesktopIdentity[], activeId: strin
   for (const identity of identities) {
     await bridge.secrets.set(secretKey(PROFILE_ID, identity.id, "refreshToken"), "old");
   }
-  const registry = new AgentRegistry(bridge);
+  const registry = new ConnectionRegistry(bridge);
   await registry.boot(PROFILE_ID, identities, activeId);
   return { registry, bridge };
 }
@@ -85,8 +85,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("AgentRegistry.boot", () => {
-  it("starts one agent per identity and lists both healthy in the snapshot, in config order", async () => {
+describe("ConnectionRegistry.boot", () => {
+  it("starts one connection per identity and lists both healthy in the snapshot, in config order", async () => {
     stubServerInfo(ORIGIN_A, "Alpha");
     stubRefresh(ORIGIN_A);
     stubServerInfo(ORIGIN_B, "Beta");
@@ -98,36 +98,36 @@ describe("AgentRegistry.boot", () => {
 
     await vi.waitFor(() => {
       const snap = registry.getSnapshot();
-      expect(snap.agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
+      expect(snap.connections.map((a) => a.status)).toEqual(["healthy", "healthy"]);
     });
 
     const snapshot = registry.getSnapshot();
-    expect(snapshot.agents.map((a) => a.identityId)).toEqual(["ia", "ib"]);
-    expect(snapshot.agents.map((a) => a.serverName)).toEqual(["Alpha", "Beta"]);
+    expect(snapshot.connections.map((a) => a.identityId)).toEqual(["ia", "ib"]);
+    expect(snapshot.connections.map((a) => a.serverName)).toEqual(["Alpha", "Beta"]);
     expect(snapshot.activeIdentityId).toBe("ia");
-    expect(registry.getAgent("ia")).toBeDefined();
-    expect(registry.getAgent("ib")).toBeDefined();
-    expect(registry.getAgent("nope")).toBeUndefined();
+    expect(registry.getConnection("ia")).toBeDefined();
+    expect(registry.getConnection("ib")).toBeDefined();
+    expect(registry.getConnection("nope")).toBeUndefined();
 
     registry.stopAll();
   });
 
-  it("resolves without waiting for the agents to become healthy", async () => {
+  it("resolves without waiting for the connections to become healthy", async () => {
     stubServerInfo(ORIGIN_A, "Alpha");
     stubRefresh(ORIGIN_A);
     const identityA = makeIdentity("ia", ORIGIN_A);
 
     const { registry } = await bootWithFakeBridge([identityA], "ia");
 
-    expect(registry.getSnapshot().agents[0]?.status).toBe("connecting");
+    expect(registry.getSnapshot().connections[0]?.status).toBe("connecting");
 
-    await vi.waitFor(() => expect(registry.getSnapshot().agents[0]?.status).toBe("healthy"));
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
     registry.stopAll();
   });
 });
 
-describe("AgentRegistry active-identity refresh delegation", () => {
-  it("routes the global refreshAccessToken() through the active agent's refreshNow()", async () => {
+describe("ConnectionRegistry active-identity refresh delegation", () => {
+  it("routes the global refreshAccessToken() through the active connection's refreshNow()", async () => {
     stubServerInfo(ORIGIN_A, "Alpha");
     stubRefresh(ORIGIN_A, "rotated-a");
     stubServerInfo(ORIGIN_B, "Beta");
@@ -137,12 +137,15 @@ describe("AgentRegistry active-identity refresh delegation", () => {
 
     const { registry } = await bootWithFakeBridge([identityA, identityB], "ia");
     await vi.waitFor(() => {
-      expect(registry.getSnapshot().agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
+      expect(registry.getSnapshot().connections.map((a) => a.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
     });
 
     setAccessToken("stale");
     const refreshed = await refreshAccessToken();
-    expect(refreshed).toBe(registry.getAgent("ia")!.getAccessToken());
+    expect(refreshed).toBe(registry.getConnection("ia")!.getAccessToken());
 
     registry.stopAll();
   });
@@ -157,7 +160,10 @@ describe("AgentRegistry active-identity refresh delegation", () => {
 
     const { registry } = await bootWithFakeBridge([identityA, identityB], "ia");
     await vi.waitFor(() => {
-      expect(registry.getSnapshot().agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
+      expect(registry.getSnapshot().connections.map((a) => a.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
     });
 
     registry.setActiveIdentity("ib");
@@ -165,14 +171,14 @@ describe("AgentRegistry active-identity refresh delegation", () => {
 
     setAccessToken("stale");
     const refreshed = await refreshAccessToken();
-    expect(refreshed).toBe(registry.getAgent("ib")!.getAccessToken());
+    expect(refreshed).toBe(registry.getConnection("ib")!.getAccessToken());
 
     registry.stopAll();
   });
 });
 
-describe("AgentRegistry.onNotification", () => {
-  it("relays notification events from any agent, tagged with that agent's identityId", async () => {
+describe("ConnectionRegistry.onNotification", () => {
+  it("relays notification events from any connection, tagged with that connection's identityId", async () => {
     stubServerInfo(ORIGIN_A, "Alpha", `${ORIGIN_A}/.well-known/mercure`);
     stubRefresh(ORIGIN_A);
     stubData(ORIGIN_A, 1);
@@ -184,7 +190,10 @@ describe("AgentRegistry.onNotification", () => {
 
     const { registry } = await bootWithFakeBridge([identityA, identityB], "ia");
     await vi.waitFor(() => {
-      expect(registry.getSnapshot().agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
+      expect(registry.getSnapshot().connections.map((a) => a.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
     });
     await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBe(2));
     const esA = getFakeEventSourceInstances().find((es) => es.url.startsWith(ORIGIN_A))!;
@@ -217,14 +226,16 @@ describe("AgentRegistry.onNotification", () => {
 
     unsubscribe();
     esA.dispatch(JSON.stringify({ ...raw, id: 2 }));
-    await vi.waitFor(() => expect(registry.getSnapshot().agents[0]?.unreadCounts["5"]).toBe(1));
+    await vi.waitFor(() =>
+      expect(registry.getSnapshot().connections[0]?.unreadCounts["5"]).toBe(1),
+    );
     expect(received).toHaveLength(1);
 
     registry.stopAll();
   });
 });
 
-describe("AgentRegistry.subscribe", () => {
+describe("ConnectionRegistry.subscribe", () => {
   it("notifies listeners and returns a cached snapshot reference until the next change", async () => {
     stubServerInfo(ORIGIN_A, "Alpha");
     stubRefresh(ORIGIN_A);
@@ -237,7 +248,7 @@ describe("AgentRegistry.subscribe", () => {
     const before = registry.getSnapshot();
     expect(registry.getSnapshot()).toBe(before);
 
-    await vi.waitFor(() => expect(registry.getSnapshot().agents[0]?.status).toBe("healthy"));
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
     expect(registry.getSnapshot()).not.toBe(before);
     expect(listener).toHaveBeenCalled();
 
@@ -246,14 +257,14 @@ describe("AgentRegistry.subscribe", () => {
   });
 });
 
-describe("AgentRegistry.addIdentity", () => {
-  it("spawns and starts a new agent post-boot, appended to the snapshot", async () => {
+describe("ConnectionRegistry.addIdentity", () => {
+  it("spawns and starts a new connection post-boot, appended to the snapshot", async () => {
     stubServerInfo(ORIGIN_A, "Alpha");
     stubRefresh(ORIGIN_A);
     const identityA = makeIdentity("ia", ORIGIN_A);
 
     const { registry, bridge } = await bootWithFakeBridge([identityA], "ia");
-    await vi.waitFor(() => expect(registry.getSnapshot().agents[0]?.status).toBe("healthy"));
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
 
     stubServerInfo(ORIGIN_B, "Beta");
     stubRefresh(ORIGIN_B);
@@ -261,18 +272,21 @@ describe("AgentRegistry.addIdentity", () => {
     await bridge.secrets.set(secretKey(PROFILE_ID, identityB.id, "refreshToken"), "old");
 
     registry.addIdentity(identityB);
-    expect(registry.getSnapshot().agents.map((a) => a.identityId)).toEqual(["ia", "ib"]);
+    expect(registry.getSnapshot().connections.map((a) => a.identityId)).toEqual(["ia", "ib"]);
 
     await vi.waitFor(() => {
-      expect(registry.getSnapshot().agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
+      expect(registry.getSnapshot().connections.map((a) => a.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
     });
 
     registry.stopAll();
   });
 });
 
-describe("AgentRegistry.stopAll", () => {
-  it("stops every agent's timers and closes its SSE subscription", async () => {
+describe("ConnectionRegistry.stopAll", () => {
+  it("stops every connection's timers and closes its SSE subscription", async () => {
     stubServerInfo(ORIGIN_A, "Alpha", `${ORIGIN_A}/.well-known/mercure`);
     stubRefresh(ORIGIN_A);
     stubData(ORIGIN_A, 1);
@@ -291,20 +305,20 @@ describe("AgentRegistry.stopAll", () => {
     for (const spy of closeSpies) expect(spy).toHaveBeenCalled();
   });
 
-  it("clears the refresh executor and the agent map so a decommissioned identity can't serve a later refresh", async () => {
+  it("clears the refresh executor and the connection map so a decommissioned identity can't serve a later refresh", async () => {
     stubServerInfo(ORIGIN_A, "Alpha");
     stubRefresh(ORIGIN_A);
     const identityA = makeIdentity("ia", ORIGIN_A);
 
     const { registry } = await bootWithFakeBridge([identityA], "ia");
-    await vi.waitFor(() => expect(registry.getSnapshot().agents[0]?.status).toBe("healthy"));
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
 
-    const agent = registry.getAgent("ia")!;
-    const refreshSpy = vi.spyOn(agent, "refreshNow");
+    const connection = registry.getConnection("ia")!;
+    const refreshSpy = vi.spyOn(connection, "refreshNow");
 
     registry.stopAll();
-    expect(registry.getAgent("ia")).toBeUndefined();
-    expect(registry.getSnapshot().agents).toHaveLength(0);
+    expect(registry.getConnection("ia")).toBeUndefined();
+    expect(registry.getSnapshot().connections).toHaveLength(0);
 
     setAccessToken("stale");
     await refreshAccessToken().catch(() => undefined);

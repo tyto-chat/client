@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
-import { AgentNotificationBridge } from "@/desktop/AgentNotificationBridge";
-import { AgentsContext, type AgentsContextValue } from "@/desktop/agents/AgentsContext";
-import type { AgentRegistry } from "@/desktop/agents/AgentRegistry";
-import type { AgentNotificationEvent } from "@/desktop/agents/IdentityAgent";
+import { ConnectionNotificationBridge } from "@/desktop/ConnectionNotificationBridge";
+import {
+  ConnectionsContext,
+  type ConnectionsContextValue,
+} from "@/desktop/connections/ConnectionsContext";
+import type { ConnectionRegistry } from "@/desktop/connections/ConnectionRegistry";
+import type { ConnectionNotificationEvent } from "@/desktop/connections/IdentityConnection";
 import type { NotificationMercureEvent } from "@/types/api";
 import * as desktopNotifications from "@/utils/desktopNotifications";
 
@@ -34,35 +37,38 @@ function makeRaw(overrides: Partial<NotificationMercureEvent> = {}): Notificatio
 }
 
 function makeRegistryStub(activeIdentityId: string | null): {
-  registry: AgentRegistry;
-  emit: (event: AgentNotificationEvent) => void;
+  registry: ConnectionRegistry;
+  emit: (event: ConnectionNotificationEvent) => void;
 } {
-  let listener: ((event: AgentNotificationEvent) => void) | null = null;
+  let listener: ((event: ConnectionNotificationEvent) => void) | null = null;
   const registry = {
-    getSnapshot: () => ({ agents: [], activeIdentityId }),
+    getSnapshot: () => ({ connections: [], activeIdentityId }),
     subscribe: () => () => undefined,
-    onNotification: (l: (event: AgentNotificationEvent) => void) => {
+    onNotification: (l: (event: ConnectionNotificationEvent) => void) => {
       listener = l;
       return () => {
         listener = null;
       };
     },
-  } as unknown as AgentRegistry;
+  } as unknown as ConnectionRegistry;
   return {
     registry,
     emit: (event) => listener?.(event),
   };
 }
 
-function renderWithContext(registry: AgentRegistry, switchTo: AgentsContextValue["switchTo"]) {
+function renderWithContext(
+  registry: ConnectionRegistry,
+  switchTo: ConnectionsContextValue["switchTo"],
+) {
   return render(
-    <AgentsContext.Provider value={{ registry, switchTo }}>
-      <AgentNotificationBridge />
-    </AgentsContext.Provider>,
+    <ConnectionsContext.Provider value={{ registry, switchTo }}>
+      <ConnectionNotificationBridge />
+    </ConnectionsContext.Provider>,
   );
 }
 
-describe("AgentNotificationBridge", () => {
+describe("ConnectionNotificationBridge", () => {
   beforeEach(() => {
     vi.stubEnv("VITE_APP_MODE", "desktop");
     notifyMock.mockReset();
@@ -163,12 +169,12 @@ describe("AgentNotificationBridge", () => {
     expect(showSpy).not.toHaveBeenCalled();
   });
 
-  it("is a no-op outside AgentsContext", () => {
-    const { container } = render(<AgentNotificationBridge />);
+  it("is a no-op outside ConnectionsContext", () => {
+    const { container } = render(<ConnectionNotificationBridge />);
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("does nothing when not in managed identity mode, even inside AgentsContext", () => {
+  it("does nothing when not in managed identity mode, even inside ConnectionsContext", () => {
     vi.stubEnv("VITE_APP_MODE", "");
     const switchTo = vi.fn();
     const { registry, emit } = makeRegistryStub("active-id");

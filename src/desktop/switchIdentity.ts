@@ -5,7 +5,7 @@ import { setAccessToken } from "@/api/tokenStore";
 import { setActiveIdentityKey } from "@/platform/activeIdentity";
 import type { ServerInfo } from "@/types/api";
 import type { PlatformBridge } from "@/platform/PlatformBridge";
-import type { AgentRegistry } from "./agents/AgentRegistry";
+import type { ConnectionRegistry } from "./connections/ConnectionRegistry";
 import { loadDesktopConfig, saveDesktopConfig, setLastActiveIdentity } from "./desktopConfig";
 
 export interface SwitchTarget {
@@ -14,22 +14,22 @@ export interface SwitchTarget {
 }
 
 export async function performIdentitySwitch(
-  registry: AgentRegistry,
+  registry: ConnectionRegistry,
   bridge: PlatformBridge,
   target: SwitchTarget,
 ): Promise<{ token: string; serverInfo: ServerInfo }> {
   const previousActiveIdentityId = registry.getSnapshot().activeIdentityId;
-  const agent = registry.getAgent(target.identityId);
-  const agentSnapshot = agent?.getSnapshot();
-  if (!agent || agentSnapshot?.status !== "healthy") {
+  const connection = registry.getConnection(target.identityId);
+  const connectionSnapshot = connection?.getSnapshot();
+  if (!connection || connectionSnapshot?.status !== "healthy") {
     throw new Error("identity_switch_target_not_healthy");
   }
 
-  const token = agent.getAccessToken() ?? (await agent.refreshNow());
+  const token = connection.getAccessToken() ?? (await connection.refreshNow());
 
-  await negotiateApiVersion(agentSnapshot.origin);
+  await negotiateApiVersion(connectionSnapshot.origin);
 
-  const serverInfo = agent.serverInfo();
+  const serverInfo = connection.serverInfo();
   if (!serverInfo) throw new Error("identity_switch_missing_server_info");
   configureApiClient(serverInfo.apiUrl);
   setServerInfo(serverInfo);
@@ -45,10 +45,10 @@ export async function performIdentitySwitch(
     await saveDesktopConfig(bridge, next);
   }
 
-  const unreadRefreshes = [agent.refreshUnreadCounts()];
+  const unreadRefreshes = [connection.refreshUnreadCounts()];
   if (previousActiveIdentityId && previousActiveIdentityId !== target.identityId) {
-    const previousAgent = registry.getAgent(previousActiveIdentityId);
-    if (previousAgent) unreadRefreshes.push(previousAgent.refreshUnreadCounts());
+    const previousConnection = registry.getConnection(previousActiveIdentityId);
+    if (previousConnection) unreadRefreshes.push(previousConnection.refreshUnreadCounts());
   }
   await Promise.allSettled(unreadRefreshes);
 

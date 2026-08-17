@@ -7,7 +7,7 @@ import {
   IdentityFetchError,
   unwrapMember,
   type ServerContext,
-} from "@/desktop/agents/identityFetch";
+} from "@/desktop/connections/identityFetch";
 
 const ORIGIN_A = "https://alpha.example";
 const ORIGIN_B = "https://beta.example";
@@ -157,13 +157,13 @@ describe("identityPost", () => {
     let receivedBody: unknown;
     let contentType: string | null = null;
     server.use(
-      http.post(`${ORIGIN_A}/api/v1/agents/ping`, async ({ request }) => {
+      http.post(`${ORIGIN_A}/api/v1/connections/ping`, async ({ request }) => {
         contentType = request.headers.get("Content-Type");
         receivedBody = await request.json();
         return HttpResponse.json({ ack: true });
       }),
     );
-    const result = await identityPost(ctx(ORIGIN_A), "/agents/ping", { note: "hi" });
+    const result = await identityPost(ctx(ORIGIN_A), "/connections/ping", { note: "hi" });
     expect(contentType).toContain("application/json");
     expect(receivedBody).toEqual({ note: "hi" });
     expect(result).toEqual({ ack: true });
@@ -172,24 +172,24 @@ describe("identityPost", () => {
   it("sends no body when none is provided", async () => {
     let receivedText = "unset";
     server.use(
-      http.post(`${ORIGIN_A}/api/v1/agents/ping`, async ({ request }) => {
+      http.post(`${ORIGIN_A}/api/v1/connections/ping`, async ({ request }) => {
         receivedText = await request.text();
         return HttpResponse.json({ ack: true });
       }),
     );
-    await identityPost(ctx(ORIGIN_A), "/agents/ping");
+    await identityPost(ctx(ORIGIN_A), "/connections/ping");
     expect(receivedText).toBe("");
   });
 
   it("still sends the Bearer token on a post", async () => {
     let authHeader: string | null = null;
     server.use(
-      http.post(`${ORIGIN_A}/api/v1/agents/ping`, ({ request }) => {
+      http.post(`${ORIGIN_A}/api/v1/connections/ping`, ({ request }) => {
         authHeader = request.headers.get("Authorization");
         return HttpResponse.json({});
       }),
     );
-    await identityPost(ctx(ORIGIN_A, "post-token"), "/agents/ping", {});
+    await identityPost(ctx(ORIGIN_A, "post-token"), "/connections/ping", {});
     expect(authHeader).toBe("Bearer post-token");
   });
 });

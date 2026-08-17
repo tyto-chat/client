@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
-import { AgentRegistry } from "@/desktop/agents/AgentRegistry";
+import { ConnectionRegistry } from "@/desktop/connections/ConnectionRegistry";
 import { performIdentitySwitch } from "@/desktop/switchIdentity";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import {
@@ -81,7 +81,7 @@ async function bootWithFakeBridge(identities: DesktopIdentity[], activeId: strin
   config = setLastActiveIdentity(config, profileId, activeId);
   await saveDesktopConfig(bridge, config);
 
-  const registry = new AgentRegistry(bridge);
+  const registry = new ConnectionRegistry(bridge);
   await registry.boot(profileId, identities, activeId);
   return { registry, bridge, profileId };
 }
@@ -117,19 +117,22 @@ describe("performIdentitySwitch", () => {
 
     const { registry, bridge, profileId } = await bootWithFakeBridge([identityA, identityB], "ia");
     await vi.waitFor(() => {
-      expect(registry.getSnapshot().agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
+      expect(registry.getSnapshot().connections.map((a) => a.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
     });
 
-    const agentBTokenBeforeSwitch = registry.getAgent("ib")!.getAccessToken();
+    const connectionBTokenBeforeSwitch = registry.getConnection("ib")!.getAccessToken();
 
     const result = await performIdentitySwitch(registry, bridge, { identityId: "ib" });
 
-    expect(result.token).toBe(agentBTokenBeforeSwitch);
+    expect(result.token).toBe(connectionBTokenBeforeSwitch);
     expect(result.serverInfo.name).toBe("Beta");
 
     expect(getBaseUrl()).toBe(`${ORIGIN_B}/api`);
     expect(getServerInfo()!.name).toBe("Beta");
-    expect(getAccessToken()).toBe(agentBTokenBeforeSwitch);
+    expect(getAccessToken()).toBe(connectionBTokenBeforeSwitch);
     expect(registry.getSnapshot().activeIdentityId).toBe("ib");
 
     const persisted = await loadDesktopConfig(bridge);
@@ -145,7 +148,7 @@ describe("performIdentitySwitch", () => {
     registry.stopAll();
   });
 
-  it("throws and leaves the globals untouched when the target agent is not healthy", async () => {
+  it("throws and leaves the globals untouched when the target connection is not healthy", async () => {
     const ORIGIN_UNREACHABLE = "https://unreachable.example";
     stubServerInfo(ORIGIN_A, "Alpha");
     stubData(ORIGIN_A, 1);
@@ -158,7 +161,7 @@ describe("performIdentitySwitch", () => {
 
     const { registry, bridge } = await bootWithFakeBridge([identityA, identityB], "ia");
     await vi.waitFor(() => {
-      expect(registry.getAgent("ia")!.getSnapshot().status).toBe("healthy");
+      expect(registry.getConnection("ia")!.getSnapshot().status).toBe("healthy");
     });
 
     setServerInfo({
@@ -192,7 +195,7 @@ describe("performIdentitySwitch", () => {
     registry.stopAll();
   });
 
-  it("rejects and leaves every global untouched when the target agent's token refresh fails mid-switch", async () => {
+  it("rejects and leaves every global untouched when the target connection's token refresh fails mid-switch", async () => {
     stubServerInfo(ORIGIN_A, "Alpha");
     stubServerInfo(ORIGIN_B, "Beta");
     stubData(ORIGIN_A, 1);
@@ -204,7 +207,10 @@ describe("performIdentitySwitch", () => {
 
     const { registry, bridge, profileId } = await bootWithFakeBridge([identityA, identityB], "ia");
     await vi.waitFor(() => {
-      expect(registry.getSnapshot().agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
+      expect(registry.getSnapshot().connections.map((a) => a.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
     });
 
     await performIdentitySwitch(registry, bridge, { identityId: "ia" });
@@ -215,8 +221,8 @@ describe("performIdentitySwitch", () => {
     expect(baseUrlBefore).toBe(`${ORIGIN_A}/api`);
     expect(serverInfoNameBefore).toBe("Alpha");
 
-    const agentB = registry.getAgent("ib")!;
-    const getAccessTokenSpy = vi.spyOn(agentB, "getAccessToken").mockReturnValue(null);
+    const connectionB = registry.getConnection("ib")!;
+    const getAccessTokenSpy = vi.spyOn(connectionB, "getAccessToken").mockReturnValue(null);
     server.use(
       http.post(`${ORIGIN_B}/api/token/refresh`, () =>
         HttpResponse.json({ error: "invalid_refresh_token" }, { status: 401 }),
@@ -238,7 +244,7 @@ describe("performIdentitySwitch", () => {
     registry.stopAll();
   });
 
-  it("refetches unread counts for both the previous and the newly-active agent after a switch", async () => {
+  it("refetches unread counts for both the previous and the newly-active connection after a switch", async () => {
     stubServerInfo(ORIGIN_A, "Alpha");
     stubServerInfo(ORIGIN_B, "Beta");
     stubData(ORIGIN_A, 1);
@@ -250,13 +256,16 @@ describe("performIdentitySwitch", () => {
 
     const { registry, bridge } = await bootWithFakeBridge([identityA, identityB], "ia");
     await vi.waitFor(() => {
-      expect(registry.getSnapshot().agents.map((a) => a.status)).toEqual(["healthy", "healthy"]);
+      expect(registry.getSnapshot().connections.map((a) => a.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
     });
 
-    const agentA = registry.getAgent("ia")!;
-    const agentB = registry.getAgent("ib")!;
-    const refreshA = vi.spyOn(agentA, "refreshUnreadCounts").mockResolvedValue(undefined);
-    const refreshB = vi.spyOn(agentB, "refreshUnreadCounts").mockResolvedValue(undefined);
+    const connectionA = registry.getConnection("ia")!;
+    const connectionB = registry.getConnection("ib")!;
+    const refreshA = vi.spyOn(connectionA, "refreshUnreadCounts").mockResolvedValue(undefined);
+    const refreshB = vi.spyOn(connectionB, "refreshUnreadCounts").mockResolvedValue(undefined);
 
     await performIdentitySwitch(registry, bridge, { identityId: "ib" });
 

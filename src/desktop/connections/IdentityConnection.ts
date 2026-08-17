@@ -17,10 +17,10 @@ import { decodeJwtPayload } from "@/utils/jwtPayload";
 import { parseMercureEvent } from "@/utils/parseMercureEvent";
 import { identityFetch, unwrapMember, type ServerContext } from "./identityFetch";
 
-export type AgentStatus =
+export type ConnectionStatus =
   "connecting" | "healthy" | "auth-failed" | "unreachable" | "version-mismatch";
 
-export interface AgentCommunity {
+export interface ConnectionCommunity {
   id: number;
   identifier: string;
   name: string;
@@ -31,33 +31,33 @@ export interface AgentCommunity {
   pinned: boolean;
 }
 
-export interface AgentNotificationEvent {
+export interface ConnectionNotificationEvent {
   identityId: string;
   origin: string;
   serverName: string | null;
   raw: NotificationMercureEvent;
 }
 
-export interface AgentRailSeed {
+export interface ConnectionRailSeed {
   communities: Community[];
   pinned: PinnedCommunity[];
   memberships: MyCommunityMembership[];
 }
 
-export interface AgentSnapshot {
+export interface ConnectionSnapshot {
   identityId: string;
-  status: AgentStatus;
+  status: ConnectionStatus;
   serverName: string | null;
   origin: string;
   userId: number | null;
-  communities: AgentCommunity[];
+  communities: ConnectionCommunity[];
   unreadCounts: Record<string, number>;
   error: unknown;
 }
 
-export interface AgentCallbacks {
-  onChange(snapshot: AgentSnapshot): void;
-  onNotification(event: AgentNotificationEvent): void;
+export interface ConnectionCallbacks {
+  onChange(snapshot: ConnectionSnapshot): void;
+  onNotification(event: ConnectionNotificationEvent): void;
   persistRotatedToken(refreshToken: string): Promise<void>;
 }
 
@@ -73,14 +73,14 @@ class AuthFailedError extends Error {
   }
 }
 
-function buildAgentCommunities(
+function buildConnectionCommunities(
   memberships: MyCommunityMembership[],
   communities: Community[],
   pinned: PinnedCommunity[],
-): AgentCommunity[] {
+): ConnectionCommunity[] {
   const memberIds = new Set(memberships.map((m) => m.communityId));
   const pinnedIds = new Set(pinned.map((p) => p.community.id));
-  const toAgentCommunity = (c: Community): AgentCommunity => ({
+  const toConnectionCommunity = (c: Community): ConnectionCommunity => ({
     id: c.id,
     identifier: c.identifier,
     name: c.name,
@@ -95,22 +95,22 @@ function buildAgentCommunities(
     .sort((a, b) => a.position - b.position)
     .map((p) => byId.get(p.community.id) ?? p.community);
   const rest = communities.filter((c) => !pinnedIds.has(c.id));
-  return [...pinnedFirst, ...rest].map(toAgentCommunity);
+  return [...pinnedFirst, ...rest].map(toConnectionCommunity);
 }
 
-export class IdentityAgent {
+export class IdentityConnection {
   private bridge: PlatformBridge;
   private profileId: string;
   private identity: DesktopIdentity;
-  private callbacks: AgentCallbacks;
+  private callbacks: ConnectionCallbacks;
 
-  private status: AgentStatus = "connecting";
+  private status: ConnectionStatus = "connecting";
   private token: string | null = null;
   private serverInfoValue: ServerInfo | null = null;
   private apiVersionValue = "";
   private apiBase: string | null = null;
   private errorValue: unknown = null;
-  private snapshot: AgentSnapshot;
+  private snapshot: ConnectionSnapshot;
 
   private stopped = true;
   private connectionId = 0;
@@ -120,8 +120,8 @@ export class IdentityAgent {
   private inFlightRefresh: Promise<string> | null = null;
 
   private userIdValue: number | null = null;
-  private communitiesValue: AgentCommunity[] = [];
-  private railSeedValue: AgentRailSeed | null = null;
+  private communitiesValue: ConnectionCommunity[] = [];
+  private railSeedValue: ConnectionRailSeed | null = null;
   private unreadCountsValue: Record<string, number> = {};
   private realtimeUnsubscribe: (() => void) | null = null;
   private realtimeRemintTimer: ReturnType<typeof setTimeout> | null = null;
@@ -132,7 +132,7 @@ export class IdentityAgent {
     bridge: PlatformBridge,
     profileId: string,
     identity: DesktopIdentity,
-    callbacks: AgentCallbacks,
+    callbacks: ConnectionCallbacks,
   ) {
     this.bridge = bridge;
     this.profileId = profileId;
@@ -168,7 +168,7 @@ export class IdentityAgent {
     this.closeRealtimeSubscription();
   }
 
-  getSnapshot(): AgentSnapshot {
+  getSnapshot(): ConnectionSnapshot {
     return this.snapshot;
   }
 
@@ -207,7 +207,7 @@ export class IdentityAgent {
     return this.serverInfoValue;
   }
 
-  railSeed(): AgentRailSeed | null {
+  railSeed(): ConnectionRailSeed | null {
     return this.railSeedValue;
   }
 
@@ -266,7 +266,7 @@ export class IdentityAgent {
 
   private async performRefresh(): Promise<string> {
     if (!this.apiBase) {
-      const error = new Error("identity_agent_not_connected");
+      const error = new Error("identity_connection_not_connected");
       if (this.stopped) throw error;
       this.errorValue = error;
       this.setStatus("unreachable");
@@ -356,7 +356,7 @@ export class IdentityAgent {
     }, delay);
   }
 
-  private setStatus(status: AgentStatus): void {
+  private setStatus(status: ConnectionStatus): void {
     this.status = status;
     this.rebuildSnapshot();
   }
@@ -366,7 +366,7 @@ export class IdentityAgent {
     this.callbacks.onChange(this.snapshot);
   }
 
-  private buildSnapshot(): AgentSnapshot {
+  private buildSnapshot(): ConnectionSnapshot {
     return {
       identityId: this.identity.id,
       status: this.status,
@@ -409,7 +409,7 @@ export class IdentityAgent {
         pinned: pinnedList,
         memberships: membershipList,
       };
-      this.communitiesValue = buildAgentCommunities(membershipList, communityList, pinnedList);
+      this.communitiesValue = buildConnectionCommunities(membershipList, communityList, pinnedList);
       this.unreadCountsValue = counts.counts;
       this.rebuildSnapshot();
       this.subscribeRealtime(myId, me.id, realtimeToken.token, realtimeToken.expiresAt);

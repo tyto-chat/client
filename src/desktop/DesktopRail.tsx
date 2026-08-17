@@ -6,9 +6,9 @@ import { isManagedIdentityMode } from "@/platform/appMode";
 import { getPlatformBridge } from "@/platform/bridge";
 import { gradientEnd, onAccentColor } from "@/utils/accentGradient";
 import { getUserColor } from "@/utils/userColor";
-import { AgentsContext, type AgentsContextValue } from "./agents/AgentsContext";
-import type { AgentRegistry, RegistrySnapshot } from "./agents/AgentRegistry";
-import type { AgentCommunity, AgentSnapshot } from "./agents/IdentityAgent";
+import { ConnectionsContext, type ConnectionsContextValue } from "./connections/ConnectionsContext";
+import type { ConnectionRegistry, RegistrySnapshot } from "./connections/ConnectionRegistry";
+import type { ConnectionCommunity, ConnectionSnapshot } from "./connections/IdentityConnection";
 import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
 import { ReloginModal } from "./ReloginModal";
 import { persistWizardResult } from "./identitySetup";
@@ -17,7 +17,7 @@ import { loadDesktopConfig, saveDesktopConfig, setLastActiveIdentity } from "./d
 const DEFAULT_HEALTHY_TIMEOUT_MS = 15_000;
 
 function waitForHealthy(
-  registry: AgentRegistry,
+  registry: ConnectionRegistry,
   identityId: string,
   timeoutMs: number,
 ): Promise<boolean> {
@@ -34,10 +34,13 @@ function waitForHealthy(
     }
 
     function check() {
-      const agent = registry.getSnapshot().agents.find((a) => a.identityId === identityId);
-      if (!agent) return;
-      if (agent.status === "healthy") settle(true);
-      else if (agent.status === "auth-failed" || agent.status === "version-mismatch") settle(false);
+      const connection = registry
+        .getSnapshot()
+        .connections.find((a) => a.identityId === identityId);
+      if (!connection) return;
+      if (connection.status === "healthy") settle(true);
+      else if (connection.status === "auth-failed" || connection.status === "version-mismatch")
+        settle(false);
     }
 
     const timer = setTimeout(() => settle(false), timeoutMs);
@@ -46,12 +49,12 @@ function waitForHealthy(
   });
 }
 
-function useOptionalAgentsContext(): AgentsContextValue | null {
-  return useContext(AgentsContext);
+function useOptionalConnectionsContext(): ConnectionsContextValue | null {
+  return useContext(ConnectionsContext);
 }
 
 function useOptionalRegistrySnapshot(
-  contextValue: AgentsContextValue | null,
+  contextValue: ConnectionsContextValue | null,
 ): RegistrySnapshot | null {
   const subscribe = useCallback(
     (listener: () => void) => {
@@ -67,7 +70,7 @@ function useOptionalRegistrySnapshot(
   return useSyncExternalStore(subscribe, getSnapshot);
 }
 
-function agentCommunityTileStyle(community: AgentCommunity): React.CSSProperties {
+function connectionCommunityTileStyle(community: ConnectionCommunity): React.CSSProperties {
   if (community.logoUrl) return {};
   const base = community.accentColor ?? getUserColor(community.iri ?? community.identifier);
   return {
@@ -77,17 +80,17 @@ function agentCommunityTileStyle(community: AgentCommunity): React.CSSProperties
 }
 
 function ServerStatusOverlay({
-  agent,
+  connection,
   registry,
   onLockClick,
 }: {
-  agent: AgentSnapshot;
-  registry: AgentRegistry;
+  connection: ConnectionSnapshot;
+  registry: ConnectionRegistry;
   onLockClick: () => void;
 }) {
   const { t } = useTranslation("desktop");
 
-  if (agent.status === "auth-failed") {
+  if (connection.status === "auth-failed") {
     return (
       <button
         type="button"
@@ -104,7 +107,7 @@ function ServerStatusOverlay({
     );
   }
 
-  if (agent.status === "unreachable") {
+  if (connection.status === "unreachable") {
     return (
       <button
         type="button"
@@ -112,7 +115,7 @@ function ServerStatusOverlay({
         title={t("server_status_unreachable")}
         onClick={(e) => {
           e.stopPropagation();
-          registry.getAgent(agent.identityId)?.retry();
+          registry.getConnection(connection.identityId)?.retry();
         }}
         className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rail text-fg-subtle ring-2 ring-rail"
       >
@@ -121,7 +124,7 @@ function ServerStatusOverlay({
     );
   }
 
-  if (agent.status === "version-mismatch") {
+  if (connection.status === "version-mismatch") {
     return (
       <span
         data-testid="desktop-server-incompatible"
@@ -146,17 +149,27 @@ function formatHost(origin: string): string {
   return host.length > 18 ? `${host.slice(0, 9)}…${host.slice(-6)}` : host;
 }
 
-function ServerCaption({ agent, showDmDot }: { agent: AgentSnapshot; showDmDot?: boolean }) {
-  const name = agent.serverName ?? formatHost(agent.origin);
-  const dmUnread = agent.unreadCounts["dm"] ?? 0;
+function ServerCaption({
+  connection,
+  showDmDot,
+}: {
+  connection: ConnectionSnapshot;
+  showDmDot?: boolean;
+}) {
+  const name = connection.serverName ?? formatHost(connection.origin);
+  const dmUnread = connection.unreadCounts["dm"] ?? 0;
   return (
     <div
       role="group"
       aria-label={name}
-      title={agent.serverName ? `${agent.serverName} — ${agent.origin}` : agent.origin}
+      title={
+        connection.serverName
+          ? `${connection.serverName} — ${connection.origin}`
+          : connection.origin
+      }
       data-testid="desktop-server-header"
       className={`flex max-w-[64px] items-center gap-1 ${
-        agent.status === "connecting" ? "animate-pulse" : ""
+        connection.status === "connecting" ? "animate-pulse" : ""
       }`}
     >
       <span className="truncate text-[9px] font-semibold text-fg-subtle">{name}</span>
@@ -173,17 +186,17 @@ function ServerCaption({ agent, showDmDot }: { agent: AgentSnapshot; showDmDot?:
 const wellClass =
   "rail-well relative flex w-[58px] shrink-0 flex-col items-center gap-2.5 rounded-[18px] px-2 py-2.5";
 
-function AgentCommunityTile({
-  agent,
+function ConnectionCommunityTile({
+  connection,
   community,
   switchTo,
 }: {
-  agent: AgentSnapshot;
-  community: AgentCommunity;
-  switchTo: AgentsContextValue["switchTo"];
+  connection: ConnectionSnapshot;
+  community: ConnectionCommunity;
+  switchTo: ConnectionsContextValue["switchTo"];
 }) {
-  const unread = agent.unreadCounts[String(community.id)] ?? 0;
-  const disabled = agent.status !== "healthy";
+  const unread = connection.unreadCounts[String(community.id)] ?? 0;
+  const disabled = connection.status !== "healthy";
   return (
     <div className="relative">
       <button
@@ -194,12 +207,12 @@ function AgentCommunityTile({
         aria-disabled={disabled}
         onClick={() => {
           if (disabled) return;
-          void switchTo(agent.identityId, {
+          void switchTo(connection.identityId, {
             to: "/$communityId",
             params: { communityId: community.identifier },
           }).catch(() => undefined);
         }}
-        style={agentCommunityTileStyle(community)}
+        style={connectionCommunityTileStyle(community)}
         className={`flex h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-[13px] font-bold transition-opacity hover:opacity-80 ${
           disabled ? "pointer-events-none opacity-40" : ""
         }`}
@@ -223,17 +236,20 @@ function AgentCommunityTile({
   );
 }
 
-function AgentOverflowTile({
-  agent,
+function ConnectionOverflowTile({
+  connection,
   overflow,
   switchTo,
 }: {
-  agent: AgentSnapshot;
-  overflow: AgentCommunity[];
-  switchTo: AgentsContextValue["switchTo"];
+  connection: ConnectionSnapshot;
+  overflow: ConnectionCommunity[];
+  switchTo: ConnectionsContextValue["switchTo"];
 }) {
-  const disabled = agent.status !== "healthy";
-  const totalUnread = overflow.reduce((sum, c) => sum + (agent.unreadCounts[String(c.id)] ?? 0), 0);
+  const disabled = connection.status !== "healthy";
+  const totalUnread = overflow.reduce(
+    (sum, c) => sum + (connection.unreadCounts[String(c.id)] ?? 0),
+    0,
+  );
   return (
     <div className="relative">
       <button
@@ -244,7 +260,7 @@ function AgentOverflowTile({
         aria-disabled={disabled}
         onClick={() => {
           if (disabled) return;
-          void switchTo(agent.identityId).catch(() => undefined);
+          void switchTo(connection.identityId).catch(() => undefined);
         }}
         className={`flex h-[42px] w-[42px] items-center justify-center rounded-[13px] bg-surface text-fg-muted hover:bg-raised hover:text-fg ${
           disabled ? "pointer-events-none opacity-40" : ""
@@ -262,34 +278,34 @@ function AgentOverflowTile({
 }
 
 function InactiveServerCommunities({
-  agent,
+  connection,
   switchTo,
 }: {
-  agent: AgentSnapshot;
-  switchTo: AgentsContextValue["switchTo"];
+  connection: ConnectionSnapshot;
+  switchTo: ConnectionsContextValue["switchTo"];
 }) {
-  const pinned = agent.communities.filter((c) => c.pinned);
-  const overflow = agent.communities.filter((c) => !c.pinned);
+  const pinned = connection.communities.filter((c) => c.pinned);
+  const overflow = connection.communities.filter((c) => !c.pinned);
   return (
     <>
       {pinned.map((community) => (
-        <AgentCommunityTile
+        <ConnectionCommunityTile
           key={community.id}
-          agent={agent}
+          connection={connection}
           community={community}
           switchTo={switchTo}
         />
       ))}
       {overflow.length === 1 && overflow[0] ? (
-        <AgentCommunityTile
+        <ConnectionCommunityTile
           key={overflow[0].id}
-          agent={agent}
+          connection={connection}
           community={overflow[0]}
           switchTo={switchTo}
         />
       ) : (
         overflow.length > 1 && (
-          <AgentOverflowTile agent={agent} overflow={overflow} switchTo={switchTo} />
+          <ConnectionOverflowTile connection={connection} overflow={overflow} switchTo={switchTo} />
         )
       )}
     </>
@@ -298,32 +314,35 @@ function InactiveServerCommunities({
 
 export function DesktopRailGroups({ children }: { children?: React.ReactNode }) {
   const { t } = useTranslation("desktop");
-  const contextValue = useOptionalAgentsContext();
+  const contextValue = useOptionalConnectionsContext();
   const snapshot = useOptionalRegistrySnapshot(contextValue);
   const [modalOpen, setModalOpen] = useState(false);
   const [reloginIdentityId, setReloginIdentityId] = useState<string | null>(null);
   if (!isManagedIdentityMode() || !contextValue || !snapshot) return <>{children}</>;
 
-  const hasActive = snapshot.agents.some((a) => a.identityId === snapshot.activeIdentityId);
+  const hasActive = snapshot.connections.some((a) => a.identityId === snapshot.activeIdentityId);
 
   return (
     <>
       {!hasActive && children}
-      {snapshot.agents.map((agent) => {
-        const isActive = agent.identityId === snapshot.activeIdentityId;
+      {snapshot.connections.map((connection) => {
+        const isActive = connection.identityId === snapshot.activeIdentityId;
         return (
-          <div key={agent.identityId} className="flex flex-col items-center gap-1">
-            <ServerCaption agent={agent} showDmDot={!isActive} />
+          <div key={connection.identityId} className="flex flex-col items-center gap-1">
+            <ServerCaption connection={connection} showDmDot={!isActive} />
             <div className={wellClass} data-testid={isActive ? "desktop-active-group" : undefined}>
               <ServerStatusOverlay
-                agent={agent}
+                connection={connection}
                 registry={contextValue.registry}
-                onLockClick={() => setReloginIdentityId(agent.identityId)}
+                onLockClick={() => setReloginIdentityId(connection.identityId)}
               />
               {isActive ? (
                 children
               ) : (
-                <InactiveServerCommunities agent={agent} switchTo={contextValue.switchTo} />
+                <InactiveServerCommunities
+                  connection={connection}
+                  switchTo={contextValue.switchTo}
+                />
               )}
             </div>
           </div>
@@ -357,8 +376,8 @@ export function DesktopRailGroups({ children }: { children?: React.ReactNode }) 
 }
 
 export interface AddServerModalProps {
-  registry: AgentRegistry;
-  switchTo: AgentsContextValue["switchTo"];
+  registry: ConnectionRegistry;
+  switchTo: ConnectionsContextValue["switchTo"];
   onClose: () => void;
   healthyTimeoutMs?: number;
 }
@@ -386,7 +405,7 @@ export function AddServerModal({
     const profile = nextConfig.profiles.find((p) => p.id === profileId);
     const identityId = profile?.lastActiveIdentityId ?? null;
 
-    if (identityId && !registry.getAgent(identityId)) {
+    if (identityId && !registry.getConnection(identityId)) {
       const identity = profile?.identities.find((i) => i.id === identityId);
       if (identity) registry.addIdentity(identity);
     }
