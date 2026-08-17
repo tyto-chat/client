@@ -17,3 +17,29 @@ export function subscribeActiveIdentity(listener: () => void): () => void {
     listeners.delete(listener);
   };
 }
+
+export interface IdentitySwitchNavigateTarget {
+  to: string;
+  params?: Record<string, string>;
+  search?: Record<string, unknown>;
+}
+
+type IdentitySwitchHandler = (
+  identityKey: string,
+  navigateTo?: IdentitySwitchNavigateTarget,
+) => Promise<void>;
+
+let switchHandler: IdentitySwitchHandler | null = null;
+
+export function registerIdentitySwitchHandler(handler: IdentitySwitchHandler | null): void {
+  switchHandler = handler;
+}
+
+export async function requestIdentitySwitch(
+  identityKey: string,
+  navigateTo?: IdentitySwitchNavigateTarget,
+): Promise<boolean> {
+  if (!switchHandler) return false;
+  await switchHandler(identityKey, navigateTo);
+  return true;
+}

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouterState } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +9,11 @@ import { useAccountDeletionStatus } from "@/queries/accountDeletionQueries";
 import { CommunityRail } from "@/components/CommunityRail";
 import { DesktopRailGroups } from "@/desktop/DesktopRail";
 import { isManagedIdentityMode } from "@/platform/appMode";
+import {
+  getActiveIdentityKey,
+  requestIdentitySwitch,
+  subscribeActiveIdentity,
+} from "@/platform/activeIdentity";
 import { ConnectionNotificationBridge } from "@/desktop/ConnectionNotificationBridge";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerInfo } from "@/hooks/useServerInfo";
@@ -64,7 +69,7 @@ function CommunityVoiceIndicator({ communityIdentifier }: { communityIdentifier:
   );
 }
 
-function ActiveVoiceButton() {
+export function ActiveVoiceButton() {
   const { t } = useTranslation("channel");
   const {
     activeCall,
@@ -81,8 +86,14 @@ function ActiveVoiceButton() {
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   useClickOutside(ref, closeMenu, menuOpen);
+  const activeIdentityKey = useSyncExternalStore(subscribeActiveIdentity, getActiveIdentityKey);
 
   if (!activeCall) return null;
+
+  const callIdentityKey =
+    activeCall.identityKey && activeCall.identityKey !== activeIdentityKey
+      ? activeCall.identityKey
+      : null;
 
   const offAir = isDeafened || isMuted;
   const buttonTitle = isDeafened
@@ -144,17 +155,35 @@ function ActiveVoiceButton() {
           </MenuItem>
 
           <div className="border-t border-line">
-            <Link
-              to="/$communityId/$channelId"
-              params={{
-                communityId: activeCall.communityId,
-                channelId: activeCall.channel.identifier,
-              }}
-              onClick={closeMenu}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-fg hover:bg-surface"
-            >
-              {t("return_to_channel")}
-            </Link>
+            {callIdentityKey ? (
+              <button
+                onClick={() => {
+                  closeMenu();
+                  void requestIdentitySwitch(callIdentityKey, {
+                    to: "/$communityId/$channelId",
+                    params: {
+                      communityId: activeCall.communityId,
+                      channelId: activeCall.channel.identifier,
+                    },
+                  });
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-fg hover:bg-surface"
+              >
+                {t("return_to_channel")}
+              </button>
+            ) : (
+              <Link
+                to="/$communityId/$channelId"
+                params={{
+                  communityId: activeCall.communityId,
+                  channelId: activeCall.channel.identifier,
+                }}
+                onClick={closeMenu}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-fg hover:bg-surface"
+              >
+                {t("return_to_channel")}
+              </Link>
+            )}
           </div>
           <div className="border-t border-line">
             <button

@@ -5,6 +5,7 @@ import { AppShell, router } from "@/appShell";
 import { createAppQueryClient } from "@/queryClientFactory";
 import { queryKeys } from "@/queries/queryKeys";
 import { getPlatformBridge } from "@/platform/bridge";
+import { registerIdentitySwitchHandler } from "@/platform/activeIdentity";
 import { ConnectionRegistry } from "./connections/ConnectionRegistry";
 import { ConnectionsContext, type ConnectionsContextValue } from "./connections/ConnectionsContext";
 import { DesktopBootstrap, type DesktopSession } from "./DesktopBootstrap";
@@ -100,6 +101,11 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
     },
     [registry, transplantCaches],
   );
+
+  useEffect(() => {
+    registerIdentitySwitchHandler(switchTo);
+    return () => registerIdentitySwitchHandler(null);
+  }, [switchTo]);
 
   const contextValue = useMemo<ConnectionsContextValue>(
     () => ({ registry, switchTo }),
