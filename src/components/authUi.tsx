@@ -17,7 +17,10 @@ export function ErrorBanner({ message }: { message: string }) {
   const lead = separatorIndex === -1 ? message : message.slice(0, separatorIndex + 1);
   const rest = separatorIndex === -1 ? "" : message.slice(separatorIndex + 1).trim();
   return (
-    <div className="flex items-start gap-2.5 rounded-md border border-danger/35 bg-danger-subtle px-3 py-2.5 text-[13px] text-fg">
+    <div
+      data-testid="auth-error"
+      className="flex items-start gap-2.5 rounded-md border border-danger/35 bg-danger-subtle px-3 py-2.5 text-[13px] text-fg"
+    >
       <span>
         <b className="text-danger">{lead}</b>
         {rest && ` ${rest}`}
