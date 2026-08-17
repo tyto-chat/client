@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppShell, router } from "@/appShell";
 import { createAppQueryClient } from "@/queryClientFactory";
+import { queryKeys } from "@/queries/queryKeys";
 import { getPlatformBridge } from "@/platform/bridge";
 import { AgentRegistry } from "./agents/AgentRegistry";
 import { AgentsContext, type AgentsContextValue } from "./agents/AgentsContext";
@@ -50,6 +51,19 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
 
   const switchTo = useCallback(
     async (identityId: string, navigateTo?: SwitchTarget["navigateTo"]): Promise<void> => {
+      const seed = registry.getAgent(identityId)?.railSeed();
+      if (seed) {
+        const client = clientFor(queryClients, identityId);
+        if (!client.getQueryData(queryKeys.communities())) {
+          client.setQueryData(queryKeys.communities(), seed.communities);
+        }
+        if (!client.getQueryData(queryKeys.pinnedCommunities())) {
+          client.setQueryData(queryKeys.pinnedCommunities(), { items: seed.pinned });
+        }
+        if (!client.getQueryData(queryKeys.myMemberships())) {
+          client.setQueryData(queryKeys.myMemberships(), seed.memberships);
+        }
+      }
       const pending = { identityId, navigateTo: navigateTo ?? { to: "/" } };
       pendingNavigationRef.current = pending;
       try {
@@ -59,7 +73,7 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
         throw error;
       }
     },
-    [registry],
+    [registry, queryClients],
   );
 
   const contextValue = useMemo<AgentsContextValue>(
@@ -82,7 +96,7 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
       {activeIdentityId && (
         <AgentsContext.Provider value={contextValue}>
           <QueryClientProvider client={clientFor(queryClients, activeIdentityId)}>
-            {renderApp ? renderApp(activeIdentityId) : <AppShell key={activeIdentityId} />}
+            {renderApp ? renderApp(activeIdentityId) : <AppShell />}
           </QueryClientProvider>
         </AgentsContext.Provider>
       )}

@@ -2,6 +2,7 @@ import { configureApiClient } from "@/api/client";
 import { negotiateApiVersion } from "@/api/apiVersion";
 import { setServerInfo } from "@/api/serverInfo";
 import { setAccessToken } from "@/api/tokenStore";
+import { setActiveIdentityKey } from "@/platform/activeIdentity";
 import type { ServerInfo } from "@/types/api";
 import type { PlatformBridge } from "@/platform/PlatformBridge";
 import type { AgentRegistry } from "./agents/AgentRegistry";
@@ -35,6 +36,7 @@ export async function performIdentitySwitch(
 
   setAccessToken(token);
   registry.setActiveIdentity(target.identityId);
+  setActiveIdentityKey(target.identityId);
 
   const config = await loadDesktopConfig(bridge);
   const profileId = config.lastActiveProfileId ?? config.profiles[0]?.id ?? null;

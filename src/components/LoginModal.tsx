@@ -1,16 +1,22 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { login as apiLogin, verifyTwoFactorLogin } from "@/api/auth";
-import { fetchMe, requestPasswordReset, confirmPasswordReset } from "@/api/users";
+import { fetchMe } from "@/api/users";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotification } from "@/context/NotificationContext";
 import { ServerBranding } from "@/components/ServerBranding";
 import { LegalFooterLinks, PoweredByTyto } from "@/components/LegalLinks";
-import { TextInput } from "@/components/TextInput";
-import { ModalFooter } from "@/components/ModalFooter";
+import { ForgotPasswordModal } from "@/components/ForgotPasswordModal";
 import { Modal } from "@/components/Modal";
+import {
+  ErrorBanner,
+  TotpCellsInput,
+  inputClass,
+  labelClass,
+  primaryButtonClass,
+} from "@/components/authUi";
 import { isRateLimited, ApiError } from "@/api/client";
 import type { ServerInfo } from "@/types/api";
 
@@ -36,7 +42,6 @@ export function LoginModal({ serverInfo, onClose, onSwitchToRegister, onSuccess 
   const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [useRecovery, setUseRecovery] = useState(false);
-  const verifyFormRef = useRef<HTMLFormElement>(null);
 
   async function completeLogin(token: string) {
     login(token);
@@ -108,17 +113,22 @@ export function LoginModal({ serverInfo, onClose, onSwitchToRegister, onSuccess 
               onNavigate={onClose}
             />
           )}
-          <h1 className="mb-4 pr-6 text-2xl font-bold">
-            {t(step === "totp" ? "two_factor_title" : "sign_in")}
-          </h1>
+          <div className="mb-4 pr-6">
+            <h1 className="mb-1 text-[19px] font-semibold tracking-tight text-fg">
+              {t(step === "totp" ? "two_factor_title" : "sign_in")}
+            </h1>
+            <p className="text-[13.5px] text-fg-muted">
+              {step === "totp"
+                ? t(useRecovery ? "two_factor_recovery_hint" : "two_factor_hint")
+                : t("sign_in_sub")}
+            </p>
+          </div>
 
           {step === "credentials" ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <div className="animate-message-in space-y-1">
-                  <p className="rounded bg-red-500/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-                    {error}
-                  </p>
+                  <ErrorBanner message={error} />
                   <p className="text-right text-xs">
                     <button
                       type="button"
@@ -131,8 +141,8 @@ export function LoginModal({ serverInfo, onClose, onSwitchToRegister, onSuccess 
                 </div>
               )}
 
-              <div className="space-y-1">
-                <label htmlFor="email" className="text-sm text-fg-muted">
+              <div>
+                <label htmlFor="email" className={labelClass}>
                   {t("common:email")}
                 </label>
                 <input
@@ -142,12 +152,12 @@ export function LoginModal({ serverInfo, onClose, onSwitchToRegister, onSuccess 
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg bg-surface px-3 py-2 text-fg outline-none focus:ring-2 focus:ring-[var(--accent)] dark:text-white"
+                  className={inputClass}
                 />
               </div>
 
-              <div className="space-y-1">
-                <label htmlFor="password" className="text-sm text-fg-muted">
+              <div>
+                <label htmlFor="password" className={labelClass}>
                   {t("common:password")}
                 </label>
                 <input
@@ -157,7 +167,7 @@ export function LoginModal({ serverInfo, onClose, onSwitchToRegister, onSuccess 
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg bg-surface px-3 py-2 text-fg outline-none focus:ring-2 focus:ring-[var(--accent)] dark:text-white"
+                  className={inputClass}
                 />
               </div>
 
@@ -171,11 +181,7 @@ export function LoginModal({ serverInfo, onClose, onSwitchToRegister, onSuccess 
                 {t("remember_me")}
               </label>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full rounded-lg bg-accent-gradient py-2 font-semibold text-on-accent shadow-soft-sm transition hover:opacity-90 disabled:opacity-50"
-              >
+              <button type="submit" disabled={isSubmitting} className={primaryButtonClass}>
                 {isSubmitting ? t("signing_in") : t("sign_in")}
               </button>
 
@@ -191,42 +197,42 @@ export function LoginModal({ serverInfo, onClose, onSwitchToRegister, onSuccess 
               </p>
             </form>
           ) : (
-            <form ref={verifyFormRef} onSubmit={handleVerify} className="space-y-4">
-              <p className="text-sm text-fg-muted">
-                {t(useRecovery ? "two_factor_recovery_hint" : "two_factor_hint")}
-              </p>
-
-              <div className="space-y-1">
-                <label htmlFor="two-factor-code" className="text-sm text-fg-muted">
-                  {t(useRecovery ? "two_factor_recovery_label" : "two_factor_code_label")}
-                </label>
-                <input
+            <form onSubmit={handleVerify} className="space-y-4">
+              {useRecovery ? (
+                <div>
+                  <label htmlFor="two-factor-code" className={labelClass}>
+                    {t("two_factor_recovery_label")}
+                  </label>
+                  <input
+                    id="two-factor-code"
+                    autoFocus
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    autoComplete="one-time-code"
+                    placeholder="xxxxx-xxxxx"
+                    className={`${inputClass} font-mono`}
+                    data-testid="two-factor-code-input"
+                  />
+                </div>
+              ) : (
+                <TotpCellsInput
                   id="two-factor-code"
-                  autoFocus
                   value={code}
-                  onChange={(e) => {
-                    const value = useRecovery
-                      ? e.target.value
-                      : e.target.value.replace(/\D/g, "").slice(0, 6);
-                    setCode(value);
-                    if (!useRecovery && value.length === 6) {
-                      queueMicrotask(() => verifyFormRef.current?.requestSubmit());
-                    }
-                  }}
-                  inputMode={useRecovery ? "text" : "numeric"}
-                  autoComplete="one-time-code"
-                  placeholder={useRecovery ? "xxxxx-xxxxx" : "123456"}
-                  className="w-full rounded-lg bg-surface px-3 py-2 text-center font-mono text-lg tracking-widest text-fg outline-none focus:ring-2 focus:ring-[var(--accent)] dark:text-white"
-                  data-testid="two-factor-code-input"
+                  onChange={setCode}
+                  ariaLabel={t("two_factor_code_label")}
+                  testId="two-factor-code-input"
+                  cellTestIdPrefix="two-factor-code-cell"
                 />
-              </div>
+              )}
 
-              {error && <p className="text-sm text-danger">{error}</p>}
+              <p className="text-[12.5px] text-fg-subtle">{t("signing_in_as", { email })}</p>
+
+              {error && <ErrorBanner message={error} />}
 
               <button
                 type="submit"
-                disabled={isSubmitting || code.length === 0}
-                className="w-full rounded-lg bg-accent-gradient py-2 font-semibold text-on-accent shadow-soft-sm transition hover:opacity-90 disabled:opacity-50"
+                disabled={isSubmitting || (useRecovery ? code.length === 0 : code.length !== 6)}
+                className={primaryButtonClass}
               >
                 {t("two_factor_verify_submit")}
               </button>
@@ -280,121 +286,6 @@ export function LoginModal({ serverInfo, onClose, onSwitchToRegister, onSuccess 
             )}
         </>
       )}
-    </Modal>
-  );
-}
-
-function ForgotPasswordModal({
-  initialEmail,
-  onClose,
-  onSuccess,
-}: {
-  initialEmail: string;
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const { t } = useTranslation(["auth", "common"]);
-  const { notify } = useNotification();
-  const [step, setStep] = useState<"email" | "token">("email");
-  const [email, setEmail] = useState(initialEmail);
-  const [token, setToken] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [touched, setTouched] = useState({ newPassword: false, confirmPassword: false });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const tooShort = newPassword.length > 0 && newPassword.length < 8;
-  const mismatch = confirmPassword.length > 0 && newPassword !== confirmPassword;
-  const isValid = token.length > 0 && newPassword.length >= 8 && newPassword === confirmPassword;
-
-  async function handleEmailSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      await requestPasswordReset(email);
-      notify(t("token_sent"), "success");
-      setStep("token");
-    } catch {
-      notify(t("failed_send_reset"), "error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function handleTokenSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!isValid) return;
-    setIsSubmitting(true);
-    try {
-      await confirmPasswordReset(email, token, newPassword);
-      onSuccess();
-    } catch {
-      notify(t("invalid_token"), "error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  return (
-    <Modal title={t("reset_password_modal_title")} onClose={onClose} size="sm">
-      {(close) =>
-        step === "email" ? (
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <p className="text-sm text-fg-muted">{t("enter_email_hint")}</p>
-            <TextInput
-              type="email"
-              label={t("common:email")}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <ModalFooter
-              onCancel={close}
-              submitLabel={t("send_token")}
-              pendingLabel={t("sending")}
-              isPending={isSubmitting}
-            />
-          </form>
-        ) : (
-          <form onSubmit={handleTokenSubmit} className="animate-message-in space-y-4">
-            <p className="text-sm text-fg-muted">{t("enter_token_hint", { email })}</p>
-            <TextInput
-              label={t("reset_token_label")}
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              required
-            />
-            <TextInput
-              label={t("new_password")}
-              type="password"
-              autoComplete="new-password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              onBlur={() => setTouched((prev) => ({ ...prev, newPassword: true }))}
-              required
-              error={touched.newPassword && tooShort ? t("password_too_short") : undefined}
-            />
-            <TextInput
-              label={t("confirm_new_password")}
-              type="password"
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              onBlur={() => setTouched((prev) => ({ ...prev, confirmPassword: true }))}
-              required
-              error={touched.confirmPassword && mismatch ? t("passwords_dont_match") : undefined}
-            />
-            <ModalFooter
-              onCancel={() => setStep("email")}
-              cancelLabel={t("common:back")}
-              submitLabel={t("reset_password_submit")}
-              pendingLabel={t("resetting")}
-              isPending={isSubmitting}
-              disabled={!isValid}
-            />
-          </form>
-        )
-      }
     </Modal>
   );
 }

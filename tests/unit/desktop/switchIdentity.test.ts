@@ -57,6 +57,9 @@ function stubData(origin: string, userId: number) {
     http.get(`${origin}/api/v1/me/community-memberships`, () =>
       HttpResponse.json({ "hydra:member": [] }),
     ),
+    http.get(`${origin}/api/v1/me/pinned-communities`, () =>
+      HttpResponse.json({ "hydra:member": [] }),
+    ),
     http.get(`${origin}/api/v1/communities`, () => HttpResponse.json({ "hydra:member": [] })),
     http.get(`${origin}/api/v1/notifications/unread-counts`, () =>
       HttpResponse.json({ counts: {} }),

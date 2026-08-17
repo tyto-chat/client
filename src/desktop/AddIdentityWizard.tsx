@@ -1,13 +1,25 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { loginAt, verifyTwoFactorAt } from "@/api/auth";
 import { isRateLimited, ApiError, configureApiClient } from "@/api/client";
 import type { ServerInfo } from "@/types/api";
+import {
+  ErrorBanner,
+  TotpCellsInput,
+  ghostButtonClass,
+  inputClass,
+  labelClass,
+  primaryButtonClass,
+} from "@/components/authUi";
+import { ForgotPasswordModal } from "@/components/ForgotPasswordModal";
+import { RegisterForm } from "@/components/RegisterForm";
+import { LegalFooterLinks } from "@/components/LegalLinks";
 import { normalizeServerUrl, InvalidServerUrlError } from "./desktopConfig";
 import { resolveServer } from "./connectIdentity";
 import { ServerTile } from "./ServerTile";
 
-type Step = "server" | "credentials" | "totp";
+type Step = "server" | "credentials" | "totp" | "register";
 
 interface ServerState {
   origin: string;
@@ -38,37 +50,12 @@ async function resolveServerState(origin: string): Promise<ServerState> {
 
 class ServerResolutionFailedError extends Error {}
 
-const inputClass =
-  "w-full rounded-md border border-line-strong bg-raised px-3 py-2 text-fg outline-none placeholder:text-fg-subtle focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)] dark:text-white";
-
-const labelClass = "mb-1.5 block text-[12.5px] font-semibold tracking-[0.01em] text-fg-muted";
-
-const primaryButtonClass =
-  "w-full rounded-md bg-accent-gradient py-2.5 font-semibold text-on-accent shadow-soft-sm transition hover:opacity-90 disabled:opacity-50";
-
-const ghostButtonClass =
-  "w-full py-1.5 text-center text-[13px] font-medium text-fg-muted underline decoration-fg-muted/45 underline-offset-[3px] transition hover:text-fg disabled:opacity-50";
-
-export function ErrorBanner({ message }: { message: string }) {
-  const separatorIndex = message.indexOf(". ");
-  const lead = separatorIndex === -1 ? message : message.slice(0, separatorIndex + 1);
-  const rest = separatorIndex === -1 ? "" : message.slice(separatorIndex + 1).trim();
-  return (
-    <div className="flex items-start gap-2.5 rounded-md border border-danger/35 bg-danger-subtle px-3 py-2.5 text-[13px] text-fg">
-      <span>
-        <b className="text-danger">{lead}</b>
-        {rest && ` ${rest}`}
-      </span>
-    </div>
-  );
-}
-
 function BrandHeader({ step }: { step: 1 | 2 }) {
   const { t } = useTranslation("desktop");
   return (
     <div className="flex items-center gap-2.5">
       <img src="/nebula-logo.svg" alt="" className="h-[34px] w-auto shrink-0" />
-      <span className="text-[17px] font-bold tracking-tight text-fg">tyto</span>
+      <span className="text-[17px] font-bold tracking-tight text-fg">tyto.chat</span>
       <span className="ml-auto text-xs text-fg-subtle">
         {t("step_counter", { current: step, total: 2 })}
       </span>
@@ -166,19 +153,18 @@ export function AddIdentityWizard({
   initialEmail,
   lockServer,
 }: Props) {
-  const { t } = useTranslation("desktop");
+  const { t } = useTranslation(["desktop", "auth"]);
   const startsOnCredentials = Boolean(lockServer && initialServerUrl);
   const [step, setStep] = useState<Step>(startsOnCredentials ? "credentials" : "server");
   const [serverUrlInput, setServerUrlInput] = useState(initialServerUrl ?? "");
   const [serverState, setServerState] = useState<ServerState | null>(null);
   const [email, setEmail] = useState(initialEmail ?? "");
   const [password, setPassword] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [code, setCode] = useState("");
-  const [totpFocused, setTotpFocused] = useState(false);
   const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const totpFormRef = useRef<HTMLFormElement>(null);
   const resolvingRef = useRef<Promise<ServerState> | null>(null);
 
   useEffect(() => {
@@ -264,6 +250,19 @@ export function AddIdentityWizard({
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  async function handleRegistered(regEmail: string, regPassword: string) {
+    const state = await requireServerState();
+    const result = await loginAt(state.serverInfo.apiUrl, regEmail, regPassword);
+    onComplete({
+      serverUrl: state.origin,
+      email: regEmail,
+      password: regPassword,
+      token: result.token,
+      refreshToken: result.refreshToken,
+      serverInfo: state.serverInfo,
+    });
   }
 
   async function handleVerify(e: React.FormEvent) {
@@ -399,6 +398,17 @@ export function AddIdentityWizard({
           >
             {t("change_server")}
           </button>
+          <p className="text-center text-[12.5px]">
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-accent-text hover:underline"
+              data-testid="wizard-forgot-password"
+            >
+              {t("auth:forgot_password")}
+            </button>
+          </p>
+          <LegalFooterLinks serverInfo={serverState?.serverInfo ?? null} />
         </form>
       )}
 
@@ -458,11 +468,58 @@ export function AddIdentityWizard({
           >
             {t("sign_in")}
           </button>
+          <p className="text-center text-[12.5px]">
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-accent-text hover:underline"
+              data-testid="wizard-forgot-password"
+            >
+              {t("auth:forgot_password")}
+            </button>
+          </p>
+          {serverState?.serverInfo.registrationEnabled && (
+            <p className="text-center text-[12.5px] text-fg-muted">
+              {t("auth:no_account")}{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setStep("register");
+                }}
+                className="text-accent-text hover:underline"
+                data-testid="wizard-register-link"
+              >
+                {t("auth:register_link")}
+              </button>
+            </p>
+          )}
+          <LegalFooterLinks serverInfo={serverState?.serverInfo ?? null} />
         </form>
       )}
 
+      {step === "register" && serverState && (
+        <div className="space-y-4">
+          <BrandHeader step={2} />
+          <h3 className="text-[19px] font-semibold tracking-tight text-fg">
+            {t("auth:create_account")}
+          </h3>
+          <ServerChip
+            name={serverState.serverInfo.name}
+            origin={serverState.origin}
+            onChange={handleChangeServer}
+          />
+          <RegisterForm
+            serverInfo={serverState.serverInfo}
+            onSwitchToLogin={() => setStep("credentials")}
+            onComplete={handleRegistered}
+          />
+          <LegalFooterLinks serverInfo={serverState.serverInfo} />
+        </div>
+      )}
+
       {step === "totp" && (
-        <form ref={totpFormRef} onSubmit={handleVerify} className="space-y-4">
+        <form onSubmit={handleVerify} className="space-y-4">
           <div>
             <h3 className="mb-1 text-[19px] font-semibold tracking-tight text-fg">
               {t("totp_title")}
@@ -472,46 +529,14 @@ export function AddIdentityWizard({
           {serverState && (
             <ServerChip name={serverState.serverInfo.name} origin={serverState.origin} />
           )}
-          <div className="relative">
-            <div className="flex gap-2" aria-hidden="true">
-              {Array.from({ length: 6 }, (_, i) => {
-                const char = code[i] ?? "";
-                const isActive = totpFocused && code.length === i;
-                return (
-                  <div
-                    key={i}
-                    data-testid={`wizard-totp-cell-${i}`}
-                    className={`flex h-13 w-11 items-center justify-center rounded-md border bg-raised font-mono text-xl text-fg ${
-                      isActive
-                        ? "border-[var(--accent)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)]"
-                        : "border-line-strong"
-                    }`}
-                  >
-                    {char}
-                  </div>
-                );
-              })}
-            </div>
-            <input
-              id="wizard-totp"
-              autoFocus
-              value={code}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, "").slice(0, 6);
-                setCode(value);
-                if (value.length === 6) {
-                  queueMicrotask(() => totpFormRef.current?.requestSubmit());
-                }
-              }}
-              onFocus={() => setTotpFocused(true)}
-              onBlur={() => setTotpFocused(false)}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              aria-label={t("totp_title")}
-              className="absolute inset-0 h-full w-full cursor-text opacity-0"
-              data-testid="wizard-totp-input"
-            />
-          </div>
+          <TotpCellsInput
+            id="wizard-totp"
+            value={code}
+            onChange={setCode}
+            ariaLabel={t("totp_title")}
+            testId="wizard-totp-input"
+            cellTestIdPrefix="wizard-totp-cell"
+          />
           <p className="text-[12.5px] text-fg-subtle">{t("signing_in_as", { email })}</p>
           {error && <ErrorBanner message={error} />}
           <button
@@ -524,6 +549,16 @@ export function AddIdentityWizard({
           </button>
         </form>
       )}
+
+      {showForgotPassword &&
+        createPortal(
+          <ForgotPasswordModal
+            initialEmail={email}
+            onClose={() => setShowForgotPassword(false)}
+            onSuccess={() => setShowForgotPassword(false)}
+          />,
+          document.body,
+        )}
     </div>
   );
 }

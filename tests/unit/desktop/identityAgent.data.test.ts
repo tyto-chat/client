@@ -68,6 +68,7 @@ interface StubDataOverrides {
   me?: { id: number };
   memberships?: unknown[];
   communities?: unknown[];
+  pinned?: unknown[];
   counts?: Record<string, number>;
   realtimeExpiresAt?: number;
 }
@@ -97,6 +98,9 @@ function stubData(overrides: StubDataOverrides = {}) {
     ),
     http.get(`${ORIGIN}/api/v1/communities`, () =>
       HttpResponse.json({ "hydra:member": communities }),
+    ),
+    http.get(`${ORIGIN}/api/v1/me/pinned-communities`, () =>
+      HttpResponse.json({ "hydra:member": overrides.pinned ?? [] }),
     ),
     http.get(`${ORIGIN}/api/v1/notifications/unread-counts`, () => HttpResponse.json({ counts })),
     http.get(`${ORIGIN}/api/v1/realtime/token`, () =>
@@ -129,7 +133,7 @@ afterEach(() => {
 });
 
 describe("IdentityAgent data sync", () => {
-  it("loads userId, member communities, and unread counts after reaching healthy", async () => {
+  it("loads userId, all visible communities with member/pinned flags, and unread counts after reaching healthy", async () => {
     const { agent } = await startHealthyAgentWithData();
 
     const snapshot = agent.getSnapshot();
@@ -141,6 +145,19 @@ describe("IdentityAgent data sync", () => {
         name: "Team Alpha",
         logoUrl: "https://cdn.example/logo-sm.png",
         accentColor: "#112233",
+        iri: null,
+        member: true,
+        pinned: false,
+      },
+      {
+        id: 6,
+        identifier: "not-a-member",
+        name: "Not A Member",
+        logoUrl: null,
+        accentColor: null,
+        iri: null,
+        member: false,
+        pinned: false,
       },
     ]);
     expect(snapshot.unreadCounts).toEqual({ "5": 2 });
@@ -316,6 +333,9 @@ describe("IdentityAgent data-load retry", () => {
           ],
         }),
       ),
+      http.get(`${ORIGIN}/api/v1/me/pinned-communities`, () =>
+        HttpResponse.json({ "hydra:member": [] }),
+      ),
       http.get(`${ORIGIN}/api/v1/notifications/unread-counts`, () => {
         countsHits += 1;
         if (countsHits === 1) return HttpResponse.json({ error: "boom" }, { status: 500 });
@@ -361,6 +381,9 @@ describe("IdentityAgent data-load retry", () => {
         HttpResponse.json({ "hydra:member": [] }),
       ),
       http.get(`${ORIGIN}/api/v1/communities`, () => HttpResponse.json({ "hydra:member": [] })),
+      http.get(`${ORIGIN}/api/v1/me/pinned-communities`, () =>
+        HttpResponse.json({ "hydra:member": [] }),
+      ),
       http.get(`${ORIGIN}/api/v1/notifications/unread-counts`, () => {
         countsHits += 1;
         return HttpResponse.json({ error: "boom" }, { status: 500 });

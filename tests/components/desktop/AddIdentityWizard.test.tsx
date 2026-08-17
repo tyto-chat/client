@@ -1,18 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse, delay } from "msw";
 import { server } from "../../mocks/server";
+import { NotificationProvider } from "@/context/NotificationContext";
 import { AddIdentityWizard } from "@/desktop/AddIdentityWizard";
 
 const ORIGIN = "https://srv.example";
 const ORIGIN_2 = "https://srv2.example";
 
-function stubServerResolution() {
+function stubServerResolution(serverInfo: Record<string, unknown> = {}) {
   server.use(
     http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
     http.get(`${ORIGIN}/api/v1/server-info`, () =>
-      HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "Srv" }),
+      HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "Srv", ...serverInfo }),
     ),
   );
 }
@@ -280,6 +281,87 @@ describe("AddIdentityWizard", () => {
     expect(cells[3]).toHaveTextContent("");
     expect(cells[4]).toHaveTextContent("");
     expect(cells[5]).toHaveTextContent("");
+  });
+
+  it("hides the register link when registration is disabled", async () => {
+    stubServerResolution();
+    const user = userEvent.setup();
+    render(<AddIdentityWizard onComplete={vi.fn()} />);
+
+    await user.type(screen.getByTestId("wizard-server-input"), "srv.example");
+    await user.click(screen.getByTestId("wizard-server-submit"));
+
+    expect(await screen.findByTestId("wizard-email-input")).toBeInTheDocument();
+    expect(screen.getByTestId("wizard-forgot-password")).toBeInTheDocument();
+    expect(screen.queryByTestId("wizard-register-link")).not.toBeInTheDocument();
+  });
+
+  it("registers a new account and completes the wizard when registration is enabled", async () => {
+    stubServerResolution({ registrationEnabled: true });
+    server.use(
+      http.post(`${ORIGIN}/api/api/v1/challenges`, () => HttpResponse.json({}, { status: 201 })),
+      http.post(`${ORIGIN}/api/api/v1/users`, () => HttpResponse.json({ id: 1 }, { status: 201 })),
+      http.post(`${ORIGIN}/api/auth`, () =>
+        HttpResponse.json({ token: "jwt-r", refresh_token: "refresh-r" }),
+      ),
+    );
+    const onComplete = vi.fn();
+    const user = userEvent.setup();
+    render(<AddIdentityWizard onComplete={onComplete} />);
+
+    await user.type(screen.getByTestId("wizard-server-input"), "srv.example");
+    await user.click(screen.getByTestId("wizard-server-submit"));
+    await user.click(await screen.findByTestId("wizard-register-link"));
+
+    await user.type(await screen.findByTestId("register-email-input"), "new@b.c");
+    await user.click(screen.getByTestId("register-email-submit"));
+
+    await user.type(await screen.findByTestId("register-display-name-input"), "Newbie");
+    await user.click(screen.getByLabelText("Digit 1"));
+    await user.paste("123456");
+    await user.type(screen.getByTestId("register-password-input"), "longenough");
+    await user.type(screen.getByTestId("register-confirm-password-input"), "longenough");
+    await user.click(screen.getByTestId("register-submit"));
+
+    await waitFor(() =>
+      expect(onComplete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          serverUrl: ORIGIN,
+          email: "new@b.c",
+          password: "longenough",
+          token: "jwt-r",
+          refreshToken: "refresh-r",
+        }),
+      ),
+    );
+  });
+
+  it("opens the forgot-password modal and requests a reset against the resolved server", async () => {
+    stubServerResolution();
+    const resetRequests: unknown[] = [];
+    server.use(
+      http.post(`${ORIGIN}/api/api/v1/reset_password`, async ({ request }) => {
+        resetRequests.push(await request.json());
+        return HttpResponse.json({}, { status: 202 });
+      }),
+    );
+    const user = userEvent.setup();
+    render(
+      <NotificationProvider>
+        <AddIdentityWizard onComplete={vi.fn()} />
+      </NotificationProvider>,
+    );
+
+    await user.type(screen.getByTestId("wizard-server-input"), "srv.example");
+    await user.click(screen.getByTestId("wizard-server-submit"));
+    await user.type(await screen.findByTestId("wizard-email-input"), "a@b.c");
+    await user.click(screen.getByTestId("wizard-forgot-password"));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByLabelText(/email/i)).toHaveValue("a@b.c");
+    await user.click(within(dialog).getByRole("button", { name: /send/i }));
+
+    await waitFor(() => expect(resetRequests).toEqual([{ email: "a@b.c" }]));
   });
 
   it("shows the welcome-back identity block with the signed-in email on a locked wizard", async () => {

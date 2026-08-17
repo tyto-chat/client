@@ -7,7 +7,8 @@ import { UserProfileButton } from "@/components/UserProfileButton";
 import { AccountPendingDeletionGate } from "@/components/AccountPendingDeletionGate";
 import { useAccountDeletionStatus } from "@/queries/accountDeletionQueries";
 import { CommunityRail } from "@/components/CommunityRail";
-import { DesktopRailActiveHeader, DesktopRailOthers } from "@/desktop/DesktopRail";
+import { DesktopRailGroups } from "@/desktop/DesktopRail";
+import { isManagedIdentityMode } from "@/platform/appMode";
 import { AgentNotificationBridge } from "@/desktop/AgentNotificationBridge";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerInfo } from "@/hooks/useServerInfo";
@@ -177,7 +178,7 @@ function CommunityRailNav({ children }: { children: ReactNode }) {
   return (
     <nav
       className={cn(
-        "group/nav flex w-16 flex-col items-center gap-2.5 bg-rail py-3",
+        `group/nav flex ${isManagedIdentityMode() ? "w-[72px]" : "w-16"} flex-col items-center gap-2.5 bg-rail py-3`,
         "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:transition-transform",
         navOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full",
         "md:static",
@@ -285,14 +286,14 @@ function AppShell() {
                         })()}
                       </Link>
                     )}
-                    <DesktopRailActiveHeader unreadCounts={unreadCounts} />
-                    <CommunityRail
-                      unreadCounts={unreadCounts}
-                      renderTileExtra={(c) => (
-                        <CommunityVoiceIndicator communityIdentifier={c.identifier} />
-                      )}
-                    />
-                    <DesktopRailOthers />
+                    <DesktopRailGroups>
+                      <CommunityRail
+                        unreadCounts={unreadCounts}
+                        renderTileExtra={(c) => (
+                          <CommunityVoiceIndicator communityIdentifier={c.identifier} />
+                        )}
+                      />
+                    </DesktopRailGroups>
                     <AgentNotificationBridge />
                     <div className="mt-auto" />
                     <ActiveVoiceButton />

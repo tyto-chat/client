@@ -13,7 +13,6 @@ import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
 import { ReloginModal } from "./ReloginModal";
 import { persistWizardResult } from "./identitySetup";
 import { loadDesktopConfig, saveDesktopConfig, setLastActiveIdentity } from "./desktopConfig";
-import { ServerTile } from "./ServerTile";
 
 const DEFAULT_HEALTHY_TIMEOUT_MS = 15_000;
 
@@ -68,13 +67,9 @@ function useOptionalRegistrySnapshot(
   return useSyncExternalStore(subscribe, getSnapshot);
 }
 
-function totalUnread(unreadCounts: Record<string, number>): number {
-  return Object.values(unreadCounts).reduce((sum, n) => sum + n, 0);
-}
-
 function agentCommunityTileStyle(community: AgentCommunity): React.CSSProperties {
   if (community.logoUrl) return {};
-  const base = community.accentColor ?? getUserColor(community.identifier);
+  const base = community.accentColor ?? getUserColor(community.iri ?? community.identifier);
   return {
     backgroundImage: `linear-gradient(135deg, ${base}, ${gradientEnd(base)})`,
     color: onAccentColor(base),
@@ -102,7 +97,7 @@ function ServerStatusOverlay({
           e.stopPropagation();
           onLockClick();
         }}
-        className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rail text-warning ring-2 ring-rail"
+        className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rail text-warning ring-2 ring-rail"
       >
         <LockIcon size={10} />
       </button>
@@ -119,7 +114,7 @@ function ServerStatusOverlay({
           e.stopPropagation();
           registry.getAgent(agent.identityId)?.retry();
         }}
-        className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rail text-fg-subtle ring-2 ring-rail"
+        className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rail text-fg-subtle ring-2 ring-rail"
       >
         <CloudOffIcon size={10} />
       </button>
@@ -131,7 +126,7 @@ function ServerStatusOverlay({
       <span
         data-testid="desktop-server-incompatible"
         title={t("server_incompatible")}
-        className="pointer-events-none absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rail text-danger ring-2 ring-rail"
+        className="pointer-events-none absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rail text-danger ring-2 ring-rail"
       >
         <AlertTriangleIcon size={10} />
       </span>
@@ -141,52 +136,42 @@ function ServerStatusOverlay({
   return null;
 }
 
-function ServerHeaderTile({
-  agent,
-  registry,
-  onLockClick,
-  unreadCounts,
-}: {
-  agent: AgentSnapshot;
-  registry: AgentRegistry;
-  onLockClick: (identityId: string) => void;
-  unreadCounts?: Record<string, number>;
-}) {
-  const name = agent.serverName ?? agent.origin;
-  const counts = unreadCounts ?? agent.unreadCounts;
-  const total = totalUnread(counts);
-  const dmUnread = counts["dm"] ?? 0;
+function formatHost(origin: string): string {
+  let host: string;
+  try {
+    host = new URL(origin).host;
+  } catch {
+    host = origin;
+  }
+  return host.length > 18 ? `${host.slice(0, 9)}…${host.slice(-6)}` : host;
+}
+
+function ServerCaption({ agent, showDmDot }: { agent: AgentSnapshot; showDmDot?: boolean }) {
+  const name = agent.serverName ?? formatHost(agent.origin);
+  const dmUnread = agent.unreadCounts["dm"] ?? 0;
   return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div aria-hidden className="h-px w-8 bg-line" />
-      <div
-        className={`relative ${agent.status === "connecting" ? "animate-pulse" : ""}`}
-        role="group"
-        aria-label={name}
-        title={name}
-        data-testid="desktop-server-header"
-      >
-        <ServerTile name={name} colorSeed={agent.origin} sizeClassName="h-7 w-7" />
-        {total > 0 && (
-          <span className="pointer-events-none absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-danger text-[0.55rem] font-bold text-white ring-2 ring-rail">
-            <span className="block cap-trim">{total > 9 ? "9+" : total}</span>
-          </span>
-        )}
-        {dmUnread > 0 && (
-          <span
-            data-testid="desktop-server-header-dm"
-            className="pointer-events-none absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-accent ring-2 ring-rail"
-          />
-        )}
-        <ServerStatusOverlay
-          agent={agent}
-          registry={registry}
-          onLockClick={() => onLockClick(agent.identityId)}
+    <div
+      role="group"
+      aria-label={name}
+      title={agent.serverName ? `${agent.serverName} — ${agent.origin}` : agent.origin}
+      data-testid="desktop-server-header"
+      className={`flex max-w-[64px] items-center gap-1 ${
+        agent.status === "connecting" ? "animate-pulse" : ""
+      }`}
+    >
+      <span className="truncate text-[9px] font-semibold text-fg-subtle">{name}</span>
+      {showDmDot && dmUnread > 0 && (
+        <span
+          data-testid="desktop-server-header-dm"
+          className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
         />
-      </div>
+      )}
     </div>
   );
 }
+
+const wellClass =
+  "rail-well relative flex w-[58px] shrink-0 flex-col items-center gap-2.5 rounded-[18px] px-2 py-2.5";
 
 function AgentCommunityTile({
   agent,
@@ -238,27 +223,128 @@ function AgentCommunityTile({
   );
 }
 
-export function DesktopRailActiveHeader({
-  unreadCounts,
+function AgentOverflowTile({
+  agent,
+  overflow,
+  switchTo,
 }: {
-  unreadCounts: Record<string, number>;
+  agent: AgentSnapshot;
+  overflow: AgentCommunity[];
+  switchTo: AgentsContextValue["switchTo"];
 }) {
+  const disabled = agent.status !== "healthy";
+  const totalUnread = overflow.reduce((sum, c) => sum + (agent.unreadCounts[String(c.id)] ?? 0), 0);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        data-testid="desktop-rail-overflow"
+        title={overflow.map((c) => c.name).join(", ")}
+        disabled={disabled}
+        aria-disabled={disabled}
+        onClick={() => {
+          if (disabled) return;
+          void switchTo(agent.identityId).catch(() => undefined);
+        }}
+        className={`flex h-[42px] w-[42px] items-center justify-center rounded-[13px] bg-surface text-fg-muted hover:bg-raised hover:text-fg ${
+          disabled ? "pointer-events-none opacity-40" : ""
+        }`}
+      >
+        <span className="text-sm font-semibold">+{overflow.length}</span>
+      </button>
+      {totalUnread > 0 && (
+        <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[0.625rem] font-bold text-white ring-2 ring-rail">
+          <span className="block cap-trim">{totalUnread > 9 ? "9+" : totalUnread}</span>
+        </span>
+      )}
+    </div>
+  );
+}
+
+function InactiveServerCommunities({
+  agent,
+  switchTo,
+}: {
+  agent: AgentSnapshot;
+  switchTo: AgentsContextValue["switchTo"];
+}) {
+  const pinned = agent.communities.filter((c) => c.pinned);
+  const overflow = agent.communities.filter((c) => !c.pinned);
+  return (
+    <>
+      {pinned.map((community) => (
+        <AgentCommunityTile
+          key={community.id}
+          agent={agent}
+          community={community}
+          switchTo={switchTo}
+        />
+      ))}
+      {overflow.length === 1 && overflow[0] ? (
+        <AgentCommunityTile
+          key={overflow[0].id}
+          agent={agent}
+          community={overflow[0]}
+          switchTo={switchTo}
+        />
+      ) : (
+        overflow.length > 1 && (
+          <AgentOverflowTile agent={agent} overflow={overflow} switchTo={switchTo} />
+        )
+      )}
+    </>
+  );
+}
+
+export function DesktopRailGroups({ children }: { children?: React.ReactNode }) {
+  const { t } = useTranslation("desktop");
   const contextValue = useOptionalAgentsContext();
   const snapshot = useOptionalRegistrySnapshot(contextValue);
+  const [modalOpen, setModalOpen] = useState(false);
   const [reloginIdentityId, setReloginIdentityId] = useState<string | null>(null);
-  if (!isManagedIdentityMode() || !contextValue || !snapshot) return null;
+  if (!isManagedIdentityMode() || !contextValue || !snapshot) return <>{children}</>;
 
-  const active = snapshot.agents.find((a) => a.identityId === snapshot.activeIdentityId);
-  if (!active) return null;
+  const hasActive = snapshot.agents.some((a) => a.identityId === snapshot.activeIdentityId);
 
   return (
     <>
-      <ServerHeaderTile
-        agent={active}
-        registry={contextValue.registry}
-        onLockClick={setReloginIdentityId}
-        unreadCounts={unreadCounts}
-      />
+      {!hasActive && children}
+      {snapshot.agents.map((agent) => {
+        const isActive = agent.identityId === snapshot.activeIdentityId;
+        return (
+          <div key={agent.identityId} className="flex flex-col items-center gap-1">
+            <ServerCaption agent={agent} showDmDot={!isActive} />
+            <div className={wellClass} data-testid={isActive ? "desktop-active-group" : undefined}>
+              <ServerStatusOverlay
+                agent={agent}
+                registry={contextValue.registry}
+                onLockClick={() => setReloginIdentityId(agent.identityId)}
+              />
+              {isActive ? (
+                children
+              ) : (
+                <InactiveServerCommunities agent={agent} switchTo={contextValue.switchTo} />
+              )}
+            </div>
+          </div>
+        );
+      })}
+      <button
+        type="button"
+        data-testid="desktop-add-server"
+        title={t("add_identity_title")}
+        onClick={() => setModalOpen(true)}
+        className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-dashed border-line-strong text-fg-muted transition-colors hover:border-line hover:bg-raised hover:text-fg"
+      >
+        <PlusIcon size={16} />
+      </button>
+      {modalOpen && (
+        <AddServerModal
+          registry={contextValue.registry}
+          switchTo={contextValue.switchTo}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
       {reloginIdentityId && (
         <ReloginModal
           registry={contextValue.registry}
@@ -323,61 +409,5 @@ export function AddServerModal({
     <Modal ariaLabel={t("add_identity_title")} onClose={onClose} size="sm">
       {(close) => <AddIdentityWizard onComplete={(result) => void handleComplete(result, close)} />}
     </Modal>
-  );
-}
-
-export function DesktopRailOthers() {
-  const { t } = useTranslation("desktop");
-  const contextValue = useOptionalAgentsContext();
-  const snapshot = useOptionalRegistrySnapshot(contextValue);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [reloginIdentityId, setReloginIdentityId] = useState<string | null>(null);
-  if (!isManagedIdentityMode() || !contextValue || !snapshot) return null;
-
-  const others = snapshot.agents.filter((a) => a.identityId !== snapshot.activeIdentityId);
-
-  return (
-    <>
-      {others.map((agent) => (
-        <div key={agent.identityId} className="flex w-full flex-col items-center gap-2.5">
-          <ServerHeaderTile
-            agent={agent}
-            registry={contextValue.registry}
-            onLockClick={setReloginIdentityId}
-          />
-          {agent.communities.map((community) => (
-            <AgentCommunityTile
-              key={community.id}
-              agent={agent}
-              community={community}
-              switchTo={contextValue.switchTo}
-            />
-          ))}
-        </div>
-      ))}
-      <button
-        type="button"
-        data-testid="desktop-add-server"
-        title={t("add_identity_title")}
-        onClick={() => setModalOpen(true)}
-        className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-dashed border-line-strong text-fg-muted transition-colors hover:border-line hover:bg-raised hover:text-fg"
-      >
-        <PlusIcon size={16} />
-      </button>
-      {modalOpen && (
-        <AddServerModal
-          registry={contextValue.registry}
-          switchTo={contextValue.switchTo}
-          onClose={() => setModalOpen(false)}
-        />
-      )}
-      {reloginIdentityId && (
-        <ReloginModal
-          registry={contextValue.registry}
-          identityId={reloginIdentityId}
-          onClose={() => setReloginIdentityId(null)}
-        />
-      )}
-    </>
   );
 }

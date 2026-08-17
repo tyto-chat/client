@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
-import { AddServerModal, DesktopRailActiveHeader, DesktopRailOthers } from "@/desktop/DesktopRail";
+import { AddServerModal, DesktopRailGroups } from "@/desktop/DesktopRail";
 import { ReloginModal } from "@/desktop/ReloginModal";
 import { AgentsContext, type AgentsContextValue } from "@/desktop/agents/AgentsContext";
 import { AgentRegistry as RealAgentRegistry } from "@/desktop/agents/AgentRegistry";
@@ -51,6 +51,9 @@ function stubOriginFull(
     }),
     http.get(`${origin}/api/v1/me`, () => HttpResponse.json({ id: userId })),
     http.get(`${origin}/api/v1/me/community-memberships`, () =>
+      HttpResponse.json({ "hydra:member": [] }),
+    ),
+    http.get(`${origin}/api/v1/me/pinned-communities`, () =>
       HttpResponse.json({ "hydra:member": [] }),
     ),
     http.get(`${origin}/api/v1/communities`, () => HttpResponse.json({ "hydra:member": [] })),
@@ -149,32 +152,32 @@ describe("DesktopRail", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders a group header for the active identity via DesktopRailActiveHeader", () => {
+  it("renders a group header for the active identity", () => {
     const active = makeAgent({ identityId: "ia", serverName: "Alpha" });
     const snapshot: RegistrySnapshot = { agents: [active], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
-    renderWithContext(<DesktopRailActiveHeader unreadCounts={{}} />, { registry });
+    renderWithContext(<DesktopRailGroups />, { registry });
 
     const headers = screen.getAllByTestId("desktop-server-header");
     expect(headers).toHaveLength(1);
     expect(headers[0]).toHaveAccessibleName("Alpha");
   });
 
-  it("sources the active header's badge from the unreadCounts prop, not the agent snapshot", () => {
+  it("captions the group with a middle-ellipsized host when the server has no name", () => {
     const active = makeAgent({
       identityId: "ia",
-      serverName: "Alpha",
-      unreadCounts: { "10": 9 },
+      serverName: null,
+      origin: "https://chat.acme-corp.example.com",
     });
     const snapshot: RegistrySnapshot = { agents: [active], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
-    renderWithContext(<DesktopRailActiveHeader unreadCounts={{ "10": 2, dm: 1 }} />, { registry });
+    renderWithContext(<DesktopRailGroups />, { registry });
 
     const header = screen.getByTestId("desktop-server-header");
-    expect(within(header).getByText("3")).toBeInTheDocument();
-    expect(within(header).queryByText("9")).not.toBeInTheDocument();
+    expect(within(header).getByText("chat.acme…le.com")).toBeInTheDocument();
+    expect(header).toHaveAttribute("title", "https://chat.acme-corp.example.com");
   });
 
   it("lists the non-active group's communities with unread badges and does not repeat the active group", () => {
@@ -183,19 +186,38 @@ describe("DesktopRail", () => {
       identityId: "ib",
       serverName: "Beta",
       communities: [
-        { id: 10, identifier: "sw", name: "Software", logoUrl: null, accentColor: "#3b82f6" },
-        { id: 11, identifier: "gm", name: "Games", logoUrl: null, accentColor: null },
+        {
+          id: 10,
+          identifier: "sw",
+          name: "Software",
+          logoUrl: null,
+          accentColor: "#3b82f6",
+          iri: null,
+          member: true,
+          pinned: true,
+        },
+        {
+          id: 11,
+          identifier: "gm",
+          name: "Games",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: true,
+          pinned: true,
+        },
       ],
       unreadCounts: { "10": 3, "11": 0, dm: 2 },
     });
     const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
-    renderWithContext(<DesktopRailOthers />, { registry });
+    renderWithContext(<DesktopRailGroups />, { registry });
 
     const headers = screen.getAllByTestId("desktop-server-header");
-    expect(headers).toHaveLength(1);
-    expect(headers[0]).toHaveAccessibleName("Beta");
+    expect(headers).toHaveLength(2);
+    expect(headers[0]).toHaveAccessibleName("Alpha");
+    expect(headers[1]).toHaveAccessibleName("Beta");
 
     const tiles = screen.getAllByTestId("desktop-rail-community");
     expect(tiles).toHaveLength(2);
@@ -210,6 +232,110 @@ describe("DesktopRail", () => {
     expect(screen.getByTestId("desktop-server-header-dm")).toBeInTheDocument();
   });
 
+  it("keeps registry order when the active identity is not first — active well moves, groups do not", () => {
+    const first = makeAgent({
+      identityId: "ia",
+      serverName: "Alpha",
+      communities: [
+        {
+          id: 10,
+          identifier: "sw",
+          name: "Software",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: true,
+          pinned: true,
+        },
+      ],
+    });
+    const second = makeAgent({ identityId: "ib", serverName: "Beta" });
+    const snapshot: RegistrySnapshot = { agents: [first, second], activeIdentityId: "ib" };
+    const registry = makeRegistryStub(snapshot);
+
+    renderWithContext(
+      <DesktopRailGroups>
+        <span data-testid="active-children" />
+      </DesktopRailGroups>,
+      { registry },
+    );
+
+    const headers = screen.getAllByTestId("desktop-server-header");
+    expect(headers.map((h) => h.getAttribute("aria-label"))).toEqual(["Alpha", "Beta"]);
+
+    const activeWell = screen.getByTestId("desktop-active-group");
+    expect(within(activeWell).getByTestId("active-children")).toBeInTheDocument();
+    expect(within(activeWell).queryByTestId("desktop-rail-community")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("desktop-rail-community")).toHaveLength(1);
+  });
+
+  it("mirrors the rail overflow rule in inactive wells: pinned tiles, single unpinned as tile, several as +N", async () => {
+    const mk = (id: number, name: string, pinned: boolean) => ({
+      id,
+      identifier: name.toLowerCase(),
+      name,
+      logoUrl: null,
+      accentColor: null,
+      iri: null,
+      member: true,
+      pinned,
+    });
+    const active = makeAgent({ identityId: "ia", serverName: "Alpha" });
+    const other = makeAgent({
+      identityId: "ib",
+      serverName: "Beta",
+      communities: [
+        mk(1, "Pin1", true),
+        mk(2, "Pin2", true),
+        mk(3, "Ov1", false),
+        mk(4, "Ov2", false),
+      ],
+      unreadCounts: { "3": 2, "4": 1 },
+    });
+    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+    const registry = makeRegistryStub(snapshot);
+    const switchTo = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+
+    renderWithContext(<DesktopRailGroups />, { registry, switchTo });
+
+    const tiles = screen.getAllByTestId("desktop-rail-community");
+    expect(tiles.map((tile) => tile.getAttribute("title"))).toEqual(["Pin1", "Pin2"]);
+    const overflowTile = screen.getByTestId("desktop-rail-overflow");
+    expect(overflowTile).toHaveTextContent("+2");
+    expect(within(overflowTile.parentElement!).getByText("3")).toBeInTheDocument();
+
+    await user.click(overflowTile);
+    expect(switchTo).toHaveBeenCalledWith("ib");
+  });
+
+  it("renders a single unpinned community as a real tile, not a +1 badge, in an inactive well", () => {
+    const active = makeAgent({ identityId: "ia", serverName: "Alpha" });
+    const other = makeAgent({
+      identityId: "ib",
+      serverName: "Beta",
+      communities: [
+        {
+          id: 3,
+          identifier: "solo",
+          name: "Solo",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: true,
+          pinned: false,
+        },
+      ],
+    });
+    const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
+    const registry = makeRegistryStub(snapshot);
+
+    renderWithContext(<DesktopRailGroups />, { registry });
+
+    expect(screen.getByTestId("desktop-rail-community")).toHaveAttribute("title", "Solo");
+    expect(screen.queryByTestId("desktop-rail-overflow")).not.toBeInTheDocument();
+  });
+
   it("fires switchTo with the right identity + navigate target when a community tile is clicked", async () => {
     const user = userEvent.setup();
     const active = makeAgent({ identityId: "ia" });
@@ -217,14 +343,23 @@ describe("DesktopRail", () => {
       identityId: "ib",
       serverName: "Beta",
       communities: [
-        { id: 10, identifier: "sw", name: "Software", logoUrl: null, accentColor: null },
+        {
+          id: 10,
+          identifier: "sw",
+          name: "Software",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: true,
+          pinned: true,
+        },
       ],
     });
     const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
     const switchTo = vi.fn().mockResolvedValue(undefined);
 
-    renderWithContext(<DesktopRailOthers />, { registry, switchTo });
+    renderWithContext(<DesktopRailGroups />, { registry, switchTo });
 
     await user.click(screen.getByTestId("desktop-rail-community"));
 
@@ -242,14 +377,23 @@ describe("DesktopRail", () => {
       serverName: "Beta",
       status: "unreachable",
       communities: [
-        { id: 10, identifier: "sw", name: "Software", logoUrl: null, accentColor: null },
+        {
+          id: 10,
+          identifier: "sw",
+          name: "Software",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: true,
+          pinned: true,
+        },
       ],
     });
     const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
     const switchTo = vi.fn().mockResolvedValue(undefined);
 
-    renderWithContext(<DesktopRailOthers />, { registry, switchTo });
+    renderWithContext(<DesktopRailGroups />, { registry, switchTo });
 
     const tile = screen.getByTestId("desktop-rail-community");
     expect(tile).toBeDisabled();
@@ -268,7 +412,7 @@ describe("DesktopRail", () => {
     const snapshot: RegistrySnapshot = { agents: [active], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
-    renderWithContext(<DesktopRailOthers />, { registry });
+    renderWithContext(<DesktopRailGroups />, { registry });
 
     expect(screen.queryByTestId("wizard-server-input")).not.toBeInTheDocument();
     await user.click(screen.getByTestId("desktop-add-server"));
@@ -284,8 +428,8 @@ describe("DesktopRail", () => {
 
     const { container } = renderWithContext(
       <>
-        <DesktopRailActiveHeader unreadCounts={{}} />
-        <DesktopRailOthers />
+        <DesktopRailGroups />
+        <DesktopRailGroups />
       </>,
       { registry },
     );
@@ -296,8 +440,8 @@ describe("DesktopRail", () => {
   it("renders null for both rail sections outside AgentsContext, even in desktop mode", () => {
     const { container } = render(
       <>
-        <DesktopRailActiveHeader unreadCounts={{}} />
-        <DesktopRailOthers />
+        <DesktopRailGroups />
+        <DesktopRailGroups />
       </>,
     );
 
@@ -507,7 +651,7 @@ describe("DesktopRail", () => {
     });
     const user = userEvent.setup();
 
-    renderWithContext(<DesktopRailOthers />, { registry });
+    renderWithContext(<DesktopRailGroups />, { registry });
 
     const lockButton = screen.getByTestId("desktop-server-lock");
     expect(lockButton.className).toContain("text-warning");
@@ -574,7 +718,7 @@ describe("DesktopRail", () => {
     });
     const user = userEvent.setup();
 
-    renderWithContext(<DesktopRailOthers />, { registry });
+    renderWithContext(<DesktopRailGroups />, { registry });
 
     await user.click(screen.getByTestId("desktop-server-lock"));
     await screen.findByTestId("wizard-email-input");
@@ -712,7 +856,7 @@ describe("DesktopRail", () => {
     });
     const user = userEvent.setup();
 
-    renderWithContext(<DesktopRailActiveHeader unreadCounts={{}} />, { registry });
+    renderWithContext(<DesktopRailGroups />, { registry });
 
     await user.click(screen.getByTestId("desktop-server-lock"));
     await screen.findByTestId("wizard-email-input");
@@ -738,7 +882,7 @@ describe("DesktopRail", () => {
     });
     const user = userEvent.setup();
 
-    renderWithContext(<DesktopRailOthers />, { registry });
+    renderWithContext(<DesktopRailGroups />, { registry });
 
     const retryButton = screen.getByTestId("desktop-server-retry");
     await user.click(retryButton);
@@ -753,7 +897,7 @@ describe("DesktopRail", () => {
     const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
-    renderWithContext(<DesktopRailOthers />, { registry });
+    renderWithContext(<DesktopRailGroups />, { registry });
 
     const warning = screen.getByTestId("desktop-server-incompatible");
     expect(warning.className).toContain("text-danger");
@@ -765,9 +909,9 @@ describe("DesktopRail", () => {
     const snapshot: RegistrySnapshot = { agents: [active, other], activeIdentityId: "ia" };
     const registry = makeRegistryStub(snapshot);
 
-    renderWithContext(<DesktopRailOthers />, { registry });
+    renderWithContext(<DesktopRailGroups />, { registry });
 
-    const header = screen.getByTestId("desktop-server-header");
-    expect(header.className).toContain("animate-pulse");
+    const headers = screen.getAllByTestId("desktop-server-header");
+    expect(headers[1]!.className).toContain("animate-pulse");
   });
 });

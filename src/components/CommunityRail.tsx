@@ -200,14 +200,25 @@ export function CommunityRail({ unreadCounts, renderTileExtra }: Props) {
           {renderTileExtra?.(activeUnpinned)}
         </div>
       )}
-      {overflow.length > 0 && (
-        <OverflowButton
-          communities={overflow}
-          unreadCounts={unreadCounts}
-          onQuickPin={quickPin}
-          canPin={canPin}
-          isMemberOf={isMemberOf}
-        />
+      {overflow.length === 1 && overflow[0] ? (
+        <div className="relative">
+          <CommunityTile
+            community={overflow[0]}
+            unread={unreadCounts[String(overflow[0].id)] ?? 0}
+            isMember={isMemberOf(overflow[0])}
+          />
+          {renderTileExtra?.(overflow[0])}
+        </div>
+      ) : (
+        overflow.length > 1 && (
+          <OverflowButton
+            communities={overflow}
+            unreadCounts={unreadCounts}
+            onQuickPin={quickPin}
+            canPin={canPin}
+            isMemberOf={isMemberOf}
+          />
+        )
       )}
     </>
   );

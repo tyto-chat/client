@@ -41,6 +41,9 @@ function stubHealthyServer(origin: string, name: string) {
     http.get(`${origin}/api/v1/me/community-memberships`, () =>
       HttpResponse.json({ "hydra:member": [] }),
     ),
+    http.get(`${origin}/api/v1/me/pinned-communities`, () =>
+      HttpResponse.json({ "hydra:member": [] }),
+    ),
     http.get(`${origin}/api/v1/communities`, () => HttpResponse.json({ "hydra:member": [] })),
     http.get(`${origin}/api/v1/notifications/unread-counts`, () =>
       HttpResponse.json({ counts: {} }),

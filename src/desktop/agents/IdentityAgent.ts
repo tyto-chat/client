@@ -9,6 +9,7 @@ import type {
   Community,
   HydraCollection,
   MyCommunityMembership,
+  PinnedCommunity,
   ServerInfo,
   NotificationMercureEvent,
 } from "@/types/api";
@@ -25,6 +26,9 @@ export interface AgentCommunity {
   name: string;
   logoUrl: string | null;
   accentColor: string | null;
+  iri: string | null;
+  member: boolean;
+  pinned: boolean;
 }
 
 export interface AgentNotificationEvent {
@@ -32,6 +36,12 @@ export interface AgentNotificationEvent {
   origin: string;
   serverName: string | null;
   raw: NotificationMercureEvent;
+}
+
+export interface AgentRailSeed {
+  communities: Community[];
+  pinned: PinnedCommunity[];
+  memberships: MyCommunityMembership[];
 }
 
 export interface AgentSnapshot {
@@ -66,17 +76,26 @@ class AuthFailedError extends Error {
 function buildAgentCommunities(
   memberships: MyCommunityMembership[],
   communities: Community[],
+  pinned: PinnedCommunity[],
 ): AgentCommunity[] {
   const memberIds = new Set(memberships.map((m) => m.communityId));
-  return communities
-    .filter((c) => memberIds.has(c.id))
-    .map((c) => ({
-      id: c.id,
-      identifier: c.identifier,
-      name: c.name,
-      logoUrl: logoUrl(c.logo?.contentUrl ?? null),
-      accentColor: c.accentColor,
-    }));
+  const pinnedIds = new Set(pinned.map((p) => p.community.id));
+  const toAgentCommunity = (c: Community): AgentCommunity => ({
+    id: c.id,
+    identifier: c.identifier,
+    name: c.name,
+    logoUrl: logoUrl(c.logo?.contentUrl ?? null),
+    accentColor: c.accentColor,
+    iri: c["@id"] ?? null,
+    member: memberIds.has(c.id),
+    pinned: pinnedIds.has(c.id),
+  });
+  const byId = new Map(communities.map((c) => [c.id, c]));
+  const pinnedFirst = [...pinned]
+    .sort((a, b) => a.position - b.position)
+    .map((p) => byId.get(p.community.id) ?? p.community);
+  const rest = communities.filter((c) => !pinnedIds.has(c.id));
+  return [...pinnedFirst, ...rest].map(toAgentCommunity);
 }
 
 export class IdentityAgent {
@@ -102,6 +121,7 @@ export class IdentityAgent {
 
   private userIdValue: number | null = null;
   private communitiesValue: AgentCommunity[] = [];
+  private railSeedValue: AgentRailSeed | null = null;
   private unreadCountsValue: Record<string, number> = {};
   private realtimeUnsubscribe: (() => void) | null = null;
   private realtimeRemintTimer: ReturnType<typeof setTimeout> | null = null;
@@ -185,6 +205,10 @@ export class IdentityAgent {
 
   serverInfo(): ServerInfo | null {
     return this.serverInfoValue;
+  }
+
+  railSeed(): AgentRailSeed | null {
+    return this.railSeedValue;
   }
 
   refreshUnreadCounts(): Promise<void> {
@@ -359,13 +383,17 @@ export class IdentityAgent {
     if (this.stopped || this.connectionId !== myId) return;
     const ctx = this.serverContext();
     try {
-      const [me, memberships, communities, counts, realtimeToken] = await Promise.all([
+      const [me, memberships, communities, pinned, counts, realtimeToken] = await Promise.all([
         identityFetch<{ id: number }>(ctx, "/me"),
         identityFetch<HydraCollection<MyCommunityMembership> | MyCommunityMembership[]>(
           ctx,
           "/me/community-memberships",
         ),
         identityFetch<HydraCollection<Community> | Community[]>(ctx, "/communities"),
+        identityFetch<HydraCollection<PinnedCommunity> | PinnedCommunity[]>(
+          ctx,
+          "/me/pinned-communities",
+        ),
         identityFetch<{ counts: Record<string, number> }>(ctx, "/notifications/unread-counts"),
         identityFetch<{ token: string; expiresAt: number }>(ctx, "/realtime/token"),
       ]);
@@ -373,10 +401,15 @@ export class IdentityAgent {
       this.dataRetryAttempt = 0;
       this.errorValue = null;
       this.userIdValue = me.id;
-      this.communitiesValue = buildAgentCommunities(
-        unwrapMember(memberships),
-        unwrapMember(communities),
-      );
+      const membershipList = unwrapMember(memberships);
+      const communityList = unwrapMember(communities);
+      const pinnedList = unwrapMember(pinned);
+      this.railSeedValue = {
+        communities: communityList,
+        pinned: pinnedList,
+        memberships: membershipList,
+      };
+      this.communitiesValue = buildAgentCommunities(membershipList, communityList, pinnedList);
       this.unreadCountsValue = counts.counts;
       this.rebuildSnapshot();
       this.subscribeRealtime(myId, me.id, realtimeToken.token, realtimeToken.expiresAt);

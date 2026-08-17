@@ -3,10 +3,13 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { beginAuthRestore, finishAuthRestore, setAccessToken } from "@/api/tokenStore";
 import { getPlatformBridge } from "@/platform/bridge";
+import { setActiveIdentityKey } from "@/platform/activeIdentity";
 import type { PlatformBridge } from "@/platform/PlatformBridge";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { Spinner } from "@/components/icons";
-import { AddIdentityWizard, ErrorBanner, type AddIdentityResult } from "./AddIdentityWizard";
+import { ErrorBanner } from "@/components/authUi";
+import { NotificationProvider } from "@/context/NotificationContext";
+import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
 import { connectIdentity, installRefreshExecutor } from "./connectIdentity";
 import {
   loadDesktopConfig,
@@ -29,17 +32,19 @@ type BootState =
 
 function FullScreenWizard({ children }: { children: ReactNode }) {
   return (
-    <div
-      className="flex h-screen w-screen items-center justify-center bg-canvas p-6"
-      style={{
-        backgroundImage:
-          "radial-gradient(ellipse 90% 70% at 50% -10%, color-mix(in srgb, var(--accent) 7%, transparent), transparent)",
-      }}
-    >
-      <div className="w-full max-w-[380px] rounded-lg bg-overlay p-7 text-fg shadow-soft-lg ring-1 ring-inset ring-line">
-        {children}
+    <NotificationProvider>
+      <div
+        className="flex h-screen w-screen items-center justify-center bg-canvas p-6"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 90% 70% at 50% -10%, color-mix(in srgb, var(--accent) 7%, transparent), transparent)",
+        }}
+      >
+        <div className="w-full max-w-[380px] rounded-lg bg-overlay p-7 text-fg shadow-soft-lg ring-1 ring-inset ring-line">
+          {children}
+        </div>
       </div>
-    </div>
+    </NotificationProvider>
   );
 }
 
@@ -75,6 +80,7 @@ export function DesktopBootstrap({
       identities = next.profiles.find((p) => p.id === profileId)?.identities ?? [];
     }
     setAccessToken(token);
+    setActiveIdentityKey(identityId);
     localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
     finishAuthRestore();
     onSession?.({ profileId, identityId, identities });
