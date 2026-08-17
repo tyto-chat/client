@@ -11,6 +11,7 @@ import { loadDesktopConfig, saveDesktopConfig, setLastActiveIdentity } from "./d
 export interface SwitchTarget {
   identityId: string;
   navigateTo?: { to: string; params?: Record<string, string>; search?: Record<string, unknown> };
+  onBeforeActivate?: () => void;
 }
 
 export async function performIdentitySwitch(
@@ -35,6 +36,7 @@ export async function performIdentitySwitch(
   setServerInfo(serverInfo);
 
   setAccessToken(token);
+  target.onBeforeActivate?.();
   registry.setActiveIdentity(target.identityId);
   setActiveIdentityKey(target.identityId);
 

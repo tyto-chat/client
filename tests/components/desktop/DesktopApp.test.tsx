@@ -169,8 +169,7 @@ describe("DesktopApp", () => {
     await waitFor(() => {
       expect(renders.at(-1)?.activeIdentityId).toBe("ib");
     });
-    const clientForB = renders.at(-1)!.queryClient;
-    expect(clientForB).not.toBe(clientForA);
+    expect(renders.at(-1)!.queryClient).toBe(clientForA);
 
     act(() => {
       renders.at(-1)!.registry.setActiveIdentity("ia");
@@ -250,7 +249,7 @@ describe("DesktopApp", () => {
     expect(screen.queryByTestId("probe")).not.toBeInTheDocument();
   });
 
-  it("switchTo re-invokes renderApp with the new identity and a different QueryClient, then navigates", async () => {
+  it("switchTo keeps one stable QueryClient and transplants the per-identity cache, then navigates", async () => {
     stubHealthyServer(ORIGIN_A, "Alpha");
     stubHealthyServer(ORIGIN_B, "Beta");
     const bridge = createFakePlatformBridge();
@@ -280,6 +279,7 @@ describe("DesktopApp", () => {
     });
 
     const clientForA = renders.at(-1)!.queryClient;
+    clientForA.setQueryData(["notifications", "unread-counts"], { counts: { "1": 3 } });
     const navigateSpy = vi.spyOn(router, "navigate").mockResolvedValue(undefined);
 
     await act(async () => {
@@ -290,12 +290,23 @@ describe("DesktopApp", () => {
       expect(renders.at(-1)?.activeIdentityId).toBe("ib");
     });
 
-    expect(renders.at(-1)!.queryClient).not.toBe(clientForA);
+    expect(renders.at(-1)!.queryClient).toBe(clientForA);
+    expect(clientForA.getQueryData(["notifications", "unread-counts"])).toBeUndefined();
     expect(getBaseUrl()).toBe(`${ORIGIN_B}/api`);
     expect(getAccessToken()).toBe("jwt-live");
 
     await waitFor(() => {
       expect(navigateSpy).toHaveBeenCalledWith({ to: "/" });
+    });
+
+    await act(async () => {
+      await renders.at(-1)!.switchTo("ia");
+    });
+    await waitFor(() => {
+      expect(renders.at(-1)?.activeIdentityId).toBe("ia");
+    });
+    expect(clientForA.getQueryData(["notifications", "unread-counts"])).toEqual({
+      counts: { "1": 3 },
     });
 
     navigateSpy.mockRestore();

@@ -14,18 +14,30 @@ export interface DesktopAppProps {
   renderApp?: (activeIdentityId: string) => ReactNode;
 }
 
-function clientFor(clients: Map<string, QueryClient>, identityId: string): QueryClient {
-  let client = clients.get(identityId);
-  if (!client) {
-    client = createAppQueryClient(router);
-    clients.set(identityId, client);
+type CacheSnapshot = { queryKey: readonly unknown[]; data: unknown; dataUpdatedAt: number }[];
+
+function snapshotCache(client: QueryClient): CacheSnapshot {
+  return client
+    .getQueryCache()
+    .getAll()
+    .filter((q) => q.state.status === "success" && q.state.data !== undefined)
+    .map((q) => ({
+      queryKey: q.queryKey,
+      data: q.state.data,
+      dataUpdatedAt: q.state.dataUpdatedAt,
+    }));
+}
+
+function hydrateCache(client: QueryClient, snapshot: CacheSnapshot): void {
+  for (const entry of snapshot) {
+    client.setQueryData(entry.queryKey, entry.data, { updatedAt: entry.dataUpdatedAt });
   }
-  return client;
 }
 
 export function DesktopApp({ renderApp }: DesktopAppProps) {
   const [registry] = useState(() => new ConnectionRegistry(getPlatformBridge()));
-  const [queryClients] = useState(() => new Map<string, QueryClient>());
+  const [activeClient] = useState(() => createAppQueryClient(router));
+  const [identityCaches] = useState(() => new Map<string, CacheSnapshot>());
 
   const subscribe = useCallback((listener: () => void) => registry.subscribe(listener), [registry]);
   const getSnapshot = useCallback(() => registry.getSnapshot(), [registry]);
@@ -49,31 +61,44 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
     navigateTo: NonNullable<SwitchTarget["navigateTo"]>;
   } | null>(null);
 
+  const transplantCaches = useCallback(
+    (fromIdentityId: string | null, toIdentityId: string) => {
+      if (fromIdentityId === toIdentityId) return;
+      if (fromIdentityId) identityCaches.set(fromIdentityId, snapshotCache(activeClient));
+      void activeClient.cancelQueries();
+      activeClient.clear();
+      const stored = identityCaches.get(toIdentityId);
+      if (stored) {
+        hydrateCache(activeClient, stored);
+        return;
+      }
+      const seed = registry.getConnection(toIdentityId)?.railSeed();
+      if (seed) {
+        activeClient.setQueryData(queryKeys.communities(), seed.communities);
+        activeClient.setQueryData(queryKeys.pinnedCommunities(), { items: seed.pinned });
+        activeClient.setQueryData(queryKeys.myMemberships(), seed.memberships);
+      }
+    },
+    [registry, activeClient, identityCaches],
+  );
+
   const switchTo = useCallback(
     async (identityId: string, navigateTo?: SwitchTarget["navigateTo"]): Promise<void> => {
-      const seed = registry.getConnection(identityId)?.railSeed();
-      if (seed) {
-        const client = clientFor(queryClients, identityId);
-        if (!client.getQueryData(queryKeys.communities())) {
-          client.setQueryData(queryKeys.communities(), seed.communities);
-        }
-        if (!client.getQueryData(queryKeys.pinnedCommunities())) {
-          client.setQueryData(queryKeys.pinnedCommunities(), { items: seed.pinned });
-        }
-        if (!client.getQueryData(queryKeys.myMemberships())) {
-          client.setQueryData(queryKeys.myMemberships(), seed.memberships);
-        }
-      }
+      const previousIdentityId = registry.getSnapshot().activeIdentityId;
       const pending = { identityId, navigateTo: navigateTo ?? { to: "/" } };
       pendingNavigationRef.current = pending;
       try {
-        await performIdentitySwitch(registry, getPlatformBridge(), { identityId, navigateTo });
+        await performIdentitySwitch(registry, getPlatformBridge(), {
+          identityId,
+          navigateTo,
+          onBeforeActivate: () => transplantCaches(previousIdentityId, identityId),
+        });
       } catch (error) {
         if (pendingNavigationRef.current === pending) pendingNavigationRef.current = null;
         throw error;
       }
     },
-    [registry, queryClients],
+    [registry, transplantCaches],
   );
 
   const contextValue = useMemo<ConnectionsContextValue>(
@@ -95,7 +120,7 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
     <DesktopBootstrap onSession={handleSession}>
       {activeIdentityId && (
         <ConnectionsContext.Provider value={contextValue}>
-          <QueryClientProvider client={clientFor(queryClients, activeIdentityId)}>
+          <QueryClientProvider client={activeClient}>
             {renderApp ? renderApp(activeIdentityId) : <AppShell />}
           </QueryClientProvider>
         </ConnectionsContext.Provider>
