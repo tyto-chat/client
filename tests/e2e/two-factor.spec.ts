@@ -145,6 +145,7 @@ test.describe.serial("Two-factor authentication", () => {
     const codeInput = page.getByTestId(testIds.twoFactorCodeInput);
     await expect(codeInput).toBeVisible({ timeout: T(10_000) });
 
+    await page.getByRole("button", { name: "Use a recovery code instead" }).click();
     await codeInput.fill(recoveryCodes[0]!);
     await page.getByRole("button", { name: "Verify" }).click();
 
