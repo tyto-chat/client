@@ -1,15 +1,26 @@
 import { ApiError, configureApiClient, getBaseUrl } from "@/api/client";
 import { refreshWithToken, setRefreshExecutor } from "@/api/auth";
 import { getApiVersion, negotiateApiVersion } from "@/api/apiVersion";
-import { fetchServerInfo } from "@/api/serverInfo";
+import { fetchServerInfo, fetchServerInfoQuiet } from "@/api/serverInfo";
 import type { ServerInfo } from "@/types/api";
 import type { PlatformBridge } from "@/platform/PlatformBridge";
 import { secretKey, type DesktopIdentity } from "./desktopConfig";
 
+export class VersionMismatchError extends Error {
+  readonly direction: string;
+
+  constructor(direction: string) {
+    super(`api version mismatch: ${direction}`);
+    this.name = "VersionMismatchError";
+    this.direction = direction;
+  }
+}
+
 export type ConnectOutcome =
   | { status: "connected"; serverInfo: ServerInfo; token: string }
   | { status: "needs-login" }
-  | { status: "unreachable"; error: unknown };
+  | { status: "unreachable"; error: unknown }
+  | { status: "version-mismatch"; direction: string };
 
 export async function connectIdentity(
   bridge: PlatformBridge,
@@ -20,6 +31,9 @@ export async function connectIdentity(
   try {
     serverInfo = await resolveServer(identity.serverUrl);
   } catch (error) {
+    if (error instanceof VersionMismatchError) {
+      return { status: "version-mismatch", direction: error.direction };
+    }
     return { status: "unreachable", error };
   }
   configureApiClient(serverInfo.apiUrl);
@@ -41,8 +55,14 @@ export async function connectIdentity(
 
 export async function resolveServer(origin: string): Promise<ServerInfo> {
   const negotiation = await negotiateApiVersion(origin);
-  if (!negotiation.ok) throw new Error(`api version mismatch: ${negotiation.direction}`);
+  if (!negotiation.ok) throw new VersionMismatchError(negotiation.direction);
   return fetchServerInfo(`${origin}/api/${getApiVersion()}/server-info`);
+}
+
+export async function resolveServerQuiet(origin: string): Promise<ServerInfo> {
+  const negotiation = await negotiateApiVersion(origin);
+  if (!negotiation.ok) throw new VersionMismatchError(negotiation.direction);
+  return fetchServerInfoQuiet(`${origin}/api/${getApiVersion()}/server-info`);
 }
 
 export function installRefreshExecutor(bridge: PlatformBridge, key: string): void {

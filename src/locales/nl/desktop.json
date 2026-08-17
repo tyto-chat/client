@@ -5,7 +5,6 @@
   "server_url_invalid": "Dat lijkt geen geldig serveradres.",
   "server_unreachable": "Kon deze server niet bereiken. Controleer het adres en probeer het opnieuw.",
   "server_continue": "Doorgaan",
-  "credentials_title": "Inloggen bij {{server}}",
   "change_server": "Andere server gebruiken",
   "email_label": "E-mail",
   "password_label": "Wachtwoord",
@@ -28,5 +27,11 @@
   "welcome_back": "Welkom terug",
   "welcome_back_sub": "Log in om verder te gaan.",
   "signing_in_as": "Inloggen als {{email}}",
-  "try_again": "Opnieuw proberen"
+  "try_again": "Opnieuw proberen",
+  "server_incompatible_title": "Deze server is niet compatibel",
+  "server_incompatible": "Deze server gebruikt een incompatibele versie van tyto. Werk de desktopapp of de server bij.",
+  "server_status_auth_failed": "Sessie verlopen. Klik om opnieuw te verbinden.",
+  "server_status_unreachable": "opnieuw verbinden…",
+  "relogin_title": "Opnieuw inloggen",
+  "boot_error_title": "Kon tyto desktop niet starten"
 }

@@ -15,7 +15,7 @@ export class LoginPage {
     this.emailInput = page.locator("#email");
     this.passwordInput = page.locator("#password");
     this.submitButton = page.locator('button[type="submit"]');
-    this.errorMessage = page.locator(".text-red-600, .text-red-400").first();
+    this.errorMessage = page.getByTestId("auth-error").first();
   }
 
   async goto(): Promise<void> {

@@ -207,6 +207,39 @@ describe("apiClient — 401 auto-refresh", () => {
     expect(result).toEqual({ data: "secret" });
     expect(callCount).toBe(2);
   });
+
+  it("skips the retry when the base URL changes between request start and the refresh completing", async () => {
+    setAccessToken("expired-token");
+    let protectedCallCount = 0;
+    let refreshCallCount = 0;
+    const OTHER_BASE = "https://other.example/api";
+
+    server.use(
+      http.get(`${BASE}/api/v1/protected`, () => {
+        protectedCallCount++;
+        return new HttpResponse(null, { status: 401 });
+      }),
+      http.post(`${BASE}/token/refresh`, () => {
+        refreshCallCount++;
+        configureApiClient(OTHER_BASE);
+        return HttpResponse.json({ token: "new-token" });
+      }),
+    );
+
+    let caught: ApiError | null = null;
+    try {
+      await apiClient.get("/api/protected");
+    } catch (e) {
+      caught = e as ApiError;
+    }
+
+    expect(caught).toBeInstanceOf(ApiError);
+    expect(caught?.status).toBe(401);
+    expect(protectedCallCount).toBe(1);
+    expect(refreshCallCount).toBe(1);
+
+    configureApiClient(BASE);
+  });
 });
 
 describe("apiClient.post / patch", () => {

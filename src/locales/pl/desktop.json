@@ -5,7 +5,6 @@
   "server_url_invalid": "To nie wygląda na prawidłowy adres serwera.",
   "server_unreachable": "Nie udało się połączyć z tym serwerem. Sprawdź adres i spróbuj ponownie.",
   "server_continue": "Dalej",
-  "credentials_title": "Zaloguj się do {{server}}",
   "change_server": "Użyj innego serwera",
   "email_label": "E-mail",
   "password_label": "Hasło",
@@ -28,5 +27,11 @@
   "welcome_back": "Witaj ponownie",
   "welcome_back_sub": "Zaloguj się, aby kontynuować.",
   "signing_in_as": "Logowanie jako {{email}}",
-  "try_again": "Spróbuj ponownie"
+  "try_again": "Spróbuj ponownie",
+  "server_incompatible_title": "Ten serwer jest niezgodny",
+  "server_incompatible": "Ten serwer używa niezgodnej wersji tyto. Zaktualizuj aplikację desktopową lub serwer.",
+  "server_status_auth_failed": "Sesja wygasła. Kliknij, aby połączyć się ponownie.",
+  "server_status_unreachable": "ponowne łączenie…",
+  "relogin_title": "Zaloguj się ponownie",
+  "boot_error_title": "Nie udało się uruchomić tyto desktop"
 }

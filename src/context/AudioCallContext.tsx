@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import type React from "react";
 import type { Channel } from "@/types/api";
+import { getActiveIdentityKey } from "@/platform/activeIdentity";
 import type { VoiceMode } from "@/utils/voiceSettings";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { getJoinMuted } from "@/utils/mediaEffects";
@@ -18,6 +19,7 @@ interface AudioCallState {
   channel: Channel;
   communityId: string;
   liveKitUrl: string;
+  identityKey?: string | null;
 }
 
 interface AudioCallContextValue {
@@ -119,7 +121,13 @@ export function AudioCallProvider({ children }: { children: React.ReactNode }) {
 
   const join = useCallback(
     (token: string, channel: Channel, communityId: string, liveKitUrl: string) => {
-      const state = { token, channel, communityId, liveKitUrl };
+      const state = {
+        token,
+        channel,
+        communityId,
+        liveKitUrl,
+        identityKey: getActiveIdentityKey(),
+      };
       sessionStorage.setItem(CALL_STORAGE_KEY, JSON.stringify(state));
       setActiveCall(state);
       setIsMuted(getJoinMuted());

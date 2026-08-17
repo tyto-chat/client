@@ -46,8 +46,13 @@ export class ChannelSidebar {
 
   private async openSectionMenu(sectionName: string): Promise<void> {
     const header = this.sectionHeader(sectionName);
-    await header.hover();
-    await header.getByTestId(testIds.sectionActionsBtn).click({ force: true });
+    // Retry the whole hover+click: under CI load the force-click can land
+    // before the menu's handlers are attached and the menu never opens.
+    await expect(async () => {
+      await header.hover();
+      await header.getByTestId(testIds.sectionActionsBtn).click({ force: true });
+      await expect(this.page.getByRole("menu")).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: T(15_000) });
   }
 
   async expectSectionVisible(name: string): Promise<void> {

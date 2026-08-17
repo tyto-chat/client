@@ -1,5 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchMe } from "@/api/users";
@@ -16,6 +24,7 @@ import { decodeJwtPayload } from "@/utils/jwtPayload";
 import { mercureTokenCoversTopic } from "@/utils/mercureToken";
 import { unsubscribeFromPush } from "@/utils/webPush";
 import { isManagedIdentityMode } from "@/platform/appMode";
+import { getActiveIdentityKey, subscribeActiveIdentity } from "@/platform/activeIdentity";
 import type { User } from "@/types/api";
 
 interface AuthState {
@@ -257,6 +266,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const activeIdentityKey = useSyncExternalStore(subscribeActiveIdentity, getActiveIdentityKey);
+  const previousIdentityKeyRef = useRef(activeIdentityKey);
+
+  useEffect(() => {
+    if (activeIdentityKey === previousIdentityKeyRef.current) return;
+    previousIdentityKeyRef.current = activeIdentityKey;
+    if (!activeIdentityKey) return;
+
+    queueMicrotask(() => {
+      if (getActiveIdentityKey() !== activeIdentityKey) return;
+      clearRefreshTimer();
+      clearMercureTimer();
+      setSessionExpired(false);
+      setMercureToken(null);
+      const switched = getAccessToken();
+      setTokenState(switched);
+      if (switched) {
+        scheduleRefreshRef.current(switched);
+        void fetchMe()
+          .then(setUser)
+          .catch(() => {});
+        void doMercureFetch();
+      } else {
+        setUser(null);
+        void doPublicMercureFetch();
+      }
+    });
+  }, [
+    activeIdentityKey,
+    clearRefreshTimer,
+    clearMercureTimer,
+    doMercureFetch,
+    doPublicMercureFetch,
+  ]);
+
   const login = useCallback(
     (newToken: string) => {
       setToken(newToken);
@@ -336,9 +380,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setMercureToken(null);
       setToken(null);
       setUser(null);
-      setSessionExpired(true);
       queryClient.clear();
       void unsubscribeFromPush().catch(() => {});
+      if (isManagedIdentityMode()) {
+        window.location.replace("/");
+        return;
+      }
+      setSessionExpired(true);
     }
     window.addEventListener("session:expired", handleSessionExpired);
     return () => window.removeEventListener("session:expired", handleSessionExpired);
@@ -377,7 +425,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               <button
                 onClick={() => {
                   setSessionExpired(false);
-                  window.location.replace("/login");
+                  window.location.replace(isManagedIdentityMode() ? "/" : "/login");
                 }}
                 className="rounded-lg bg-[var(--accent-strong)] px-4 py-2 text-sm font-semibold text-[var(--accent-on)] transition hover:opacity-90"
               >

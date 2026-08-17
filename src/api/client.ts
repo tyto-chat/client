@@ -53,6 +53,7 @@ async function request<T>(
   accept = "application/ld+json",
   contentType?: string,
 ): Promise<T> {
+  const requestBaseUrl = _baseUrl;
   await authRestored();
   const token = getAccessToken();
 
@@ -105,7 +106,7 @@ async function request<T>(
           window.dispatchEvent(new CustomEvent("session:expired"));
         }
       }
-      if (refreshed) {
+      if (refreshed && _baseUrl === requestBaseUrl) {
         return request<T>(url, method, body, true, accept, contentType);
       }
     }

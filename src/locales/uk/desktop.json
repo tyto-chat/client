@@ -5,7 +5,6 @@
   "server_url_invalid": "Це не схоже на дійсну адресу сервера.",
   "server_unreachable": "Не вдалося з'єднатися із цим сервером. Перевір адресу і спробуй ще раз.",
   "server_continue": "Продовжити",
-  "credentials_title": "Увійти на {{server}}",
   "change_server": "Використати інший сервер",
   "email_label": "Електронна пошта",
   "password_label": "Пароль",
@@ -28,5 +27,11 @@
   "welcome_back": "З поверненням",
   "welcome_back_sub": "Увійди, щоб продовжити.",
   "signing_in_as": "Вхід як {{email}}",
-  "try_again": "Спробуй ще раз"
+  "try_again": "Спробуй ще раз",
+  "server_incompatible_title": "Цей сервер несумісний",
+  "server_incompatible": "Цей сервер використовує несумісну версію tyto. Онови десктопний застосунок або сервер.",
+  "server_status_auth_failed": "Сеанс закінчився. Натисни, щоб перепідключитися.",
+  "server_status_unreachable": "повторне підключення…",
+  "relogin_title": "Увійти знову",
+  "boot_error_title": "Не вдалося запустити tyto desktop"
 }

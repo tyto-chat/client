@@ -5,7 +5,6 @@
   "server_url_invalid": "Isso não parece um endereço de servidor válido.",
   "server_unreachable": "Não foi possível conectar a este servidor. Verifique o endereço e tente novamente.",
   "server_continue": "Continuar",
-  "credentials_title": "Entrar em {{server}}",
   "change_server": "Usar outro servidor",
   "email_label": "E-mail",
   "password_label": "Senha",
@@ -28,5 +27,11 @@
   "welcome_back": "Bem-vindo de volta",
   "welcome_back_sub": "Entre para continuar.",
   "signing_in_as": "Entrando como {{email}}",
-  "try_again": "Tentar novamente"
+  "try_again": "Tentar novamente",
+  "server_incompatible_title": "Este servidor não é compatível",
+  "server_incompatible": "Este servidor executa uma versão incompatível do tyto. Atualize o aplicativo de desktop ou o servidor.",
+  "server_status_auth_failed": "Sessão expirada. Clique para reconectar.",
+  "server_status_unreachable": "reconectando…",
+  "relogin_title": "Entrar novamente",
+  "boot_error_title": "Não foi possível iniciar o tyto desktop"
 }

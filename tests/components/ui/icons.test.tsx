@@ -5,7 +5,7 @@ import * as Icons from "@/components/icons";
 describe("icons", () => {
   it("every export renders an <svg> and forwards size + className", () => {
     const names = Object.keys(Icons).filter((n) => n !== "IconProps");
-    expect(names.length).toBe(74);
+    expect(names.length).toBe(76);
     for (const name of names) {
       const Cmp = (
         Icons as Record<string, React.ComponentType<{ size?: number; className?: string }>>

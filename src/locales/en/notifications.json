@@ -36,6 +36,7 @@
   "joined_for_notifications": "Joined. You'll receive notifications from this community.",
   "join_failed": "Could not join the community.",
   "desktop_title": "tyto.chat",
+  "from_server": "{{server}} — {{text}}",
   "realtime_error": "Could not connect to real-time notifications. Please refresh the page.",
   "report_filed": "A new report needs review",
   "report_escalated": "A report was escalated to you",

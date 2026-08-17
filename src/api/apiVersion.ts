@@ -60,6 +60,11 @@ export function getApiVersion(): string {
   return negotiation?.ok ? negotiation.version : highestSupported;
 }
 
+export function getApiVersionForOrigin(origin: string): string {
+  const negotiation = byOrigin.get(origin) ?? null;
+  return negotiation?.ok ? negotiation.version : highestSupported;
+}
+
 export function supportsFeature(name: string): boolean {
   const negotiation = active();
   if (!negotiation?.ok) return true;

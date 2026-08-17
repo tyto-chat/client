@@ -50,6 +50,7 @@
   "joined_for_notifications": "Dołączono. Będziesz otrzymywać powiadomienia z tej społeczności.",
   "join_failed": "Nie udało się dołączyć do społeczności.",
   "desktop_title": "tyto.chat",
+  "from_server": "{{server}} — {{text}}",
   "realtime_error": "Nie można połączyć z powiadomieniami w czasie rzeczywistym. Odśwież stronę.",
   "report_filed": "Nowe zgłoszenie wymaga przeglądu",
   "report_escalated": "Zgłoszenie zostało do Ciebie eskalowane",
