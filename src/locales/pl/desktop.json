@@ -38,5 +38,7 @@
   "call_on_server": "Na rozmowie: #{{channel}}",
   "browse_on_server": "Przeglądaj na",
   "compose_on_server": "Napisz na",
-  "continue_as_guest": "Kontynuuj jako gość"
+  "continue_as_guest": "Kontynuuj jako gość",
+  "guest_badge": "Gość",
+  "sign_in_to_server": "Zaloguj się"
 }

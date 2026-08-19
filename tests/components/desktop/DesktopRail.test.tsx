@@ -1115,6 +1115,88 @@ describe("DesktopRail", () => {
     setPlatformBridgeForTests(null);
   });
 
+  it("marks a guest well with a badge and a sign-in button, and never locks it", () => {
+    const guest = makeConnection({
+      identityId: "ig",
+      kind: "guest",
+      serverName: "Guest Srv",
+      status: "auth-failed",
+      error: new Error("stale"),
+      communities: [
+        {
+          id: 1,
+          identifier: "pub",
+          name: "Pub",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: false,
+          pinned: true,
+          isPrivate: false,
+        },
+      ],
+    });
+    const active = makeConnection({ identityId: "ia" });
+    const snapshot: RegistrySnapshot = {
+      connections: [active, guest],
+      activeIdentityId: "ia",
+    };
+
+    renderWithContext(<DesktopRailGroups />, { registry: makeRegistryStub(snapshot) });
+
+    expect(screen.getByTestId("desktop-guest-badge")).toHaveTextContent("Guest");
+    expect(screen.getByTestId("desktop-guest-sign-in")).toBeInTheDocument();
+    expect(screen.queryByTestId("desktop-server-lock")).not.toBeInTheDocument();
+    expect(screen.getByTestId("desktop-rail-community")).not.toHaveClass("opacity-50");
+  });
+
+  it("renders no guest chrome on an identity well", () => {
+    const snapshot: RegistrySnapshot = {
+      connections: [makeConnection({ identityId: "ia" })],
+      activeIdentityId: "ia",
+    };
+
+    renderWithContext(<DesktopRailGroups />, { registry: makeRegistryStub(snapshot) });
+
+    expect(screen.queryByTestId("desktop-guest-badge")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("desktop-guest-sign-in")).not.toBeInTheDocument();
+  });
+
+  it("opens the sign-in modal for the guest well the button belongs to", async () => {
+    const ORIGIN = "https://guest-well.example";
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ig",
+      serverUrl: ORIGIN,
+      email: "old@b.c",
+      userId: null,
+      displayName: null,
+      kind: "guest",
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ig");
+    await saveDesktopConfig(bridge, cfg);
+
+    const snapshot: RegistrySnapshot = {
+      connections: [
+        makeConnection({ identityId: "ia" }),
+        makeConnection({ identityId: "ig", kind: "guest", origin: ORIGIN }),
+      ],
+      activeIdentityId: "ia",
+    };
+    const user = userEvent.setup();
+
+    renderWithContext(<DesktopRailGroups />, { registry: makeRegistryStub(snapshot) });
+    await user.click(screen.getByTestId("desktop-guest-sign-in"));
+
+    expect(await screen.findByTestId("wizard-password-input")).toBeInTheDocument();
+
+    setPlatformBridgeForTests(null);
+  });
+
   it("dismisses the relogin modal to a guest session via continue-as-guest", async () => {
     const ORIGIN = "https://relogin-guest.example";
     const bridge = createFakePlatformBridge();

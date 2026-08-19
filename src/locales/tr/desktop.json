@@ -38,5 +38,7 @@
   "call_on_server": "Görüşmede: #{{channel}}",
   "browse_on_server": "Sunucuda gözat",
   "compose_on_server": "Sunucuda yaz",
-  "continue_as_guest": "Misafir olarak devam et"
+  "continue_as_guest": "Misafir olarak devam et",
+  "guest_badge": "Misafir",
+  "sign_in_to_server": "Giriş yap"
 }

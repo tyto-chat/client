@@ -38,5 +38,7 @@
   "call_on_server": "У дзвінку: #{{channel}}",
   "browse_on_server": "Переглянути на",
   "compose_on_server": "Написати на",
-  "continue_as_guest": "Продовжити як гість"
+  "continue_as_guest": "Продовжити як гість",
+  "guest_badge": "Гість",
+  "sign_in_to_server": "Увійти"
 }

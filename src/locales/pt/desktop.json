@@ -38,5 +38,7 @@
   "call_on_server": "Em chamada: #{{channel}}",
   "browse_on_server": "Explorar em",
   "compose_on_server": "Escrever em",
-  "continue_as_guest": "Continuar como convidado"
+  "continue_as_guest": "Continuar como convidado",
+  "guest_badge": "Convidado",
+  "sign_in_to_server": "Entrar"
 }

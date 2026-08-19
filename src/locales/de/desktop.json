@@ -38,5 +38,7 @@
   "call_on_server": "Im Anruf: #{{channel}}",
   "browse_on_server": "Durchsuchen auf",
   "compose_on_server": "Schreiben auf",
-  "continue_as_guest": "Als Gast fortfahren"
+  "continue_as_guest": "Als Gast fortfahren",
+  "guest_badge": "Gast",
+  "sign_in_to_server": "Anmelden"
 }

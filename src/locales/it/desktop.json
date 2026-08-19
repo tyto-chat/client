@@ -38,5 +38,7 @@
   "call_on_server": "In chiamata: #{{channel}}",
   "browse_on_server": "Esplora su",
   "compose_on_server": "Scrivi su",
-  "continue_as_guest": "Continua come ospite"
+  "continue_as_guest": "Continua come ospite",
+  "guest_badge": "Ospite",
+  "sign_in_to_server": "Accedi"
 }
