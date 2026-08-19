@@ -12,7 +12,6 @@
   "write_private_message": "Escrever uma mensagem privada",
   "message_tab": "Mensagem",
   "create_failed": "Falha ao criar a conversa.",
-  "settings": "Configurações da conversa",
   "members": "Membros",
   "no_conversations": "Nenhuma mensagem direta ainda.",
   "no_conversations_hint": "Comece um papo com alguém de qualquer comunidade.",
@@ -21,10 +20,8 @@
   "message_placeholder": "Mensagem para {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Você",
-  "mute": "Silenciar",
   "muted": "Silenciada",
   "mute_notifications": "Silenciar notificações",
-  "mute_notifications_hint": "Sem alertas enquanto esta conversa estiver silenciada.",
   "beginning_of_history": "Início desta conversa",
   "no_messages": "Nenhuma mensagem ainda",
   "be_first": "Diga oi para começar."

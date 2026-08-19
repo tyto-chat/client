@@ -35,6 +35,12 @@ describe("notificationText", () => {
     expect(notificationText({ ...base, type: "ban" }, t)).toBe('mod_ban:{"reason":""}');
   });
 
+  it("renders dm_message instead of a channel-less mention (cross-server toast path)", () => {
+    const text = notificationText({ ...base, type: "dm_message", channelIdentifier: "" }, t);
+    expect(text).toBe('dm_message:{"author":"Ann"}');
+    expect(notificationText({ ...base, type: "dm_message" }, realT)).not.toMatch(/#/);
+  });
+
   it("still routes real mentions (no explicit type) to the mention default", () => {
     expect(notificationText({ ...base, type: "mention" }, t)).toBe(
       'mention:{"author":"Ann","channel":"general"}',

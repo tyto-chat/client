@@ -128,11 +128,8 @@ export function MessageContent({
   highlightTerms: terms,
 }: Props) {
   const { t } = useTranslation("channel");
-  const { data: communityEmojis, isFetched: emojisFetched } = useCommunityEmojis(communityId);
-  const hasShortcodeToken = (text ?? "").includes(":");
-  const waitForEmojis = hasShortcodeToken && !!communityId && !emojisFetched;
+  const { data: communityEmojis } = useCommunityEmojis(communityId);
   const __html = useMemo(() => {
-    if (waitForEmojis) return "";
     const normalized = (text ?? "")
       .replace(/\r\n/g, "\n")
       .replace(/\n{3,}/g, "\n\n")
@@ -149,7 +146,7 @@ export function MessageContent({
       html = highlightTerms(html, terms);
     }
     return highlightCodeBlocks(html);
-  }, [text, communityEmojis, waitForEmojis, terms]);
+  }, [text, communityEmojis, terms]);
 
   const youtubeIds = useMemo(() => extractYouTubeIds(text ?? ""), [text]);
   const imageUrls = useMemo(() => extractImageUrls(text ?? ""), [text]);

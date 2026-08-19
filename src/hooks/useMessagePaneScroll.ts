@@ -1,6 +1,10 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Message } from "@/types/api";
 
+const SETTLE_QUIET_MS = 120;
+const SETTLE_MAX_MS = 2500;
+const AT_BOTTOM_THRESHOLD_PX = 50;
+
 export function useMessagePaneScroll({
   messages,
   hasPreviousPage,
@@ -13,7 +17,6 @@ export function useMessagePaneScroll({
   onFocusComplete,
   scrollToBottomTrigger,
   onAtBottom,
-  reclaim,
 }: {
   messages: Message[];
   hasPreviousPage: boolean;
@@ -26,23 +29,33 @@ export function useMessagePaneScroll({
   onFocusComplete?: () => void;
   scrollToBottomTrigger: number;
   onAtBottom?: () => void;
-  reclaim: number;
 }) {
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(() => !focusMessageId);
-  const isAtBottomRef = useRef(true);
+  const isAtBottomRef = useRef(!focusMessageId);
   const prevMessageCountRef = useRef(0);
   const prevLastIdRef = useRef<string | null>(null);
-  const prevScrollHeightRef = useRef(0);
-  const initialScrollDoneRef = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const [composerHeight, setComposerHeight] = useState(80);
-  const bottomReserve = composerHeight - reclaim + 2;
   const focusDoneRef = useRef<string | null>(null);
   const hideScrollbarTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [settled, setSettled] = useState(false);
+  const lastLayoutShiftRef = useRef(0);
+  const fetchingPreviousRef = useRef(false);
+  const preserveScrollTopRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    fetchingPreviousRef.current = isFetchingPreviousPage;
+  }, [isFetchingPreviousPage]);
+
+  useEffect(() => {
+    if (!focusMessageId) return;
+    isAtBottomRef.current = false;
+  }, [focusMessageId]);
 
   useEffect(() => {
     const node = scrollContainerRef.current;
@@ -56,8 +69,7 @@ export function useMessagePaneScroll({
     }
     function onScroll() {
       if (!scrollContainerRef.current) return;
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-      const atBottom = scrollHeight - scrollTop - clientHeight < 50;
+      const atBottom = Math.abs(scrollContainerRef.current.scrollTop) < AT_BOTTOM_THRESHOLD_PX;
       const wasAtBottom = isAtBottomRef.current;
       isAtBottomRef.current = atBottom;
       if (atBottom !== wasAtBottom) setIsAtBottom(atBottom);
@@ -98,7 +110,7 @@ export function useMessagePaneScroll({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting && hasPreviousPage && !isFetchingPreviousPage) {
-          prevScrollHeightRef.current = container.scrollHeight;
+          preserveScrollTopRef.current = container.scrollTop;
           fetchPreviousPage();
         }
       },
@@ -107,6 +119,14 @@ export function useMessagePaneScroll({
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [hasPreviousPage, isFetchingPreviousPage, fetchPreviousPage]);
+
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || preserveScrollTopRef.current === null) return;
+    // At the scroll extreme Chromium pins to the edge through prepends; restoring scrollTop restores the view.
+    container.scrollTop = preserveScrollTopRef.current;
+    preserveScrollTopRef.current = null;
+  }, [messages]);
 
   useEffect(() => {
     const sentinel = bottomSentinelRef.current;
@@ -123,19 +143,6 @@ export function useMessagePaneScroll({
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-  useLayoutEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el || messages.length === 0 || initialScrollDoneRef.current) return;
-    if (focusMessageId) {
-      initialScrollDoneRef.current = true;
-      isAtBottomRef.current = false;
-      return;
-    }
-    el.scrollTop = el.scrollHeight;
-    isAtBottomRef.current = true;
-    initialScrollDoneRef.current = true;
-  }, [messages, focusMessageId]);
 
   useEffect(() => {
     if (!focusMessageId || focusDoneRef.current === focusMessageId) return;
@@ -155,16 +162,6 @@ export function useMessagePaneScroll({
     return () => clearTimeout(timer);
   }, [focusMessageId, messages, onFocusComplete]);
 
-  useLayoutEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container || prevScrollHeightRef.current === 0) return;
-    const newScrollHeight = container.scrollHeight;
-    if (newScrollHeight !== prevScrollHeightRef.current) {
-      container.scrollTop += newScrollHeight - prevScrollHeightRef.current;
-      prevScrollHeightRef.current = 0;
-    }
-  }, [messages]);
-
   useEffect(() => {
     if (messages.length === 0) return;
     const isFirstLoad = prevMessageCountRef.current === 0;
@@ -180,13 +177,6 @@ export function useMessagePaneScroll({
     }
   }, [messages, hasNextPage]);
 
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el || messages.length === 0 || hasNewMessages || !isAtBottomRef.current) return;
-    if (focusMessageId) return;
-    el.scrollTop = el.scrollHeight;
-  }, [messages, hasNewMessages, focusMessageId]);
-
   useLayoutEffect(() => {
     const el = composerRef.current;
     if (!el) return;
@@ -197,14 +187,39 @@ export function useMessagePaneScroll({
   }, []);
 
   useLayoutEffect(() => {
-    const el = scrollContainerRef.current;
-    if (el && isAtBottomRef.current) el.scrollTop = el.scrollHeight;
-  }, [composerHeight, bottomReserve]);
+    const content = contentRef.current;
+    if (settled || !content) return;
+    const ro = new ResizeObserver(() => {
+      lastLayoutShiftRef.current = performance.now();
+    });
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, [settled]);
+
+  useEffect(() => {
+    if (settled) return undefined;
+    const start = performance.now();
+    lastLayoutShiftRef.current = start;
+    const interval = setInterval(() => {
+      const now = performance.now();
+      const imagesPending = contentRef.current
+        ? Array.from(contentRef.current.querySelectorAll("img")).some((img) => !img.complete)
+        : false;
+      if (fetchingPreviousRef.current || imagesPending) {
+        lastLayoutShiftRef.current = now;
+      }
+      if (now - lastLayoutShiftRef.current > SETTLE_QUIET_MS || now - start > SETTLE_MAX_MS) {
+        setSettled(true);
+      }
+    }, 50);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settled]);
 
   const scrollToBottom = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    el.scrollTop = 0;
     isAtBottomRef.current = true;
     setIsAtBottom(true);
     setHasNewMessages(false);
@@ -218,8 +233,7 @@ export function useMessagePaneScroll({
     const el = scrollContainerRef.current;
     if (!el) return;
     requestAnimationFrame(() => {
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-      isAtBottomRef.current = true;
+      el.scrollTo({ top: 0, behavior: "smooth" });
       setIsAtBottom(true);
       setHasNewMessages(false);
       onAtBottom?.();
@@ -228,13 +242,14 @@ export function useMessagePaneScroll({
 
   return {
     scrollContainerRef,
+    contentRef,
     topSentinelRef,
     bottomSentinelRef,
     composerRef,
     hasNewMessages,
     isAtBottom,
     scrollToBottom,
-    bottomReserve,
     composerHeight,
+    settled,
   };
 }

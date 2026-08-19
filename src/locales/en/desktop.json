@@ -33,5 +33,9 @@
   "server_status_auth_failed": "Sign-in expired. Click to reconnect.",
   "server_status_unreachable": "reconnecting…",
   "relogin_title": "Sign in again",
-  "boot_error_title": "Couldn't start tyto desktop"
+  "boot_error_title": "Couldn't start tyto desktop",
+  "switch_failed": "Couldn't switch to {{server}}. Try again.",
+  "call_on_server": "In call: #{{channel}}",
+  "browse_on_server": "Browse on",
+  "compose_on_server": "Message on"
 }

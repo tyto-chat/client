@@ -99,6 +99,7 @@ export const testIds = {
   avatar: "avatar",
   sortableRow: "sortable-row",
   dmMutedIndicator: "dm-muted-indicator",
+  dmMuteToggle: "dm-mute-toggle",
   noteEditTextarea: "note-edit-textarea",
   modApply: "mod-apply",
 } as const;

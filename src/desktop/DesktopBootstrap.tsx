@@ -6,12 +6,13 @@ import { getPlatformBridge } from "@/platform/bridge";
 import { setActiveIdentityKey } from "@/platform/activeIdentity";
 import type { PlatformBridge } from "@/platform/PlatformBridge";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
-import { Spinner } from "@/components/icons";
+import { AppSkeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/authUi";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
 import { connectIdentity, installRefreshExecutor } from "./connectIdentity";
 import {
+  getServerOrder,
   loadDesktopConfig,
   saveDesktopConfig,
   secretKey,
@@ -20,6 +21,7 @@ import {
   type DesktopIdentity,
 } from "./desktopConfig";
 import { persistWizardResult } from "./identitySetup";
+import { setServerOrderSnapshot } from "./serverOrderStore";
 
 type BootState =
   | { kind: "loading" }
@@ -77,7 +79,9 @@ export function DesktopBootstrap({
       const next = setLastActiveIdentity(current, profileId, identityId);
       configRef.current = next;
       await saveDesktopConfig(bridge, next);
-      identities = next.profiles.find((p) => p.id === profileId)?.identities ?? [];
+      const profile = next.profiles.find((p) => p.id === profileId);
+      identities = profile?.identities ?? [];
+      setServerOrderSnapshot(profile ? getServerOrder(profile) : []);
     }
     setAccessToken(token);
     setActiveIdentityKey(identityId);
@@ -159,11 +163,7 @@ export function DesktopBootstrap({
   if (state.kind === "ready") return <>{children}</>;
 
   if (state.kind === "loading") {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-canvas">
-        <Spinner size={28} />
-      </div>
-    );
+    return <AppSkeleton />;
   }
 
   if (state.kind === "boot-error") {
@@ -207,6 +207,9 @@ export function DesktopBootstrap({
           onComplete={(r) => void handleWizardComplete(r)}
           initialServerUrl={state.identity.serverUrl}
           initialEmail={state.identity.email}
+          initialDisplayName={state.identity.displayName}
+          initialAvatarDataUrl={state.identity.avatarDataUrl}
+          initialAvatarColorKey={state.identity.avatarColorKey}
           lockServer
         />
       </FullScreenWizard>

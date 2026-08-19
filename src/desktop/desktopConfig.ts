@@ -6,6 +6,17 @@ export interface DesktopIdentity {
   email: string;
   userId: number | null;
   displayName: string | null;
+  avatarDataUrl?: string | null;
+  avatarSource?: string | null;
+  avatarColorKey?: string | null;
+}
+
+export interface IdentityProfilePatch {
+  userId: number | null;
+  displayName: string | null;
+  avatarDataUrl: string | null;
+  avatarSource: string | null;
+  avatarColorKey: string | null;
 }
 
 export interface DesktopProfile {
@@ -14,6 +25,7 @@ export interface DesktopProfile {
   color: string | null;
   identities: DesktopIdentity[];
   lastActiveIdentityId: string | null;
+  serverOrder?: string[];
 }
 
 export interface DesktopConfig {
@@ -96,6 +108,32 @@ export function setLastActiveIdentity(
     ...profile,
     lastActiveIdentityId: identityId,
   }));
+}
+
+export function setIdentityProfile(
+  config: DesktopConfig,
+  profileId: string,
+  identityId: string,
+  patch: IdentityProfilePatch,
+): DesktopConfig {
+  return mapProfile(config, profileId, (profile) => ({
+    ...profile,
+    identities: profile.identities.map((identity) =>
+      identity.id === identityId ? { ...identity, ...patch } : identity,
+    ),
+  }));
+}
+
+export function getServerOrder(profile: DesktopProfile): string[] {
+  return profile.serverOrder ?? [];
+}
+
+export function setServerOrder(
+  config: DesktopConfig,
+  profileId: string,
+  order: string[],
+): DesktopConfig {
+  return mapProfile(config, profileId, (profile) => ({ ...profile, serverOrder: order }));
 }
 
 export function secretKey(

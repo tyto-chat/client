@@ -92,7 +92,7 @@ test.describe.serial("Message pagination — channel timeline", () => {
 
     const scroller = page.getByTestId(testIds.messageScroll);
     await scroller.evaluate((el) => {
-      el.scrollTop = 0;
+      el.scrollTop = -el.scrollHeight;
     });
 
     const oldest = page.getByText(OLDEST, { exact: false }).first();
@@ -103,8 +103,8 @@ test.describe.serial("Message pagination — channel timeline", () => {
     await expect(newest).toBeAttached();
     await expect(page.getByText(OLDEST, { exact: false })).toHaveCount(1);
 
-    // The prepend adjusts scrollTop by the height delta, so whatever the reader
-    // was looking at stays put. Without that, the viewport jumps to page 1's top.
+    // column-reverse keeps scroll bottom-referenced, so whatever the reader
+    // was looking at stays put when the previous page prepends above.
     await expect(page.getByText(label(PAGE_SIZE + 1), { exact: false }).first()).toBeInViewport();
   });
 

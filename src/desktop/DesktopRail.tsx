@@ -1,11 +1,13 @@
-import { useCallback, useContext, useState, useSyncExternalStore } from "react";
+import { useCallback, useContext, useRef, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/Modal";
 import { AlertTriangleIcon, CloudOffIcon, LockIcon, PlusIcon } from "@/components/icons";
+import { useAudioCall } from "@/context/AudioCallContext";
+import { CommunityCallDot } from "@/components/CommunityRail";
+import { useNotification } from "@/context/NotificationContext";
 import { isManagedIdentityMode } from "@/platform/appMode";
 import { getPlatformBridge } from "@/platform/bridge";
-import { gradientEnd, onAccentColor } from "@/utils/accentGradient";
-import { getUserColor } from "@/utils/userColor";
+import { hostFromOrigin, connectionCommunityTileStyle } from "@/utils/serverDisplay";
 import { ConnectionsContext, type ConnectionsContextValue } from "./connections/ConnectionsContext";
 import type { ConnectionRegistry, RegistrySnapshot } from "./connections/ConnectionRegistry";
 import type { ConnectionCommunity, ConnectionSnapshot } from "./connections/IdentityConnection";
@@ -13,6 +15,9 @@ import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
 import { ReloginModal } from "./ReloginModal";
 import { persistWizardResult } from "./identitySetup";
 import { loadDesktopConfig, saveDesktopConfig, setLastActiveIdentity } from "./desktopConfig";
+import { orderConnections, refreshIdentityData } from "./managerData";
+import { identityPost } from "./connections/identityFetch";
+import { getServerOrderSnapshot, subscribeServerOrder } from "./serverOrderStore";
 
 const DEFAULT_HEALTHY_TIMEOUT_MS = 15_000;
 
@@ -68,15 +73,6 @@ function useOptionalRegistrySnapshot(
     [contextValue],
   );
   return useSyncExternalStore(subscribe, getSnapshot);
-}
-
-function connectionCommunityTileStyle(community: ConnectionCommunity): React.CSSProperties {
-  if (community.logoUrl) return {};
-  const base = community.accentColor ?? getUserColor(community.iri ?? community.identifier);
-  return {
-    backgroundImage: `linear-gradient(135deg, ${base}, ${gradientEnd(base)})`,
-    color: onAccentColor(base),
-  };
 }
 
 function ServerStatusOverlay({
@@ -140,12 +136,7 @@ function ServerStatusOverlay({
 }
 
 function formatHost(origin: string): string {
-  let host: string;
-  try {
-    host = new URL(origin).host;
-  } catch {
-    host = origin;
-  }
+  const host = hostFromOrigin(origin);
   return host.length > 18 ? `${host.slice(0, 9)}…${host.slice(-6)}` : host;
 }
 
@@ -190,11 +181,15 @@ function ConnectionCommunityTile({
   connection,
   community,
   switchTo,
+  activeCallChannel,
 }: {
   connection: ConnectionSnapshot;
   community: ConnectionCommunity;
   switchTo: ConnectionsContextValue["switchTo"];
+  activeCallChannel?: string | null;
 }) {
+  const { t } = useTranslation("desktop");
+  const { notify } = useNotification();
   const unread = connection.unreadCounts[String(community.id)] ?? 0;
   const disabled = connection.status !== "healthy";
   return (
@@ -210,11 +205,14 @@ function ConnectionCommunityTile({
           void switchTo(connection.identityId, {
             to: "/$communityId",
             params: { communityId: community.identifier },
-          }).catch(() => undefined);
+          }).catch(() => {
+            const server = connection.serverName ?? formatHost(connection.origin);
+            notify(t("switch_failed", { server }), "error");
+          });
         }}
         style={connectionCommunityTileStyle(community)}
         className={`flex h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-[13px] font-bold transition-opacity hover:opacity-80 ${
-          disabled ? "pointer-events-none opacity-40" : ""
+          disabled ? "pointer-events-none opacity-40" : !community.member ? "opacity-50" : ""
         }`}
       >
         {community.logoUrl ? (
@@ -232,6 +230,7 @@ function ConnectionCommunityTile({
           <span className="block cap-trim">{unread > 9 ? "9+" : unread}</span>
         </span>
       )}
+      {activeCallChannel && <CommunityCallDot channelIdentifier={activeCallChannel} />}
     </div>
   );
 }
@@ -245,6 +244,8 @@ function ConnectionOverflowTile({
   overflow: ConnectionCommunity[];
   switchTo: ConnectionsContextValue["switchTo"];
 }) {
+  const { t } = useTranslation("desktop");
+  const { notify } = useNotification();
   const disabled = connection.status !== "healthy";
   const totalUnread = overflow.reduce(
     (sum, c) => sum + (connection.unreadCounts[String(c.id)] ?? 0),
@@ -260,7 +261,10 @@ function ConnectionOverflowTile({
         aria-disabled={disabled}
         onClick={() => {
           if (disabled) return;
-          void switchTo(connection.identityId).catch(() => undefined);
+          void switchTo(connection.identityId).catch(() => {
+            const server = connection.serverName ?? formatHost(connection.origin);
+            notify(t("switch_failed", { server }), "error");
+          });
         }}
         className={`flex h-[42px] w-[42px] items-center justify-center rounded-[13px] bg-surface text-fg-muted hover:bg-raised hover:text-fg ${
           disabled ? "pointer-events-none opacity-40" : ""
@@ -279,23 +283,108 @@ function ConnectionOverflowTile({
 
 function InactiveServerCommunities({
   connection,
+  registry,
   switchTo,
+  activeCall,
 }: {
   connection: ConnectionSnapshot;
+  registry: ConnectionRegistry;
   switchTo: ConnectionsContextValue["switchTo"];
+  activeCall: { communityId: string; channelIdentifier: string } | null;
 }) {
+  const { t } = useTranslation("community");
+  const { notify } = useNotification();
+  const callChannelFor = (community: ConnectionCommunity) =>
+    activeCall && community.identifier === activeCall.communityId
+      ? activeCall.channelIdentifier
+      : null;
   const pinned = connection.communities.filter((c) => c.pinned);
-  const overflow = connection.communities.filter((c) => !c.pinned);
+  const callUnpinned =
+    activeCall && !pinned.some((c) => c.identifier === activeCall.communityId)
+      ? (connection.communities.find((c) => c.identifier === activeCall.communityId) ?? null)
+      : null;
+  const overflow = connection.communities.filter((c) => !c.pinned && c !== callUnpinned);
+
+  const reorderable = connection.status === "healthy" && pinned.length > 1;
+  const dragFromRef = useRef<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  function handleDrop(target: number) {
+    const from = dragFromRef.current;
+    dragFromRef.current = null;
+    setDragOverIndex(null);
+    if (from === null || from === target) return;
+    const ctx = registry.getConnection(connection.identityId)?.serverContext();
+    if (!ctx) return;
+    const ids = pinned.map((c) => c.id);
+    const [moved] = ids.splice(from, 1);
+    if (moved === undefined) return;
+    ids.splice(target, 0, moved);
+    void (async () => {
+      try {
+        await identityPost(ctx, "/me/pinned-communities/order", { communityIds: ids });
+      } catch {
+        notify(t("rail_reorder_error"), "error");
+      } finally {
+        await refreshIdentityData(registry, connection.identityId);
+      }
+    })();
+  }
+
   return (
     <>
-      {pinned.map((community) => (
-        <ConnectionCommunityTile
+      {pinned.map((community, i) => (
+        <div
           key={community.id}
-          connection={connection}
-          community={community}
-          switchTo={switchTo}
-        />
+          draggable={reorderable}
+          onDragStart={
+            reorderable
+              ? (e) => {
+                  if (e.dataTransfer) {
+                    e.dataTransfer.setData("text/plain", "");
+                    e.dataTransfer.effectAllowed = "move";
+                  }
+                  dragFromRef.current = i;
+                }
+              : undefined
+          }
+          onDragOver={
+            reorderable
+              ? (e) => {
+                  if (dragFromRef.current === null) return;
+                  e.preventDefault();
+                  if (i !== dragOverIndex) setDragOverIndex(i);
+                }
+              : undefined
+          }
+          onDrop={reorderable ? () => handleDrop(i) : undefined}
+          onDragEnd={
+            reorderable
+              ? () => {
+                  dragFromRef.current = null;
+                  setDragOverIndex(null);
+                }
+              : undefined
+          }
+          style={{ opacity: dragOverIndex === i ? 0.5 : 1 }}
+        >
+          <ConnectionCommunityTile
+            connection={connection}
+            community={community}
+            switchTo={switchTo}
+            activeCallChannel={callChannelFor(community)}
+          />
+        </div>
       ))}
+      {callUnpinned && (
+        <ConnectionCommunityTile
+          key={callUnpinned.id}
+          connection={connection}
+          community={callUnpinned}
+          switchTo={switchTo}
+          activeCallChannel={callChannelFor(callUnpinned)}
+        />
+      )}
       {overflow.length === 1 && overflow[0] ? (
         <ConnectionCommunityTile
           key={overflow[0].id}
@@ -316,17 +405,29 @@ export function DesktopRailGroups({ children }: { children?: React.ReactNode }) 
   const { t } = useTranslation("desktop");
   const contextValue = useOptionalConnectionsContext();
   const snapshot = useOptionalRegistrySnapshot(contextValue);
+  const serverOrder = useSyncExternalStore(subscribeServerOrder, getServerOrderSnapshot);
+  const { activeCall } = useAudioCall();
   const [modalOpen, setModalOpen] = useState(false);
   const [reloginIdentityId, setReloginIdentityId] = useState<string | null>(null);
   if (!isManagedIdentityMode() || !contextValue || !snapshot) return <>{children}</>;
 
   const hasActive = snapshot.connections.some((a) => a.identityId === snapshot.activeIdentityId);
+  const orderedConnections = orderConnections(snapshot.connections, serverOrder);
 
   return (
     <>
       {!hasActive && children}
-      {snapshot.connections.map((connection) => {
+      <div
+        data-testid="desktop-rail-divider"
+        aria-hidden
+        className="my-1.5 h-px w-8 shrink-0 rounded-full bg-line-strong"
+      />
+      {orderedConnections.map((connection) => {
         const isActive = connection.identityId === snapshot.activeIdentityId;
+        const wellCall =
+          activeCall?.identityKey && activeCall.identityKey === connection.identityId
+            ? activeCall
+            : null;
         return (
           <div key={connection.identityId} className="flex flex-col items-center gap-1">
             <ServerCaption connection={connection} showDmDot={!isActive} />
@@ -341,7 +442,16 @@ export function DesktopRailGroups({ children }: { children?: React.ReactNode }) 
               ) : (
                 <InactiveServerCommunities
                   connection={connection}
+                  registry={contextValue.registry}
                   switchTo={contextValue.switchTo}
+                  activeCall={
+                    wellCall
+                      ? {
+                          communityId: wellCall.communityId,
+                          channelIdentifier: wellCall.channel.identifier,
+                        }
+                      : null
+                  }
                 />
               )}
             </div>
@@ -353,7 +463,7 @@ export function DesktopRailGroups({ children }: { children?: React.ReactNode }) 
         data-testid="desktop-add-server"
         title={t("add_identity_title")}
         onClick={() => setModalOpen(true)}
-        className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-dashed border-line-strong text-fg-muted transition-colors hover:border-line hover:bg-raised hover:text-fg"
+        className="flex h-[42px] w-[42px] items-center justify-center rounded-[13px] border border-dashed border-line-strong text-fg-muted transition-colors hover:border-line hover:bg-raised hover:text-fg"
       >
         <PlusIcon size={16} />
       </button>

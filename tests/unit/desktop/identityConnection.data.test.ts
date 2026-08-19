@@ -15,7 +15,12 @@ import { server } from "../../mocks/server";
 import { getFakeEventSourceInstances, getLastFakeEventSource } from "../../mocks/EventSource";
 import { IdentityConnection } from "@/desktop/connections/IdentityConnection";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
-import { secretKey, type DesktopIdentity } from "@/desktop/desktopConfig";
+import {
+  loadDesktopConfig,
+  saveDesktopConfig,
+  secretKey,
+  type DesktopIdentity,
+} from "@/desktop/desktopConfig";
 import { _resetNegotiationForTests } from "@/api/apiVersion";
 
 const ORIGIN = "https://data.example";
@@ -65,7 +70,7 @@ function stubHealthyServer() {
 }
 
 interface StubDataOverrides {
-  me?: { id: number };
+  me?: Record<string, unknown>;
   memberships?: unknown[];
   communities?: unknown[];
   pinned?: unknown[];
@@ -148,6 +153,7 @@ describe("IdentityConnection data sync", () => {
         iri: null,
         member: true,
         pinned: false,
+        isPrivate: false,
       },
       {
         id: 6,
@@ -158,11 +164,106 @@ describe("IdentityConnection data sync", () => {
         iri: null,
         member: false,
         pinned: false,
+        isPrivate: false,
       },
     ]);
     expect(snapshot.unreadCounts).toEqual({ "5": 2 });
 
     connection.stop();
+  });
+
+  it("caches the display name and avatar on the identity so relogin can show them offline", async () => {
+    stubHealthyServer();
+    stubData({
+      me: {
+        id: 42,
+        profile: {
+          name: "Ada Lovelace",
+          avatar: { contentUrl: { sm: "/media/avatar-sm.png", md: "x", lg: "x" } },
+        },
+      },
+    });
+    server.use(
+      http.get(`${ORIGIN}/media/avatar-sm.png`, () =>
+        HttpResponse.arrayBuffer(new Uint8Array([1, 2, 3]).buffer, {
+          headers: { "Content-Type": "image/png" },
+        }),
+      ),
+    );
+
+    const bridge = createFakePlatformBridge();
+    await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "old");
+    await saveDesktopConfig(bridge, {
+      version: 1,
+      lastActiveProfileId: PROFILE_ID,
+      autoOpenLastProfile: true,
+      profiles: [
+        {
+          id: PROFILE_ID,
+          name: "Default",
+          color: null,
+          lastActiveIdentityId: IDENTITY_ID,
+          identities: [makeIdentity()],
+        },
+      ],
+    });
+
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), makeCallbacks());
+    connection.start();
+    await vi.waitFor(() => expect(connection.getSnapshot().userId).toBe(42));
+
+    await vi.waitFor(async () => {
+      const stored = (await loadDesktopConfig(bridge)).profiles[0]?.identities[0];
+      expect(stored?.displayName).toBe("Ada Lovelace");
+      expect(stored?.avatarSource).toBe("/media/avatar-sm.png");
+      expect(stored?.avatarDataUrl).toMatch(/^data:/);
+    });
+  });
+
+  it("caches an animated-GIF avatar whole so the relogin screen keeps the animation", async () => {
+    stubHealthyServer();
+    stubData({
+      me: {
+        id: 42,
+        profile: {
+          name: "Gif Fan",
+          avatar: { contentUrl: { sm: "/media/avatar.gif", md: "x", lg: "x" } },
+        },
+      },
+    });
+    server.use(
+      http.get(`${ORIGIN}/media/avatar.gif`, () =>
+        HttpResponse.arrayBuffer(new Uint8Array(400_000).buffer, {
+          headers: { "Content-Type": "image/gif" },
+        }),
+      ),
+    );
+
+    const bridge = createFakePlatformBridge();
+    await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "old");
+    await saveDesktopConfig(bridge, {
+      version: 1,
+      lastActiveProfileId: PROFILE_ID,
+      autoOpenLastProfile: true,
+      profiles: [
+        {
+          id: PROFILE_ID,
+          name: "Default",
+          color: null,
+          lastActiveIdentityId: IDENTITY_ID,
+          identities: [makeIdentity()],
+        },
+      ],
+    });
+
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), makeCallbacks());
+    connection.start();
+    await vi.waitFor(() => expect(connection.getSnapshot().userId).toBe(42));
+
+    await vi.waitFor(async () => {
+      const stored = (await loadDesktopConfig(bridge)).profiles[0]?.identities[0];
+      expect(stored?.avatarDataUrl).toMatch(/^data:image\/gif/);
+    });
   });
 
   it("subscribes to the notifications and conversation-activity topics for the loaded user", async () => {
@@ -273,6 +374,49 @@ describe("IdentityConnection data sync", () => {
     connection.stop();
   });
 
+  it("marks only really-joined communities as member, even for a ROLE_ADMIN user", async () => {
+    stubHealthyServer();
+    stubData({ me: { id: 42, roles: ["ROLE_USER", "ROLE_ADMIN"] } as unknown as { id: number } });
+    const bridge = createFakePlatformBridge();
+    await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "old");
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), makeCallbacks());
+
+    connection.start();
+    await vi.waitFor(() => expect(connection.getSnapshot().userId).toBe(42));
+
+    expect(connection.getSnapshot().communities.map((c) => c.member)).toEqual([true, false]);
+
+    connection.stop();
+  });
+
+  it("refreshRailData refetches communities and pins into the snapshot without resubscribing SSE", async () => {
+    const { connection } = await startHealthyConnectionWithData();
+    await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBeGreaterThan(0));
+    const esCountBefore = getFakeEventSourceInstances().length;
+    expect(connection.getSnapshot().communities.find((c) => c.id === 5)!.pinned).toBe(false);
+
+    stubData({
+      pinned: [
+        {
+          community: {
+            id: 5,
+            identifier: "team-alpha",
+            name: "Team Alpha",
+            logo: null,
+            accentColor: "#112233",
+          },
+        },
+      ],
+    });
+    await connection.refreshRailData();
+
+    expect(connection.getSnapshot().communities.find((c) => c.id === 5)!.pinned).toBe(true);
+    expect(connection.railSeed()!.pinned).toHaveLength(1);
+    expect(getFakeEventSourceInstances().length).toBe(esCountBefore);
+
+    connection.stop();
+  });
+
   it("reconnect drift-heal refetches unread counts (direct call — see file header)", async () => {
     const { connection } = await startHealthyConnectionWithData();
     server.use(
@@ -311,6 +455,78 @@ describe("IdentityConnection data sync", () => {
     connection.stop();
 
     expect(internals.realtimeRemintTimer).toBeNull();
+  });
+
+  it("emitting a conversation.activity event updates snapshot.conversationActivityAt and notifies subscribers", async () => {
+    const { connection } = await startHealthyConnectionWithData();
+    await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBeGreaterThan(0));
+    const es = getLastFakeEventSource()!;
+
+    const beforeTime = Date.now();
+    const event = {
+      type: "conversation.activity",
+      conversationIdentifier: "conv-1",
+      lastMessageAt: new Date().toISOString(),
+    };
+    es.dispatch(JSON.stringify(event));
+
+    await vi.waitFor(() => {
+      const snap = connection.getSnapshot();
+      expect(snap.conversationActivityAt).not.toBeNull();
+      expect(snap.conversationActivityAt).toBeGreaterThanOrEqual(beforeTime);
+    });
+
+    connection.stop();
+  });
+
+  it("emitting a notification event leaves snapshot.conversationActivityAt untouched", async () => {
+    const { connection } = await startHealthyConnectionWithData();
+    await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBeGreaterThan(0));
+    const es = getLastFakeEventSource()!;
+
+    const snapBefore = connection.getSnapshot();
+    expect(snapBefore.conversationActivityAt).toBeNull();
+
+    const raw = {
+      type: "notification",
+      id: 900,
+      notificationType: "dm_message",
+      isRead: false,
+      communityId: null,
+      communityIdentifier: "",
+      channelIdentifier: "",
+      conversationIdentifier: "conv-1",
+      messageIri: null,
+      authorName: "Ada",
+      groupName: null,
+      groupIdentifier: null,
+      actorIds: null,
+      messageCount: 1,
+      createdAt: new Date().toISOString(),
+    };
+    es.dispatch(JSON.stringify(raw));
+
+    await vi.waitFor(() => expect(connection.getSnapshot().unreadCounts.dm).toBe(1));
+
+    const snapAfter = connection.getSnapshot();
+    expect(snapAfter.conversationActivityAt).toBeNull();
+
+    connection.stop();
+  });
+
+  it("ignores a malformed (non-JSON) realtime event instead of throwing", async () => {
+    const { connection } = await startHealthyConnectionWithData();
+    await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBeGreaterThan(0));
+    const es = getLastFakeEventSource()!;
+
+    const snapBefore = connection.getSnapshot();
+    expect(() => es.dispatch("not json")).not.toThrow();
+
+    const snapAfter = connection.getSnapshot();
+    expect(snapAfter.conversationActivityAt).toBe(snapBefore.conversationActivityAt);
+    expect(snapAfter.unreadCounts).toEqual(snapBefore.unreadCounts);
+
+    connection.stop();
   });
 });
 

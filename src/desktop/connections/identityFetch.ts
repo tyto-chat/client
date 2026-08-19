@@ -22,7 +22,7 @@ interface HydraMemberCollection<T> {
 
 const VERSIONED_PATH = /^\/api\/v\d+(\/|$)/;
 
-function buildUrl(ctx: ServerContext, path: string): string {
+export function buildUrl(ctx: ServerContext, path: string): string {
   if (VERSIONED_PATH.test(path)) return `${ctx.origin}${path}`;
   return `${ctx.origin}/api/${ctx.apiVersion}${path}`;
 }
@@ -70,6 +70,10 @@ export async function identityPost<T>(
     init.body = JSON.stringify(body);
   }
   return send<T>(ctx, path, init);
+}
+
+export async function identityDelete<T>(ctx: ServerContext, path: string): Promise<T> {
+  return send<T>(ctx, path, { method: "DELETE" });
 }
 
 export function unwrapMember<T>(payload: HydraMemberCollection<T> | T[]): T[] {

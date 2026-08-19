@@ -1,6 +1,7 @@
 import type { Page, Locator } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { T } from "../e2e/fixtures";
+import { testIds } from "../e2e/testIds";
 
 export class ConversationPage {
   readonly messageEditor: Locator;
@@ -43,18 +44,8 @@ export class ConversationPage {
     await this.page.locator("aside").getByText(name, { exact: false }).first().click();
   }
 
-  async openSettings(): Promise<void> {
-    await this.page.getByTitle(/conversation settings/i).click();
-  }
-
   async toggleMute(): Promise<void> {
-    await this.page.getByRole("button", { name: /^(mute|muted)$/i }).click();
-  }
-
-  async closeSettings(): Promise<void> {
-    // The Modal shell also renders an X icon with aria-label="Close"; the
-    // settings footer's text-only Close button has no aria-label.
-    await this.page.locator("button:not([aria-label])", { hasText: /^Close$/ }).click();
+    await this.page.getByTestId(testIds.dmMuteToggle).click();
   }
 
   async addReactionToLastMessage(emoji: string): Promise<void> {

@@ -12,7 +12,6 @@
   "write_private_message": "Écrire un message privé",
   "message_tab": "Message",
   "create_failed": "Échec de la création de la conversation.",
-  "settings": "Paramètres de la conversation",
   "members": "Membres",
   "no_conversations": "Pas encore de messages privés.",
   "no_conversations_hint": "Lance une discussion avec quelqu'un depuis n'importe quelle communauté.",
@@ -21,10 +20,8 @@
   "message_placeholder": "Envoyer un message à {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Toi",
-  "mute": "Sourdine",
   "muted": "En sourdine",
   "mute_notifications": "Mettre les notifications en sourdine",
-  "mute_notifications_hint": "Aucune alerte quand cette conversation est en sourdine.",
   "beginning_of_history": "Début de cette conversation",
   "no_messages": "Pas encore de messages",
   "be_first": "Dis bonjour pour lancer la discussion."

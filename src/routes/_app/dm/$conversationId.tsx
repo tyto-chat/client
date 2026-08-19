@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type InfiniteData } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { fetchConversation } from "@/api/conversations";
 import {
   useConversation,
   useDeleteConversationAttachment,
@@ -11,6 +12,7 @@ import {
   useEditConversationMessage,
   useInfiniteConversationMessages,
   useMarkConversationRead,
+  useMuteConversation,
   useSendConversationMessage,
 } from "@/queries/conversationQueries";
 import { useToggleConversationReaction } from "@/queries/reactionQueries";
@@ -29,15 +31,20 @@ import { toMemberItems } from "@/utils/toMemberItems";
 import { MessageHistoryModal } from "@/components/chat/MessageHistoryModal";
 import { MessagePane } from "@/components/chat/MessagePane";
 import { ThreadPanel } from "@/components/chat/ThreadPanel";
-import { ConversationSettingsModal } from "@/components/ConversationSettingsModal";
+import { Avatar } from "@/components/Avatar";
+import { avatarUrl } from "@/api/client";
+import { Menu, MenuStaticItem } from "@/components/ui/Menu";
 import { ReportModal } from "@/components/ReportModal";
 import { uuidFromIri } from "@/api/hydra";
-import { ChatBubbleIcon, EditIcon, SearchIcon, Spinner } from "@/components/icons";
+import { BellIcon, BellOffIcon, ChatBubbleIcon, SearchIcon } from "@/components/icons";
+import { MessagePaneSkeleton } from "@/components/ui/Skeleton";
 import { SearchDialog } from "@/components/chat/SearchDialog";
 import { MobileTopBar } from "@/components/MobileTopBar";
 import type { ChannelPage } from "@/types/api";
 import { writeLastLocation } from "@/utils/lastLocation";
 import type { MemberItem } from "@/utils/userMentionExtension";
+
+const MUTE_FOREVER = () => new Date(Date.now() + 100 * 365 * 24 * 3600 * 1000);
 
 interface ConversationSearch {
   m?: string;
@@ -54,6 +61,10 @@ export const Route = createFileRoute("/_app/dm/$conversationId")({
   loaderDeps: ({ search }) => ({ m: search.m }),
   loader: async ({ context: { queryClient }, params, deps }) => {
     try {
+      void queryClient.prefetchQuery({
+        queryKey: queryKeys.conversation(params.conversationId),
+        queryFn: () => fetchConversation(params.conversationId),
+      });
       const pages = await fetchConversationPages(params.conversationId);
       const latestPage = pages[pages.length - 1];
       const latestPageNumber = latestPage?.pageNumber ?? 1;
@@ -119,8 +130,8 @@ export const Route = createFileRoute("/_app/dm/$conversationId")({
 
 function ConversationPendingPane() {
   return (
-    <main className="flex min-w-0 flex-1 items-center justify-center">
-      <Spinner size={28} className="text-fg-muted" />
+    <main className="flex min-w-0 flex-1">
+      <MessagePaneSkeleton />
     </main>
   );
 }
@@ -156,7 +167,15 @@ function ConversationPage() {
   const title = conversation ? conversationDisplayName(conversation, user?.id, overflowSuffix) : "";
   useDocumentTitle(title);
 
-  const isMember = !!conversation?.members.find((m) => m.userId === user?.id);
+  const me = conversation?.members.find((m) => m.userId === user?.id);
+  const isMember = !!me;
+  const isMuted = !!me?.mutedUntil;
+  const isGroup = (conversation?.members.length ?? 0) > 2;
+  const muteConversation = useMuteConversation(conversationId);
+  const toggleMute = useCallback(
+    () => muteConversation.mutate(isMuted ? null : MUTE_FOREVER().toISOString()),
+    [muteConversation, isMuted],
+  );
 
   const memberItems = useMemo<MemberItem[]>(
     () => toMemberItems(conversation?.members, user?.id),
@@ -202,7 +221,6 @@ function ConversationPage() {
   usePrefetchMessagePermalinks(messages);
 
   const [historyMessageIri, setHistoryMessageIri] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [threadRootIri, setThreadRootIri] = useState<string | null>(null);
   const [reportMessageIri, setReportMessageIri] = useState<string | null>(null);
@@ -267,8 +285,8 @@ function ConversationPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center text-fg-muted">
-        {t("common:loading")}
+      <main className="flex min-w-0 flex-1">
+        <MessagePaneSkeleton />
       </main>
     );
   }
@@ -304,13 +322,50 @@ function ConversationPage() {
         <header className="border-b border-line px-4 py-3 max-md:hidden">
           <h1 className="flex items-center gap-1.5 font-semibold">
             <ChatBubbleIcon size={14} className="text-fg-subtle" />
-            <span className="block cap-trim">{title}</span>
+            {isGroup ? (
+              <Menu
+                label={t("members")}
+                testId="dm-members-menu"
+                trigger={
+                  <span className="cap-trim rounded px-1 -mx-1 hover:bg-surface">{title}</span>
+                }
+              >
+                <MenuStaticItem className="font-semibold uppercase tracking-wide">
+                  {t("members")} ({conversation.members.length})
+                </MenuStaticItem>
+                {conversation.members.map((m) => (
+                  <MenuStaticItem key={m.id} className="text-sm text-fg">
+                    <span className="flex items-center gap-2">
+                      <Avatar
+                        name={m.profile?.name ?? `#${m.userId}`}
+                        colorKey={m.profile?.["@id"] ?? String(m.userId)}
+                        imageUrl={avatarUrl(m.profile?.avatar?.contentUrl ?? null)}
+                        size="xs"
+                      />
+                      <span className="truncate">
+                        {m.profile?.name ?? `#${m.userId}`}
+                        {m.userId === user?.id && (
+                          <span className="ml-1 text-xs text-fg-subtle">({t("you")})</span>
+                        )}
+                      </span>
+                    </span>
+                  </MenuStaticItem>
+                ))}
+              </Menu>
+            ) : (
+              <span className="block cap-trim">{title}</span>
+            )}
             <button
-              onClick={() => setSettingsOpen(true)}
-              title={t("settings")}
-              className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface hover:text-fg"
+              onClick={() => toggleMute()}
+              disabled={muteConversation.isPending}
+              aria-pressed={isMuted}
+              data-testid="dm-mute-toggle"
+              title={isMuted ? t("muted") : t("mute_notifications")}
+              className={`ml-auto flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-surface disabled:opacity-50 ${
+                isMuted ? "text-accent" : "text-fg-muted hover:text-fg"
+              }`}
             >
-              <EditIcon size={13} />
+              {isMuted ? <BellOffIcon size={13} /> : <BellIcon size={13} />}
             </button>
             <button
               onClick={() => setSearchOpen(true)}
@@ -326,13 +381,6 @@ function ConversationPage() {
           <MessageHistoryModal
             messageIri={historyMessageIri}
             onClose={() => setHistoryMessageIri(null)}
-          />
-        )}
-        {settingsOpen && (
-          <ConversationSettingsModal
-            conversation={conversation}
-            currentUserId={user?.id}
-            onClose={() => setSettingsOpen(false)}
           />
         )}
         {reportMessageIri && (

@@ -17,6 +17,7 @@ import { fetchCommunity, fetchCommunityMembers } from "@/api/communities";
 import { fetchCommunityMembership } from "@/api/membership";
 import { queryKeys } from "@/queries/queryKeys";
 import { StaleTime } from "@/queries/staleTimes";
+import { fetchCommunityEmojis } from "@/api/communityEmojis";
 import {
   useDeleteAttachment,
   useDeleteMessage,
@@ -63,8 +64,8 @@ import {
   PinIcon,
   StarIcon,
   StarFilledIcon,
-  Spinner,
 } from "@/components/icons";
+import { MessagePaneSkeleton } from "@/components/ui/Skeleton";
 import { useChannelPinState, useSetChannelPinState } from "@/queries/notificationPreferenceQueries";
 import { SearchDialog } from "@/components/chat/SearchDialog";
 import { PinnedMessagesModal } from "@/components/PinnedMessagesModal";
@@ -89,6 +90,11 @@ export const Route = createFileRoute("/_app/$communityId/$channelId")({
   loaderDeps: ({ search }) => ({ m: search.m }),
   loader: async ({ context: { queryClient, auth }, params, deps }) => {
     try {
+      void queryClient.prefetchQuery({
+        queryKey: queryKeys.communityEmojis(params.communityId),
+        queryFn: () => fetchCommunityEmojis(params.communityId),
+        staleTime: StaleTime.long,
+      });
       const community = await queryClient.ensureQueryData({
         queryKey: queryKeys.community(params.communityId),
         queryFn: () => fetchCommunity(params.communityId),
@@ -212,8 +218,8 @@ export const Route = createFileRoute("/_app/$communityId/$channelId")({
 
 function ChannelPendingPane() {
   return (
-    <main className="flex min-w-0 flex-1 items-center justify-center">
-      <Spinner size={28} className="text-fg-muted" />
+    <main className="flex min-w-0 flex-1">
+      <MessagePaneSkeleton />
     </main>
   );
 }
@@ -790,9 +796,11 @@ function ChannelPage() {
           onUnpinMessage={handleUnpinMessage}
           canModerate={canModerate}
           canDeleteSystem={isAdmin}
+          canReact={isMember}
           canReply={
             !isArchived &&
             !!user &&
+            isMember &&
             (!currentChannel?.isReadonly ||
               !!currentChannel?.areReadonlyRepliesAllowed ||
               canModerate)
@@ -851,6 +859,7 @@ function ChannelPage() {
           focusReplyId={searchT ?? null}
           onReplyFocusComplete={clearReplyFocus}
           frozen={isArchived}
+          canParticipate={isMember}
           onClose={() => {
             setThreadRootIri(null);
             if (searchT) clearReplyFocus();

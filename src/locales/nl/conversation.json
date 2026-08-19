@@ -12,7 +12,6 @@
   "write_private_message": "Schrijf een privébericht",
   "message_tab": "Bericht",
   "create_failed": "Kon het gesprek niet aanmaken.",
-  "settings": "Gespreksinstellingen",
   "members": "Leden",
   "no_conversations": "Nog geen privéberichten.",
   "no_conversations_hint": "Begin een gesprek met iemand uit een community.",
@@ -21,10 +20,8 @@
   "message_placeholder": "Bericht aan {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Jij",
-  "mute": "Dempen",
   "muted": "Gedempt",
   "mute_notifications": "Meldingen dempen",
-  "mute_notifications_hint": "Geen meldingen zolang dit gesprek gedempt is.",
   "beginning_of_history": "Begin van dit gesprek",
   "no_messages": "Nog geen berichten",
   "be_first": "Zeg hallo om te beginnen."

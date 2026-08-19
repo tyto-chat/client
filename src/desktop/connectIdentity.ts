@@ -1,6 +1,11 @@
 import { ApiError, configureApiClient, getBaseUrl } from "@/api/client";
 import { refreshWithToken, setRefreshExecutor } from "@/api/auth";
-import { getApiVersion, negotiateApiVersion } from "@/api/apiVersion";
+import {
+  getApiVersion,
+  getApiVersionForOrigin,
+  negotiateApiVersion,
+  negotiateApiVersionQuiet,
+} from "@/api/apiVersion";
 import { fetchServerInfo, fetchServerInfoQuiet } from "@/api/serverInfo";
 import type { ServerInfo } from "@/types/api";
 import type { PlatformBridge } from "@/platform/PlatformBridge";
@@ -60,9 +65,9 @@ export async function resolveServer(origin: string): Promise<ServerInfo> {
 }
 
 export async function resolveServerQuiet(origin: string): Promise<ServerInfo> {
-  const negotiation = await negotiateApiVersion(origin);
+  const negotiation = await negotiateApiVersionQuiet(origin);
   if (!negotiation.ok) throw new VersionMismatchError(negotiation.direction);
-  return fetchServerInfoQuiet(`${origin}/api/${getApiVersion()}/server-info`);
+  return fetchServerInfoQuiet(`${origin}/api/${getApiVersionForOrigin(origin)}/server-info`);
 }
 
 export function installRefreshExecutor(bridge: PlatformBridge, key: string): void {

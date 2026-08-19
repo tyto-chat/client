@@ -16,8 +16,8 @@ function makeToken(exp: number): string {
   return `${header}.${payload}.sig`;
 }
 
-function farFutureToken(): string {
-  return makeToken(Math.floor(Date.now() / 1000) + 3600);
+function farFutureToken(offsetSeconds = 3600): string {
+  return makeToken(Math.floor(Date.now() / 1000) + offsetSeconds);
 }
 
 function makeWrapper(queryClient: QueryClient) {
@@ -67,14 +67,14 @@ describe("AuthContext identity switch", () => {
     expect(result.current.token).toBe(tokenA);
     await waitFor(() => expect(result.current.mercureToken).toBe("rt-1"));
 
-    const tokenB = farFutureToken();
+    const tokenB = farFutureToken(7200);
     currentUserId = 2;
     act(() => {
       setAccessToken(tokenB);
       setActiveIdentityKey("i2");
     });
 
-    expect(result.current.token).toBe(tokenB);
+    await waitFor(() => expect(result.current.token).toBe(tokenB));
     await waitFor(() => expect(result.current.user?.id).toBe(2));
     await waitFor(() => expect(result.current.mercureToken).toBe("rt-2"));
     expect(result.current.sessionExpired).toBe(false);

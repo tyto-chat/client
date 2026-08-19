@@ -12,7 +12,6 @@
   "write_private_message": "Özel bir mesaj yaz",
   "message_tab": "Mesaj",
   "create_failed": "Sohbet oluşturulamadı.",
-  "settings": "Sohbet ayarları",
   "members": "Üyeler",
   "no_conversations": "Henüz özel mesaj yok.",
   "no_conversations_hint": "Herhangi bir topluluktan biriyle sohbet başlat.",
@@ -21,10 +20,8 @@
   "message_placeholder": "{{name}} kişisine mesaj",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Sen",
-  "mute": "Sessize al",
   "muted": "Sessizde",
   "mute_notifications": "Bildirimleri sessize al",
-  "mute_notifications_hint": "Bu sohbet sessizdeyken uyarı gelmez.",
   "beginning_of_history": "Bu sohbetin başlangıcı",
   "no_messages": "Henüz mesaj yok",
   "be_first": "Başlamak için merhaba de."

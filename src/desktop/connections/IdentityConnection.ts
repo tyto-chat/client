@@ -1,9 +1,15 @@
 import { resolveServerQuiet, VersionMismatchError } from "@/desktop/connectIdentity";
 import { getApiVersionForOrigin } from "@/api/apiVersion";
-import { refreshWithToken, loginAt } from "@/api/auth";
-import { ApiError, logoUrl } from "@/api/client";
+import { refreshWithToken, loginAt, LoginRequestError } from "@/api/auth";
+import { ApiError, avatarUrl, logoUrl } from "@/api/client";
 import { subscribeMercure, type MercureHandlers } from "@/api/mercure";
-import { secretKey, type DesktopIdentity } from "@/desktop/desktopConfig";
+import {
+  loadDesktopConfig,
+  saveDesktopConfig,
+  secretKey,
+  setIdentityProfile,
+  type DesktopIdentity,
+} from "@/desktop/desktopConfig";
 import type { PlatformBridge } from "@/platform/PlatformBridge";
 import type {
   Community,
@@ -29,6 +35,7 @@ export interface ConnectionCommunity {
   iri: string | null;
   member: boolean;
   pinned: boolean;
+  isPrivate: boolean;
 }
 
 export interface ConnectionNotificationEvent {
@@ -52,6 +59,7 @@ export interface ConnectionSnapshot {
   userId: number | null;
   communities: ConnectionCommunity[];
   unreadCounts: Record<string, number>;
+  conversationActivityAt: number | null;
   error: unknown;
 }
 
@@ -59,6 +67,44 @@ export interface ConnectionCallbacks {
   onChange(snapshot: ConnectionSnapshot): void;
   onNotification(event: ConnectionNotificationEvent): void;
   persistRotatedToken(refreshToken: string): Promise<void>;
+}
+
+// Animated GIFs bypass server-side resizing, so this ceiling tracks the server's 1M avatar upload cap.
+const MAX_CACHED_AVATAR_BYTES = 1_200_000;
+
+interface MeProfileResponse {
+  id: number;
+  roles?: string[];
+  profile?: {
+    "@id"?: string | null;
+    name?: string | null;
+    avatar?: { contentUrl?: { sm: string; md: string; lg: string } | null } | null;
+  } | null;
+}
+
+function blobToDataUrl(blob: Blob): Promise<string | null> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function fetchAvatarDataUrl(ctx: ServerContext, source: string): Promise<string | null> {
+  try {
+    const url = /^https?:\/\//i.test(source) ? source : `${ctx.origin}${source}`;
+    const token = ctx.getToken();
+    const response = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      credentials: "omit",
+    });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return blob.size <= MAX_CACHED_AVATAR_BYTES ? await blobToDataUrl(blob) : null;
+  } catch {
+    return null;
+  }
 }
 
 const RETRY_DELAYS_MS = [15_000, 30_000, 60_000, 120_000, 300_000];
@@ -89,6 +135,7 @@ function buildConnectionCommunities(
     iri: c["@id"] ?? null,
     member: memberIds.has(c.id),
     pinned: pinnedIds.has(c.id),
+    isPrivate: c.isPrivate === true,
   });
   const byId = new Map(communities.map((c) => [c.id, c]));
   const pinnedFirst = [...pinned]
@@ -123,6 +170,7 @@ export class IdentityConnection {
   private communitiesValue: ConnectionCommunity[] = [];
   private railSeedValue: ConnectionRailSeed | null = null;
   private unreadCountsValue: Record<string, number> = {};
+  private conversationActivityAtValue: number | null = null;
   private realtimeUnsubscribe: (() => void) | null = null;
   private realtimeRemintTimer: ReturnType<typeof setTimeout> | null = null;
   private dataRetryAttempt = 0;
@@ -198,7 +246,7 @@ export class IdentityConnection {
   serverContext(): ServerContext {
     return {
       origin: this.identity.serverUrl,
-      apiVersion: this.apiVersionValue,
+      apiVersion: this.apiVersionValue || getApiVersionForOrigin(this.identity.serverUrl),
       getToken: () => this.token,
     };
   }
@@ -213,6 +261,37 @@ export class IdentityConnection {
 
   refreshUnreadCounts(): Promise<void> {
     return this.refetchUnreadCounts(this.connectionId);
+  }
+
+  refreshData(): Promise<void> {
+    return this.loadData(this.connectionId);
+  }
+
+  async refreshRailData(): Promise<void> {
+    const myId = this.connectionId;
+    const ctx = this.serverContext();
+    const [memberships, communities, pinned] = await Promise.all([
+      identityFetch<HydraCollection<MyCommunityMembership> | MyCommunityMembership[]>(
+        ctx,
+        "/me/community-memberships",
+      ),
+      identityFetch<HydraCollection<Community> | Community[]>(ctx, "/communities"),
+      identityFetch<HydraCollection<PinnedCommunity> | PinnedCommunity[]>(
+        ctx,
+        "/me/pinned-communities",
+      ),
+    ]);
+    if (this.stopped || this.connectionId !== myId) return;
+    const membershipList = unwrapMember(memberships);
+    const communityList = unwrapMember(communities);
+    const pinnedList = unwrapMember(pinned);
+    this.railSeedValue = {
+      communities: communityList,
+      pinned: pinnedList,
+      memberships: membershipList,
+    };
+    this.communitiesValue = buildConnectionCommunities(membershipList, communityList, pinnedList);
+    this.rebuildSnapshot();
   }
 
   private async connect(): Promise<void> {
@@ -320,7 +399,7 @@ export class IdentityConnection {
     try {
       tokens = await loginAt(apiBase, this.identity.email, password);
     } catch (error) {
-      if (error instanceof Error && error.message === "Invalid credentials") {
+      if (error instanceof LoginRequestError && error.kind === "auth") {
         throw new AuthFailedError();
       }
       throw error;
@@ -375,8 +454,61 @@ export class IdentityConnection {
       userId: this.userIdValue ?? this.identity.userId,
       communities: this.communitiesValue,
       unreadCounts: this.unreadCountsValue,
+      conversationActivityAt: this.conversationActivityAtValue,
       error: this.errorValue,
     };
+  }
+
+  private async cacheProfileForRelogin(me: MeProfileResponse, ctx: ServerContext): Promise<void> {
+    const displayName = me.profile?.name ?? null;
+    const avatarSource = avatarUrl(me.profile?.avatar?.contentUrl ?? null);
+    const avatarColorKey = me.profile?.["@id"] ?? null;
+    if (
+      displayName === this.identity.displayName &&
+      avatarSource === this.identity.avatarSource &&
+      avatarColorKey === this.identity.avatarColorKey
+    ) {
+      return;
+    }
+
+    let avatarDataUrl: string | null = null;
+    if (avatarSource) {
+      avatarDataUrl =
+        avatarSource === this.identity.avatarSource
+          ? (this.identity.avatarDataUrl ?? null)
+          : await fetchAvatarDataUrl(ctx, avatarSource);
+    }
+
+    const write = async (cachedAvatar: string | null): Promise<void> => {
+      const config = await loadDesktopConfig(this.bridge);
+      const next = setIdentityProfile(config, this.profileId, this.identity.id, {
+        userId: me.id,
+        displayName,
+        avatarDataUrl: cachedAvatar,
+        avatarSource,
+        avatarColorKey,
+      });
+      await saveDesktopConfig(this.bridge, next);
+      this.identity = {
+        ...this.identity,
+        userId: me.id,
+        displayName,
+        avatarDataUrl: cachedAvatar,
+        avatarSource,
+        avatarColorKey,
+      };
+    };
+
+    try {
+      await write(avatarDataUrl);
+    } catch {
+      // A big animated avatar can exhaust the storage quota; keep the name rather than losing the write.
+      try {
+        if (avatarDataUrl) await write(null);
+      } catch {
+        // Cached identity chrome is cosmetic; a failed write must not disturb the session.
+      }
+    }
   }
 
   private async loadData(myId: number): Promise<void> {
@@ -384,7 +516,7 @@ export class IdentityConnection {
     const ctx = this.serverContext();
     try {
       const [me, memberships, communities, pinned, counts, realtimeToken] = await Promise.all([
-        identityFetch<{ id: number }>(ctx, "/me"),
+        identityFetch<MeProfileResponse>(ctx, "/me"),
         identityFetch<HydraCollection<MyCommunityMembership> | MyCommunityMembership[]>(
           ctx,
           "/me/community-memberships",
@@ -412,6 +544,7 @@ export class IdentityConnection {
       this.communitiesValue = buildConnectionCommunities(membershipList, communityList, pinnedList);
       this.unreadCountsValue = counts.counts;
       this.rebuildSnapshot();
+      void this.cacheProfileForRelogin(me, ctx);
       this.subscribeRealtime(myId, me.id, realtimeToken.token, realtimeToken.expiresAt);
     } catch (error) {
       if (this.stopped || this.connectionId !== myId) return;
@@ -511,8 +644,17 @@ export class IdentityConnection {
   }
 
   private handleRealtimeEvent(event: MessageEvent): void {
-    const data = parseMercureEvent<NotificationMercureEvent>(event);
-    if (!data || data.type !== "notification") return;
+    const parsed = parseMercureEvent<NotificationMercureEvent | { type: string }>(event);
+    if (!parsed) return;
+
+    if (parsed.type === "conversation.activity") {
+      this.conversationActivityAtValue = Date.now();
+      this.rebuildSnapshot();
+      return;
+    }
+
+    if (parsed.type !== "notification") return;
+    const data = parsed as NotificationMercureEvent;
 
     const isDm = data.notificationType === "dm_message";
     const key = isDm ? "dm" : String(data.communityId);

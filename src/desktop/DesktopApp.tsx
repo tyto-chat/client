@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { hashKey, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppShell, router } from "@/appShell";
 import { createAppQueryClient } from "@/queryClientFactory";
 import { queryKeys } from "@/queries/queryKeys";
 import { getPlatformBridge } from "@/platform/bridge";
-import { registerIdentitySwitchHandler } from "@/platform/activeIdentity";
+import {
+  registerIdentityInfoProvider,
+  registerIdentityRequestExecutor,
+  registerIdentitySwitchHandler,
+  setIdentitySwitchInProgress,
+  setIdentitySwitchTarget,
+} from "@/platform/activeIdentity";
+import { buildUrl } from "./connections/identityFetch";
 import { ConnectionRegistry } from "./connections/ConnectionRegistry";
 import { ConnectionsContext, type ConnectionsContextValue } from "./connections/ConnectionsContext";
 import { DesktopBootstrap, type DesktopSession } from "./DesktopBootstrap";
@@ -17,11 +24,23 @@ export interface DesktopAppProps {
 
 type CacheSnapshot = { queryKey: readonly unknown[]; data: unknown; dataUpdatedAt: number }[];
 
+const RAIL_QUERY_KEYS = [
+  queryKeys.communities(),
+  queryKeys.pinnedCommunities(),
+  queryKeys.myMemberships(),
+];
+const RAIL_KEY_HASHES = new Set(RAIL_QUERY_KEYS.map((key) => hashKey(key)));
+
 function snapshotCache(client: QueryClient): CacheSnapshot {
   return client
     .getQueryCache()
     .getAll()
-    .filter((q) => q.state.status === "success" && q.state.data !== undefined)
+    .filter(
+      (q) =>
+        RAIL_KEY_HASHES.has(q.queryHash) &&
+        q.state.status === "success" &&
+        q.state.data !== undefined,
+    )
     .map((q) => ({
       queryKey: q.queryKey,
       data: q.state.data,
@@ -71,14 +90,15 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
       const stored = identityCaches.get(toIdentityId);
       if (stored) {
         hydrateCache(activeClient, stored);
-        return;
+      } else {
+        const seed = registry.getConnection(toIdentityId)?.railSeed();
+        if (seed) {
+          activeClient.setQueryData(queryKeys.communities(), seed.communities);
+          activeClient.setQueryData(queryKeys.pinnedCommunities(), { items: seed.pinned });
+          activeClient.setQueryData(queryKeys.myMemberships(), seed.memberships);
+        }
       }
-      const seed = registry.getConnection(toIdentityId)?.railSeed();
-      if (seed) {
-        activeClient.setQueryData(queryKeys.communities(), seed.communities);
-        activeClient.setQueryData(queryKeys.pinnedCommunities(), { items: seed.pinned });
-        activeClient.setQueryData(queryKeys.myMemberships(), seed.memberships);
-      }
+      void activeClient.invalidateQueries();
     },
     [registry, activeClient, identityCaches],
   );
@@ -86,9 +106,18 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
   const switchTo = useCallback(
     async (identityId: string, navigateTo?: SwitchTarget["navigateTo"]): Promise<void> => {
       const previousIdentityId = registry.getSnapshot().activeIdentityId;
+      if (identityId === previousIdentityId) {
+        await router.navigate(navigateTo ?? { to: "/" });
+        return;
+      }
       const pending = { identityId, navigateTo: navigateTo ?? { to: "/" } };
       pendingNavigationRef.current = pending;
+      setIdentitySwitchInProgress(true);
+      setIdentitySwitchTarget(pending.navigateTo);
+      let hopped = false;
       try {
+        await router.navigate({ to: "/switching" });
+        hopped = true;
         await performIdentitySwitch(registry, getPlatformBridge(), {
           identityId,
           navigateTo,
@@ -96,6 +125,9 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
         });
       } catch (error) {
         if (pendingNavigationRef.current === pending) pendingNavigationRef.current = null;
+        setIdentitySwitchInProgress(false);
+        setIdentitySwitchTarget(null);
+        if (hopped) router.history.back();
         throw error;
       }
     },
@@ -106,6 +138,30 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
     registerIdentitySwitchHandler(switchTo);
     return () => registerIdentitySwitchHandler(null);
   }, [switchTo]);
+
+  useEffect(() => {
+    registerIdentityInfoProvider((identityKey) => {
+      const connection = registry
+        .getSnapshot()
+        .connections.find((c) => c.identityId === identityKey);
+      return connection ? { serverName: connection.serverName, origin: connection.origin } : null;
+    });
+    return () => registerIdentityInfoProvider(null);
+  }, [registry]);
+
+  useEffect(() => {
+    registerIdentityRequestExecutor(async (identityKey, path, init) => {
+      const connection = registry.getConnection(identityKey);
+      if (!connection) return;
+      const ctx = connection.serverContext();
+      const url = buildUrl(ctx, path);
+      const headers = new Headers(init?.headers);
+      const token = ctx.getToken();
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+      await fetch(url, { ...init, headers, credentials: "omit" }).catch(() => {});
+    });
+    return () => registerIdentityRequestExecutor(null);
+  }, [registry]);
 
   const contextValue = useMemo<ConnectionsContextValue>(
     () => ({ registry, switchTo }),
@@ -118,7 +174,10 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
     const pending = pendingNavigationRef.current;
     if (pending && pending.identityId === activeIdentityId) {
       pendingNavigationRef.current = null;
-      void router.navigate(pending.navigateTo);
+      void router.navigate({ ...pending.navigateTo, replace: true }).finally(() => {
+        setIdentitySwitchInProgress(false);
+        setIdentitySwitchTarget(null);
+      });
     }
   }, [activeIdentityId]);
 

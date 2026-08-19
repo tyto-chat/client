@@ -50,7 +50,12 @@ export async function performIdentitySwitch(
   const unreadRefreshes = [connection.refreshUnreadCounts()];
   if (previousActiveIdentityId && previousActiveIdentityId !== target.identityId) {
     const previousConnection = registry.getConnection(previousActiveIdentityId);
-    if (previousConnection) unreadRefreshes.push(previousConnection.refreshUnreadCounts());
+    if (previousConnection) {
+      unreadRefreshes.push(
+        previousConnection.refreshUnreadCounts(),
+        previousConnection.refreshRailData(),
+      );
+    }
   }
   await Promise.allSettled(unreadRefreshes);
 

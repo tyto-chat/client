@@ -142,6 +142,10 @@ describe("ConnectionNotificationBridge", () => {
     const [, opts] = showSpy.mock.calls[0]!;
     expect(opts.tag).toBe("https://bg.example:dm:conv-1");
 
+    const [message] = notifyMock.mock.calls[0]!;
+    expect(message).toBe("@Alice sent you a direct message");
+    expect(message).not.toContain("Beta");
+
     opts.onClick?.();
     expect(switchTo).toHaveBeenCalledWith("bg-id", {
       to: "/dm/$conversationId",

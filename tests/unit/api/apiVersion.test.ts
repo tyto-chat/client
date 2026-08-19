@@ -3,6 +3,7 @@ import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import {
   negotiateApiVersion,
+  negotiateApiVersionQuiet,
   getApiVersion,
   getApiVersionForOrigin,
   supportsFeature,
@@ -65,6 +66,66 @@ describe("negotiateApiVersion", () => {
       ),
     );
     await expect(negotiateApiVersion(ORIGIN)).rejects.toThrow("malformed versions payload");
+  });
+});
+
+describe("negotiateApiVersionQuiet", () => {
+  it("never repoints the active origin", async () => {
+    const OTHER_ORIGIN = "https://other.example";
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () =>
+        HttpResponse.json({ versions: ["v1"], features: { voice: ["v1"] } }),
+      ),
+      http.get(`${OTHER_ORIGIN}/api/versions`, () =>
+        HttpResponse.json({ versions: ["v1"], features: {} }),
+      ),
+    );
+    await negotiateApiVersion(ORIGIN);
+    const result = await negotiateApiVersionQuiet(OTHER_ORIGIN);
+    expect(result).toEqual({ ok: true, version: "v1", features: {} });
+    expect(supportsFeature("voice")).toBe(true);
+    expect(getApiVersionForOrigin(OTHER_ORIGIN)).toBe("v1");
+  });
+
+  it("caches the negotiation for the origin like negotiateApiVersion does", async () => {
+    let hits = 0;
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => {
+        hits += 1;
+        return HttpResponse.json({ versions: ["v1"], features: {} });
+      }),
+    );
+    await negotiateApiVersionQuiet(ORIGIN);
+    await negotiateApiVersionQuiet(ORIGIN);
+    expect(hits).toBe(1);
+  });
+});
+
+describe("negotiation caching across variants", () => {
+  it("does not refetch /api/versions for an already-negotiated origin", async () => {
+    let hits = 0;
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => {
+        hits += 1;
+        return HttpResponse.json({ versions: ["v1"], features: {} });
+      }),
+    );
+    await negotiateApiVersion(ORIGIN);
+    await negotiateApiVersion(ORIGIN);
+    expect(hits).toBe(1);
+  });
+
+  it("shares the cache between negotiateApiVersion and negotiateApiVersionQuiet", async () => {
+    let hits = 0;
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => {
+        hits += 1;
+        return HttpResponse.json({ versions: ["v1"], features: {} });
+      }),
+    );
+    await negotiateApiVersion(ORIGIN);
+    await negotiateApiVersionQuiet(ORIGIN);
+    expect(hits).toBe(1);
   });
 });
 

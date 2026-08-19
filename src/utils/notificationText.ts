@@ -29,6 +29,8 @@ export function notificationText(n: NotificationTextInput, t: TFunc): string {
       return t("webhook_failed", { name: n.authorName });
     case "broadcast_mention":
       return t("broadcast_mention", { author: n.authorName, channel: n.channelIdentifier });
+    case "dm_message":
+      return t("dm_message", { author: n.authorName });
     case "report_filed":
       return t("report_filed");
     case "report_escalated":

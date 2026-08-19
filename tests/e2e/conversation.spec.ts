@@ -72,9 +72,7 @@ test.describe.serial("Direct messages — lifecycle", () => {
       const userConv = new ConversationPage(userPage);
 
       await userConv.goto(conv.identifier, { waitForMercure: true });
-      await userConv.openSettings();
       await userConv.toggleMute();
-      await userConv.closeSettings();
 
       await userPage.goto("/");
 

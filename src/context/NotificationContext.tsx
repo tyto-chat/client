@@ -63,7 +63,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             <span className="flex-1">{n.message}</span>
             <button
               onClick={() => dismiss(n.id)}
-              className="shrink-0 text-white/70 hover:text-white"
+              className="shrink-0 text-current opacity-70 transition-opacity hover:opacity-100"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

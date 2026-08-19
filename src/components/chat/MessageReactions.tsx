@@ -15,7 +15,6 @@ interface Props {
   currentUserId: number;
   communityIdentifier: string;
   disabled?: boolean;
-  reserveSpace?: boolean;
   onToggle: (emoji: string, existingId?: number) => void;
 }
 
@@ -89,7 +88,6 @@ export function MessageReactions({
   currentUserId,
   communityIdentifier,
   disabled,
-  reserveSpace,
   onToggle,
 }: Props) {
   const { t } = useTranslation("common");
@@ -104,10 +102,7 @@ export function MessageReactions({
 
   useClickOutside(pickerRef, () => setPickerOpen(false), pickerOpen);
 
-  if (!hasReactions) {
-    if (disabled || !reserveSpace) return null;
-    return <div aria-hidden className="mt-1.5 h-6" />;
-  }
+  if (!hasReactions) return null;
 
   return (
     <div className="mt-1.5 flex min-h-6 flex-wrap items-center gap-1">
