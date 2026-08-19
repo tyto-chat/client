@@ -89,6 +89,14 @@ export class GuestConnection {
     await this.loadCommunities(this.connectionId);
   }
 
+  refreshData(): Promise<void> {
+    return this.refreshRailData();
+  }
+
+  refreshUnreadCounts(): Promise<void> {
+    return Promise.resolve();
+  }
+
   private async connect(): Promise<void> {
     if (this.stopped) return;
     const myId = ++this.connectionId;

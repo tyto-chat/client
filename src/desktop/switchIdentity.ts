@@ -6,6 +6,7 @@ import { setActiveIdentityKey } from "@/platform/activeIdentity";
 import type { ServerInfo } from "@/types/api";
 import type { PlatformBridge } from "@/platform/PlatformBridge";
 import type { ConnectionRegistry } from "./connections/ConnectionRegistry";
+import type { IdentityConnection } from "./connections/IdentityConnection";
 import { loadDesktopConfig, saveDesktopConfig, setLastActiveIdentity } from "./desktopConfig";
 
 export interface SwitchTarget {
@@ -18,7 +19,7 @@ export async function performIdentitySwitch(
   registry: ConnectionRegistry,
   bridge: PlatformBridge,
   target: SwitchTarget,
-): Promise<{ token: string; serverInfo: ServerInfo }> {
+): Promise<{ token: string | null; serverInfo: ServerInfo }> {
   const previousActiveIdentityId = registry.getSnapshot().activeIdentityId;
   const connection = registry.getConnection(target.identityId);
   const connectionSnapshot = connection?.getSnapshot();
@@ -26,7 +27,10 @@ export async function performIdentitySwitch(
     throw new Error("identity_switch_target_not_healthy");
   }
 
-  const token = connection.getAccessToken() ?? (await connection.refreshNow());
+  const token =
+    connectionSnapshot.kind === "guest"
+      ? null
+      : (connection.getAccessToken() ?? (await (connection as IdentityConnection).refreshNow()));
 
   await negotiateApiVersion(connectionSnapshot.origin);
 
