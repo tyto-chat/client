@@ -14,6 +14,7 @@ import { useMessagePopover } from "@/context/MessagePopoverContext";
 import { useViewportClamp } from "@/hooks/useViewportClamp";
 import { copyMessageLinkToClipboard } from "@/utils/messageLink";
 import { stableMessageKey } from "@/utils/messageKey";
+import { isOptimisticMessage } from "@/utils/optimisticMessage";
 import { getUserTextColor } from "@/utils/userColor";
 import { isBirthdayToday } from "@/utils/birthday";
 import { avatarUrl } from "@/api/client";
@@ -366,7 +367,7 @@ export function MessageGroup({
                   {formatTimeOnly(msg.createdAt, timezone)}
                 </span>
               )}
-              {isTouch && !readOnly && hasTouchActions && (
+              {isTouch && !readOnly && hasTouchActions && !isOptimisticMessage(msg["@id"]) && (
                 <>
                   {/* z-9: must stay below the z-10 action bar it dismisses. */}
                   {isTouchActive && (
@@ -391,7 +392,7 @@ export function MessageGroup({
                   )}
                 </>
               )}
-              {!readOnly && (
+              {!readOnly && !isOptimisticMessage(msg["@id"]) && (
                 <MessageActions
                   ownerKey={ownerKey}
                   show={showActions || isTouchActive}

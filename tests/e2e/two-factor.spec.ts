@@ -34,8 +34,15 @@ let recoveryCodes: string[] = [];
  * below `totpLastUsedTimestep`, so the code enrollment just consumed cannot sign
  * in — and the two happen seconds apart. The server's ±29s leeway accepts the
  * next step immediately, which beats sleeping out the current one.
+ *
+ * That leeway only covers the next step once we are at least a second into the
+ * current one; called any earlier the code is 30s out and gets rejected.
  */
-function nextStepCode(): string {
+async function nextStepCode(): Promise<string> {
+  const offsetIntoStep = Date.now() % 30_000;
+  if (offsetIntoStep < 2_000) {
+    await new Promise((resolve) => setTimeout(resolve, 2_000 - offsetIntoStep));
+  }
   return totp(secret, Date.now() + 30_000);
 }
 
@@ -109,7 +116,7 @@ test.describe.serial("Two-factor authentication", () => {
     await expect(codeInput).toBeVisible({ timeout: T(10_000) });
 
     // Filling the sixth digit auto-submits the form.
-    await codeInput.fill(nextStepCode());
+    await codeInput.fill(await nextStepCode());
 
     await login.expectRedirectedAway();
     await expect(page.getByTestId(testIds.profileMenuButton)).toBeVisible({ timeout: T(10_000) });

@@ -1,10 +1,11 @@
 import type { Message, User } from "@/types/api";
+import { isOptimisticMessage } from "@/utils/optimisticMessage";
 
 export const GROUP_THRESHOLD_MS = 5 * 60 * 1000;
 
 function authorKey(msg: Message, user: User | null): string {
   if (msg.kind === "system") return `__system__:${msg["@id"]}`;
-  if (msg["@id"].startsWith("optimistic-")) return "__me__";
+  if (isOptimisticMessage(msg["@id"])) return "__me__";
   if (user && msg.createdBy && msg.createdBy.profile["@id"] === user.profile["@id"])
     return "__me__";
   return msg.createdBy?.profile["@id"] ?? `__sys__:${msg["@id"]}`;
@@ -26,7 +27,7 @@ export function groupMessages(
       last.msgs.push(msg);
     } else {
       const isOwn =
-        msg["@id"].startsWith("optimistic-") ||
+        isOptimisticMessage(msg["@id"]) ||
         (!!user && !!msg.createdBy && msg.createdBy.profile["@id"] === user.profile["@id"]);
       groups.push({ isOwn, msgs: [msg] });
     }

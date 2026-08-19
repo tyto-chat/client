@@ -14,6 +14,7 @@ import {
 import { useMercureSubscription } from "@/hooks/useMercureSubscription";
 import { inheritMessageKey } from "@/utils/messageKey";
 import { parseMercureEvent } from "@/utils/parseMercureEvent";
+import { isOptimisticMessage } from "@/utils/optimisticMessage";
 import type {
   ChannelPage,
   Conversation,
@@ -70,7 +71,7 @@ function applyMessageEvent(
         pages: old.pages.map((page) => {
           if (replaced || !page.messages) return page;
           const idx = page.messages.findIndex(
-            (m) => m["@id"].startsWith("optimistic-") && m.createdBy?.id === optimisticAuthorId,
+            (m) => isOptimisticMessage(m["@id"]) && m.createdBy?.id === optimisticAuthorId,
           );
           const stale = idx < 0 ? undefined : page.messages[idx];
           if (!stale) return page;
@@ -272,7 +273,7 @@ export function useThreadMercure(rootIri: string | null, topic: string | null) {
         const msg = data as Message;
         if (list.some((m) => m["@id"] === msg["@id"])) return list;
         const optIdx = list.findIndex(
-          (m) => m["@id"].startsWith("optimistic-") && m.createdBy?.id === msg.createdBy?.id,
+          (m) => isOptimisticMessage(m["@id"]) && m.createdBy?.id === msg.createdBy?.id,
         );
         if (optIdx >= 0) {
           const next = [...list];

@@ -14,6 +14,7 @@ import { isRateLimited } from "@/api/client";
 import { queryKeys } from "@/queries/queryKeys";
 import { inheritMessageKey } from "@/utils/messageKey";
 import type { ChannelPage, Message, User } from "@/types/api";
+import { isOptimisticMessage } from "@/utils/optimisticMessage";
 
 let optimisticSeq = 0;
 
@@ -121,14 +122,14 @@ export function useSendMessageForKey(
               return {
                 ...page,
                 messages: messages
-                  .filter((m) => !m["@id"].startsWith("optimistic-"))
+                  .filter((m) => !isOptimisticMessage(m["@id"]))
                   .map((m) => (m["@id"] === realMessage["@id"] ? { ...m, ...realMessage } : m)),
               };
             }
             return {
               ...page,
               messages: messages.map((m) => {
-                if (!m["@id"].startsWith("optimistic-")) return m;
+                if (!isOptimisticMessage(m["@id"])) return m;
                 inheritMessageKey(m["@id"], realMessage["@id"]);
                 return realMessage;
               }),
