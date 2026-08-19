@@ -4,12 +4,14 @@ import {
   createDefaultConfig,
   DuplicateServerIdentityError,
   getServerOrder,
+  identityKind,
   InvalidServerUrlError,
   loadDesktopConfig,
   normalizeServerUrl,
   removeIdentity,
   saveDesktopConfig,
   secretKey,
+  setIdentityKind,
   setLastActiveIdentity,
   setServerOrder,
 } from "@/desktop/desktopConfig";
@@ -122,5 +124,63 @@ describe("secretKey", () => {
   it("namespaces by profile and identity", () => {
     expect(secretKey("p1", "i1", "password")).toBe("p1/i1/password");
     expect(secretKey("p1", "i1", "refreshToken")).toBe("p1/i1/refreshToken");
+  });
+});
+
+describe("identity kind", () => {
+  it("treats an entry without a kind as a signed-in identity", () => {
+    expect(identityKind(identity())).toBe("identity");
+    expect(identityKind(identity({ kind: "guest" }))).toBe("guest");
+  });
+
+  it("flips the kind without mutating the source config or other fields", () => {
+    const cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    const base = addIdentity(cfg, pid, identity());
+
+    const next = setIdentityKind(base, pid, "id-1", "guest");
+
+    expect(identityKind(next.profiles[0]!.identities[0]!)).toBe("guest");
+    expect(next.profiles[0]!.identities[0]!.email).toBe("a@b.c");
+    expect(identityKind(base.profiles[0]!.identities[0]!)).toBe("identity");
+  });
+
+  it("leaves other identities untouched", () => {
+    const cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    const withTwo = addIdentity(
+      addIdentity(cfg, pid, identity()),
+      pid,
+      identity({ id: "id-2", serverUrl: "https://other.example.org" }),
+    );
+
+    const next = setIdentityKind(withTwo, pid, "id-2", "guest");
+
+    expect(identityKind(next.profiles[0]!.identities[0]!)).toBe("identity");
+    expect(identityKind(next.profiles[0]!.identities[1]!)).toBe("guest");
+  });
+
+  it("round-trips a guest entry through save/load", async () => {
+    const bridge = createFakePlatformBridge();
+    const base = await loadDesktopConfig(bridge);
+    const pid = base.profiles[0]!.id;
+    await saveDesktopConfig(
+      bridge,
+      setIdentityKind(addIdentity(base, pid, identity()), pid, "id-1", "guest"),
+    );
+
+    const loaded = await loadDesktopConfig(bridge);
+
+    expect(identityKind(loaded.profiles[0]!.identities[0]!)).toBe("guest");
+  });
+
+  it("still rejects a guest for an origin that already has an identity", () => {
+    const cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    const withIdentity = addIdentity(cfg, pid, identity());
+
+    expect(() => addIdentity(withIdentity, pid, identity({ id: "id-2", kind: "guest" }))).toThrow(
+      DuplicateServerIdentityError,
+    );
   });
 });
