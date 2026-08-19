@@ -10,9 +10,10 @@ import { AppSkeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/authUi";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
-import { connectIdentity, installRefreshExecutor } from "./connectIdentity";
+import { connectGuest, connectIdentity, installRefreshExecutor } from "./connectIdentity";
 import {
   getServerOrder,
+  identityKind,
   loadDesktopConfig,
   saveDesktopConfig,
   secretKey,
@@ -71,7 +72,7 @@ export function DesktopBootstrap({
   const [state, setState] = useState<BootState>({ kind: "loading" });
   const [bootGeneration, setBootGeneration] = useState(0);
 
-  async function finishConnected(profileId: string, identityId: string, token: string) {
+  async function finishConnected(profileId: string, identityId: string, token: string | null) {
     const bridge = bridgeRef.current!;
     const current = configRef.current;
     let identities: DesktopIdentity[] = [];
@@ -83,16 +84,29 @@ export function DesktopBootstrap({
       identities = profile?.identities ?? [];
       setServerOrderSnapshot(profile ? getServerOrder(profile) : []);
     }
-    setAccessToken(token);
+    if (token !== null) {
+      setAccessToken(token);
+      localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
+    }
     setActiveIdentityKey(identityId);
-    localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
     finishAuthRestore();
     onSession?.({ profileId, identityId, identities });
     setState({ kind: "ready" });
   }
 
-  async function tryConnect(profileId: string, identity: DesktopIdentity) {
+  async function tryConnect(profileId: string, identity: DesktopIdentity, asGuest = false) {
     const bridge = bridgeRef.current!;
+    if (asGuest || identityKind(identity) === "guest") {
+      const guestOutcome = await connectGuest(identity);
+      if (guestOutcome.status === "connected") {
+        await finishConnected(profileId, identity.id, null);
+      } else if (guestOutcome.status === "version-mismatch") {
+        setState({ kind: "incompatible", identity, direction: guestOutcome.direction });
+      } else {
+        setState({ kind: "unreachable", identity, error: guestOutcome.error });
+      }
+      return;
+    }
     const outcome = await connectIdentity(bridge, profileId, identity);
     if (outcome.status === "connected") {
       await finishConnected(profileId, identity.id, outcome.token);
