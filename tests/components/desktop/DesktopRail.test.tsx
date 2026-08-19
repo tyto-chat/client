@@ -132,7 +132,10 @@ function makeRegistryStub(
 }
 
 function makeConnectionHandle(retry: () => void): IdentityConnection {
-  return { retry } as unknown as IdentityConnection;
+  return {
+    retry,
+    getSnapshot: () => makeConnection({}),
+  } as unknown as IdentityConnection;
 }
 
 function makeLiveRegistryStub(options?: { neverHealthy?: boolean }): ConnectionRegistry {
@@ -1193,6 +1196,167 @@ describe("DesktopRail", () => {
     await user.click(screen.getByTestId("desktop-guest-sign-in"));
 
     expect(await screen.findByTestId("wizard-password-input")).toBeInTheDocument();
+
+    setPlatformBridgeForTests(null);
+  });
+
+  it("upgrades a background guest well in place when its sign-in completes", async () => {
+    const ORIGIN = "https://guest-upgrade.example";
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+      http.get(`${ORIGIN}/api/v1/server-info`, () =>
+        HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "GuestSrv" }),
+      ),
+      http.post(`${ORIGIN}/api/auth`, () =>
+        HttpResponse.json({ token: "jwt-upgraded", refresh_token: "refresh-upgraded" }),
+      ),
+    );
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ia",
+      serverUrl: "https://active.example",
+      email: "active@b.c",
+      userId: null,
+      displayName: null,
+    });
+    cfg = addIdentity(cfg, pid, {
+      id: "ig",
+      serverUrl: ORIGIN,
+      email: "",
+      userId: null,
+      displayName: null,
+      kind: "guest",
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ia");
+    await saveDesktopConfig(bridge, cfg);
+
+    const upgrade = vi.fn();
+    const switchTo = vi.fn().mockResolvedValue(undefined);
+    const snapshot: RegistrySnapshot = {
+      connections: [
+        makeConnection({ identityId: "ia" }),
+        makeConnection({ identityId: "ig", kind: "guest", origin: ORIGIN }),
+      ],
+      activeIdentityId: "ia",
+    };
+    const registry = makeRegistryStub(snapshot, {
+      upgradeToIdentity: upgrade,
+      getConnection: vi.fn((id: string) =>
+        id === "ig"
+          ? ({ getSnapshot: () => snapshot.connections[1] } as unknown as IdentityConnection)
+          : undefined,
+      ),
+    });
+    const user = userEvent.setup();
+
+    render(
+      <ConnectionsContext.Provider value={{ registry, switchTo }}>
+        <ReloginModal registry={registry} identityId="ig" onClose={() => {}} />
+      </ConnectionsContext.Provider>,
+    );
+
+    await user.type(await screen.findByTestId("wizard-email-input"), "new@b.c");
+    await user.type(screen.getByTestId("wizard-password-input"), "pw");
+    await user.click(screen.getByTestId("wizard-credentials-submit"));
+
+    await waitFor(() =>
+      expect(upgrade).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "ig", email: "new@b.c", kind: "identity" }),
+      ),
+    );
+    expect(switchTo).not.toHaveBeenCalled();
+    expect(await bridge.secrets.get(secretKey(pid, "ig", "refreshToken"))).toBe("refresh-upgraded");
+
+    setPlatformBridgeForTests(null);
+  });
+
+  it("switches back into authed semantics when the upgraded guest well is the active one", async () => {
+    const ORIGIN = "https://guest-active-upgrade.example";
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+      http.get(`${ORIGIN}/api/v1/server-info`, () =>
+        HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "GuestSrv" }),
+      ),
+      http.post(`${ORIGIN}/api/auth`, () =>
+        HttpResponse.json({ token: "jwt-upgraded", refresh_token: "refresh-upgraded" }),
+      ),
+    );
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ig",
+      serverUrl: ORIGIN,
+      email: "",
+      userId: null,
+      displayName: null,
+      kind: "guest",
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ig");
+    await saveDesktopConfig(bridge, cfg);
+
+    const switchTo = vi.fn().mockResolvedValue(undefined);
+    const snapshot: RegistrySnapshot = {
+      connections: [makeConnection({ identityId: "ig", kind: "guest", origin: ORIGIN })],
+      activeIdentityId: "ig",
+    };
+    const registry = makeRegistryStub(snapshot, {
+      getConnection: vi.fn(
+        () => ({ getSnapshot: () => snapshot.connections[0] }) as unknown as IdentityConnection,
+      ),
+    });
+    const user = userEvent.setup();
+
+    render(
+      <ConnectionsContext.Provider value={{ registry, switchTo }}>
+        <ReloginModal registry={registry} identityId="ig" onClose={() => {}} />
+      </ConnectionsContext.Provider>,
+    );
+
+    await user.type(await screen.findByTestId("wizard-email-input"), "new@b.c");
+    await user.type(screen.getByTestId("wizard-password-input"), "pw");
+    await user.click(screen.getByTestId("wizard-credentials-submit"));
+
+    await waitFor(() => expect(switchTo).toHaveBeenCalledWith("ig"));
+
+    setPlatformBridgeForTests(null);
+  });
+
+  it("offers no continue-as-guest escape inside a guest well's sign-in modal", async () => {
+    const ORIGIN = "https://guest-no-escape.example";
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ig",
+      serverUrl: ORIGIN,
+      email: "",
+      userId: null,
+      displayName: null,
+      kind: "guest",
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ig");
+    await saveDesktopConfig(bridge, cfg);
+
+    const snapshot: RegistrySnapshot = {
+      connections: [makeConnection({ identityId: "ig", kind: "guest", origin: ORIGIN })],
+      activeIdentityId: "ig",
+    };
+
+    render(
+      <ReloginModal registry={makeRegistryStub(snapshot)} identityId="ig" onClose={() => {}} />,
+    );
+
+    await screen.findByTestId("wizard-email-input");
+    expect(screen.queryByTestId("desktop-continue-as-guest")).not.toBeInTheDocument();
 
     setPlatformBridgeForTests(null);
   });

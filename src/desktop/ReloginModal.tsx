@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/Modal";
 import { getPlatformBridge } from "@/platform/bridge";
+import { ConnectionsContext } from "./connections/ConnectionsContext";
 import type { ConnectionRegistry } from "./connections/ConnectionRegistry";
 import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
 import {
@@ -20,6 +21,7 @@ export interface ReloginModalProps {
 
 export function ReloginModal({ registry, identityId, onClose }: ReloginModalProps) {
   const { t } = useTranslation("desktop");
+  const switchTo = useContext(ConnectionsContext)?.switchTo;
   const [identity, setIdentity] = useState<DesktopIdentity | null>(null);
 
   useEffect(() => {
@@ -54,14 +56,32 @@ export function ReloginModal({ registry, identityId, onClose }: ReloginModalProp
       await saveDesktopConfig(bridge, nextConfig);
     }
 
-    registry.getConnection(identityId)?.retry();
+    const wasGuest = registry.getConnection(identityId)?.getSnapshot().kind === "guest";
+    if (wasGuest) {
+      const updated = nextConfig.profiles
+        .find((p) => p.id === profileId)
+        ?.identities.find((i) => i.id === identityId);
+      if (updated) registry.upgradeToIdentity(updated);
+      if (registry.getSnapshot().activeIdentityId === identityId) {
+        void switchTo?.(identityId).catch(() => undefined);
+      }
+    } else {
+      registry.getConnection(identityId)?.retry();
+    }
     close();
   }
 
   if (!identity) return null;
 
+  const isGuestWell =
+    registry.getSnapshot().connections.find((c) => c.identityId === identityId)?.kind === "guest";
+
   return (
-    <Modal ariaLabel={t("relogin_title")} onClose={onClose} size="sm">
+    <Modal
+      ariaLabel={isGuestWell ? t("sign_in_to_server") : t("relogin_title")}
+      onClose={onClose}
+      size="sm"
+    >
       {(close) => (
         <>
           <AddIdentityWizard
@@ -73,17 +93,19 @@ export function ReloginModal({ registry, identityId, onClose }: ReloginModalProp
             initialAvatarColorKey={identity.avatarColorKey}
             lockServer
           />
-          <button
-            type="button"
-            onClick={() => {
-              registry.downgradeToGuestSession(identity);
-              close();
-            }}
-            className="mt-3 w-full py-1.5 text-center text-[13px] font-medium text-fg-muted underline decoration-fg-muted/45 underline-offset-[3px] transition hover:text-fg"
-            data-testid="desktop-continue-as-guest"
-          >
-            {t("continue_as_guest")}
-          </button>
+          {!isGuestWell && (
+            <button
+              type="button"
+              onClick={() => {
+                registry.downgradeToGuestSession(identity);
+                close();
+              }}
+              className="mt-3 w-full py-1.5 text-center text-[13px] font-medium text-fg-muted underline decoration-fg-muted/45 underline-offset-[3px] transition hover:text-fg"
+              data-testid="desktop-continue-as-guest"
+            >
+              {t("continue_as_guest")}
+            </button>
+          )}
         </>
       )}
     </Modal>
