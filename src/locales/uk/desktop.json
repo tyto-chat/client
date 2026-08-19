@@ -40,5 +40,7 @@
   "compose_on_server": "Написати на",
   "continue_as_guest": "Продовжити як гість",
   "guest_badge": "Гість",
-  "sign_in_to_server": "Увійти"
+  "sign_in_to_server": "Увійти",
+  "browse_without_signing_in": "Переглядати без входу",
+  "sign_in_different_user": "Увійти як інший користувач"
 }

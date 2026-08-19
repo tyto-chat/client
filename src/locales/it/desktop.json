@@ -40,5 +40,7 @@
   "compose_on_server": "Scrivi su",
   "continue_as_guest": "Continua come ospite",
   "guest_badge": "Ospite",
-  "sign_in_to_server": "Accedi"
+  "sign_in_to_server": "Accedi",
+  "browse_without_signing_in": "Esplora senza accedere",
+  "sign_in_different_user": "Accedi con un altro account"
 }

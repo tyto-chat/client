@@ -40,5 +40,7 @@
   "compose_on_server": "Escrever em",
   "continue_as_guest": "Continuar como convidado",
   "guest_badge": "Convidado",
-  "sign_in_to_server": "Entrar"
+  "sign_in_to_server": "Entrar",
+  "browse_without_signing_in": "Explorar sem entrar",
+  "sign_in_different_user": "Entrar com outra conta"
 }

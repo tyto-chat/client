@@ -170,6 +170,10 @@ export function DesktopBootstrap({
     configRef.current = nextConfig;
     const profile = nextConfig.profiles.find((p) => p.id === profileId)!;
     const identityId = profile.lastActiveIdentityId!;
+    if (result.guest) {
+      await finishConnected(profileId, identityId, null);
+      return;
+    }
     installRefreshExecutor(bridge, secretKey(profileId, identityId, "refreshToken"));
     await finishConnected(profileId, identityId, result.token);
   }

@@ -34,6 +34,7 @@ export interface AddIdentityResult {
   token: string;
   refreshToken: string | null;
   serverInfo: ServerInfo;
+  guest?: boolean;
 }
 
 interface Props {
@@ -210,6 +211,7 @@ export function AddIdentityWizard({
   const [email, setEmail] = useState(initialEmail ?? "");
   const [password, setPassword] = useState("");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [differentUser, setDifferentUser] = useState(!initialEmail);
   const [code, setCode] = useState("");
   const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -248,8 +250,7 @@ export function AddIdentityWizard({
     setStep("server");
   }
 
-  async function handleServerSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function resolveFromInput(): Promise<ServerState | null> {
     setError(null);
     let origin: string;
     try {
@@ -257,7 +258,7 @@ export function AddIdentityWizard({
     } catch (err) {
       if (err instanceof InvalidServerUrlError) {
         setError(t("server_url_invalid"));
-        return;
+        return null;
       }
       throw err;
     }
@@ -265,12 +266,33 @@ export function AddIdentityWizard({
     try {
       const state = await resolveServerState(origin);
       setServerState(state);
-      setStep("credentials");
+      return state;
     } catch {
       setError(t("server_unreachable"));
+      return null;
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  async function handleServerSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const state = await resolveFromInput();
+    if (state) setStep("credentials");
+  }
+
+  async function handleBrowseAsGuest() {
+    const state = await resolveFromInput();
+    if (!state) return;
+    onComplete({
+      serverUrl: state.origin,
+      email: "",
+      password: "",
+      token: "",
+      refreshToken: null,
+      serverInfo: state.serverInfo,
+      guest: true,
+    });
   }
 
   async function handleCredentialsSubmit(e: React.FormEvent) {
@@ -399,6 +421,15 @@ export function AddIdentityWizard({
           >
             {error ? t("try_again") : t("server_continue")}
           </button>
+          <button
+            type="button"
+            onClick={() => void handleBrowseAsGuest()}
+            disabled={isSubmitting}
+            className={ghostButtonClass}
+            data-testid="wizard-browse-guest"
+          >
+            {t("browse_without_signing_in")}
+          </button>
           {!error && (
             <p className="text-center text-[11.5px] text-fg-subtle">{t("server_footer")}</p>
           )}
@@ -413,14 +444,38 @@ export function AddIdentityWizard({
             </h3>
             <p className="text-[13.5px] text-fg-muted">{t("welcome_back_sub")}</p>
           </div>
-          <IdentityBlock
-            email={email}
-            origin={serverState?.origin ?? initialServerUrl ?? ""}
-            onEmailChange={setEmail}
-            displayName={initialDisplayName}
-            avatarDataUrl={initialAvatarDataUrl}
-            avatarColorKey={initialAvatarColorKey}
-          />
+          {differentUser ? (
+            <>
+              <ServerChip
+                name={serverState?.serverInfo.name ?? ""}
+                origin={serverState?.origin ?? initialServerUrl ?? ""}
+              />
+              <div>
+                <label htmlFor="wizard-email" className={labelClass}>
+                  {t("email_label")}
+                </label>
+                <input
+                  id="wizard-email"
+                  type="email"
+                  autoComplete="username"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={inputClass}
+                  data-testid="wizard-email-input"
+                />
+              </div>
+            </>
+          ) : (
+            <IdentityBlock
+              email={email}
+              origin={serverState?.origin ?? initialServerUrl ?? ""}
+              onEmailChange={setEmail}
+              displayName={initialDisplayName}
+              avatarDataUrl={initialAvatarDataUrl}
+              avatarColorKey={initialAvatarColorKey}
+            />
+          )}
           {error && <ErrorBanner message={error} />}
           <div>
             <label htmlFor="wizard-password" className={labelClass}>
@@ -464,6 +519,22 @@ export function AddIdentityWizard({
               {t("auth:forgot_password")}
             </button>
           </p>
+          {!differentUser && (
+            <p className="text-center text-[12.5px]">
+              <button
+                type="button"
+                onClick={() => {
+                  setDifferentUser(true);
+                  setEmail("");
+                  setError(null);
+                }}
+                className="text-accent-text hover:underline"
+                data-testid="wizard-different-user"
+              >
+                {t("sign_in_different_user")}
+              </button>
+            </p>
+          )}
           <LegalFooterLinks serverInfo={serverState?.serverInfo ?? null} />
         </form>
       )}

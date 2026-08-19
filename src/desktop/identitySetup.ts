@@ -7,6 +7,7 @@ import {
   secretKey,
   setLastActiveIdentity,
   type DesktopConfig,
+  type DesktopIdentity,
 } from "./desktopConfig";
 
 export async function persistWizardResult(
@@ -18,21 +19,32 @@ export async function persistWizardResult(
   const origin = normalizeServerUrl(result.serverUrl);
   const profile = config.profiles.find((p) => p.id === profileId);
   const existing = profile?.identities.find((i) => i.serverUrl === origin);
+  const guest = result.guest === true;
 
   let next = config;
   let identityId: string;
   if (existing) {
     identityId = existing.id;
+    const accountChanged = existing.email !== result.email;
+    const rewritten: DesktopIdentity = {
+      ...existing,
+      email: result.email,
+      kind: guest ? "guest" : "identity",
+      ...(accountChanged
+        ? {
+            userId: null,
+            displayName: null,
+            avatarDataUrl: null,
+            avatarSource: null,
+            avatarColorKey: null,
+          }
+        : {}),
+    };
     next = {
       ...next,
       profiles: next.profiles.map((p) =>
         p.id === profileId
-          ? {
-              ...p,
-              identities: p.identities.map((i) =>
-                i.id === identityId ? { ...i, email: result.email } : i,
-              ),
-            }
+          ? { ...p, identities: p.identities.map((i) => (i.id === identityId ? rewritten : i)) }
           : p,
       ),
     };
@@ -44,10 +56,13 @@ export async function persistWizardResult(
       email: result.email,
       userId: null,
       displayName: null,
+      kind: guest ? "guest" : "identity",
     });
   }
   next = setLastActiveIdentity(next, profileId, identityId);
   await saveDesktopConfig(bridge, next);
+
+  if (guest) return next;
 
   await bridge.secrets.set(secretKey(profileId, identityId, "password"), result.password);
   const refreshKey = secretKey(profileId, identityId, "refreshToken");

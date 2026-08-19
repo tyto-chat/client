@@ -40,5 +40,7 @@
   "compose_on_server": "Message on",
   "continue_as_guest": "Continue as guest",
   "guest_badge": "Guest",
-  "sign_in_to_server": "Sign in"
+  "sign_in_to_server": "Sign in",
+  "browse_without_signing_in": "Browse without signing in",
+  "sign_in_different_user": "Sign in as a different user"
 }

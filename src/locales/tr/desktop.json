@@ -40,5 +40,7 @@
   "compose_on_server": "Sunucuda yaz",
   "continue_as_guest": "Misafir olarak devam et",
   "guest_badge": "Misafir",
-  "sign_in_to_server": "Giriş yap"
+  "sign_in_to_server": "Giriş yap",
+  "browse_without_signing_in": "Giriş yapmadan göz at",
+  "sign_in_different_user": "Başka bir kullanıcı olarak giriş yap"
 }

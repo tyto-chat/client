@@ -40,5 +40,7 @@
   "compose_on_server": "Schreiben auf",
   "continue_as_guest": "Als Gast fortfahren",
   "guest_badge": "Gast",
-  "sign_in_to_server": "Anmelden"
+  "sign_in_to_server": "Anmelden",
+  "browse_without_signing_in": "Ohne Anmeldung stöbern",
+  "sign_in_different_user": "Als anderer Benutzer anmelden"
 }

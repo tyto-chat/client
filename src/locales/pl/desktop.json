@@ -40,5 +40,7 @@
   "compose_on_server": "Napisz na",
   "continue_as_guest": "Kontynuuj jako gość",
   "guest_badge": "Gość",
-  "sign_in_to_server": "Zaloguj się"
+  "sign_in_to_server": "Zaloguj się",
+  "browse_without_signing_in": "Przeglądaj bez logowania",
+  "sign_in_different_user": "Zaloguj się jako inny użytkownik"
 }

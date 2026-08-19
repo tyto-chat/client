@@ -40,5 +40,7 @@
   "compose_on_server": "Schrijven op",
   "continue_as_guest": "Doorgaan als gast",
   "guest_badge": "Gast",
-  "sign_in_to_server": "Inloggen"
+  "sign_in_to_server": "Inloggen",
+  "browse_without_signing_in": "Bekijken zonder in te loggen",
+  "sign_in_different_user": "Inloggen als andere gebruiker"
 }
