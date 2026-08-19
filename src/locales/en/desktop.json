@@ -46,5 +46,7 @@
   "well_menu": "Server options",
   "sign_out_server": "Sign out",
   "remove_server": "Remove server",
-  "remove_server_confirm": "Remove {{server}} and its saved sign-in from this app?"
+  "remove_server_confirm": "Remove {{server}} and its saved sign-in from this app?",
+  "remote_load_failed": "Couldn't load from {{server}}.",
+  "mark_all_dms_read_server": "Mark all DMs on {{server}} as read"
 }

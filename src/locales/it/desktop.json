@@ -46,5 +46,7 @@
   "well_menu": "Opzioni del server",
   "sign_out_server": "Esci",
   "remove_server": "Rimuovi server",
-  "remove_server_confirm": "Rimuovere {{server}} e l'accesso salvato da questa app?"
+  "remove_server_confirm": "Rimuovere {{server}} e l'accesso salvato da questa app?",
+  "remote_load_failed": "Impossibile caricare da {{server}}.",
+  "mark_all_dms_read_server": "Segna come letti tutti i messaggi diretti su {{server}}"
 }

@@ -46,5 +46,7 @@
   "well_menu": "Options du serveur",
   "sign_out_server": "Se déconnecter",
   "remove_server": "Supprimer le serveur",
-  "remove_server_confirm": "Supprimer {{server}} et sa connexion enregistrée de cette application ?"
+  "remove_server_confirm": "Supprimer {{server}} et sa connexion enregistrée de cette application ?",
+  "remote_load_failed": "Impossible de charger depuis {{server}}.",
+  "mark_all_dms_read_server": "Marquer tous les messages privés sur {{server}} comme lus"
 }

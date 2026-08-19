@@ -46,5 +46,7 @@
   "well_menu": "Sunucu seçenekleri",
   "sign_out_server": "Çıkış yap",
   "remove_server": "Sunucuyu kaldır",
-  "remove_server_confirm": "{{server}} ve kayıtlı girişi bu uygulamadan kaldırılsın mı?"
+  "remove_server_confirm": "{{server}} ve kayıtlı girişi bu uygulamadan kaldırılsın mı?",
+  "remote_load_failed": "{{server}} sunucusundan yüklenemedi.",
+  "mark_all_dms_read_server": "{{server}} üzerindeki tüm DM'leri okundu işaretle"
 }

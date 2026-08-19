@@ -46,5 +46,7 @@
   "well_menu": "Параметри сервера",
   "sign_out_server": "Вийти",
   "remove_server": "Видалити сервер",
-  "remove_server_confirm": "Видалити {{server}} і збережений вхід із цього застосунку?"
+  "remove_server_confirm": "Видалити {{server}} і збережений вхід із цього застосунку?",
+  "remote_load_failed": "Не вдалося завантажити з {{server}}.",
+  "mark_all_dms_read_server": "Позначити всі особисті повідомлення на {{server}} як прочитані"
 }

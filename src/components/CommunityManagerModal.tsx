@@ -715,9 +715,10 @@ function RemoteBrowsePanel({
   group: ManagerIdentityGroup;
   registry: ConnectionRegistry;
 }) {
-  const { t } = useTranslation(["community", "common"]);
+  const { t } = useTranslation(["community", "common", "desktop"]);
   const { notify } = useNotification();
   const [rows, setRows] = useState<ConnectionCommunity[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
   const memberIds = useMemo(
     () => new Set(group.communities.filter((c) => c.member).map((c) => c.id)),
@@ -729,16 +730,20 @@ function RemoteBrowsePanel({
     if (!ctx) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRows([]);
+      setLoadFailed(true);
       return;
     }
     let cancelled = false;
     identityFetch<HydraCollection<Community> | Community[]>(ctx, "/communities")
       .then((payload) => {
         if (cancelled) return;
+        setLoadFailed(false);
         setRows(toBrowseRows(unwrapMember(payload), memberIds));
       })
       .catch(() => {
-        if (!cancelled) setRows([]);
+        if (cancelled) return;
+        setLoadFailed(true);
+        setRows([]);
       });
     return () => {
       cancelled = true;
@@ -768,6 +773,15 @@ function RemoteBrowsePanel({
 
   if (rows === null) {
     return <p className="text-sm text-fg-subtle">{t("common:loading")}</p>;
+  }
+  if (loadFailed) {
+    return (
+      <p className="text-sm text-danger" data-testid="manager-remote-load-failed">
+        {t("desktop:remote_load_failed", {
+          server: group.serverName ?? hostFromOrigin(group.origin),
+        })}
+      </p>
+    );
   }
   if (rows.length === 0) {
     return <p className="text-sm text-fg-subtle">{t("manager_other_empty")}</p>;

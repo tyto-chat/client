@@ -706,7 +706,11 @@ describe("DesktopRail", () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
 
-    render(<AddServerModal registry={registry} switchTo={switchTo} onClose={onClose} />);
+    render(
+      <NotificationProvider>
+        <AddServerModal registry={registry} switchTo={switchTo} onClose={onClose} />
+      </NotificationProvider>,
+    );
 
     await user.type(screen.getByTestId("wizard-server-input"), "new.example");
     await user.click(screen.getByTestId("wizard-server-submit"));
@@ -721,6 +725,42 @@ describe("DesktopRail", () => {
 
     await waitFor(() => expect(switchTo).toHaveBeenCalledWith(addedIdentity.id));
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+
+    setPlatformBridgeForTests(null);
+  });
+
+  it("AddServerModal toasts when the switch to the newly added server fails", async () => {
+    const ORIGIN = "https://toast.example";
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+      http.get(`${ORIGIN}/api/v1/server-info`, () =>
+        HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "ToastServer" }),
+      ),
+      http.post(`${ORIGIN}/api/auth`, () =>
+        HttpResponse.json({ token: "jwt-toast", refresh_token: "refresh-toast" }),
+      ),
+    );
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    await saveDesktopConfig(bridge, createDefaultConfig());
+
+    const registry = makeLiveRegistryStub();
+    const switchTo = vi.fn().mockRejectedValue(new Error("nope"));
+    const user = userEvent.setup();
+
+    render(
+      <NotificationProvider>
+        <AddServerModal registry={registry} switchTo={switchTo} onClose={vi.fn()} />
+      </NotificationProvider>,
+    );
+
+    await user.type(screen.getByTestId("wizard-server-input"), "toast.example");
+    await user.click(screen.getByTestId("wizard-server-submit"));
+    await user.type(await screen.findByTestId("wizard-email-input"), "a@b.c");
+    await user.type(screen.getByTestId("wizard-password-input"), "pw");
+    await user.click(screen.getByTestId("wizard-credentials-submit"));
+
+    expect(await screen.findByText(/couldn't switch to/i)).toBeInTheDocument();
 
     setPlatformBridgeForTests(null);
   });
@@ -756,12 +796,14 @@ describe("DesktopRail", () => {
     const user = userEvent.setup();
 
     render(
-      <AddServerModal
-        registry={registry}
-        switchTo={switchTo}
-        onClose={onClose}
-        healthyTimeoutMs={30}
-      />,
+      <NotificationProvider>
+        <AddServerModal
+          registry={registry}
+          switchTo={switchTo}
+          onClose={onClose}
+          healthyTimeoutMs={30}
+        />
+      </NotificationProvider>,
     );
 
     await user.type(screen.getByTestId("wizard-server-input"), "stuck.example");
@@ -825,7 +867,11 @@ describe("DesktopRail", () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
 
-    render(<AddServerModal registry={registry} switchTo={switchTo} onClose={onClose} />);
+    render(
+      <NotificationProvider>
+        <AddServerModal registry={registry} switchTo={switchTo} onClose={onClose} />
+      </NotificationProvider>,
+    );
 
     await user.type(screen.getByTestId("wizard-server-input"), "addserver-exec-new.example");
     await user.click(screen.getByTestId("wizard-server-submit"));

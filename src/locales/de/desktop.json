@@ -46,5 +46,7 @@
   "well_menu": "Serveroptionen",
   "sign_out_server": "Abmelden",
   "remove_server": "Server entfernen",
-  "remove_server_confirm": "{{server}} und die gespeicherte Anmeldung aus dieser App entfernen?"
+  "remove_server_confirm": "{{server}} und die gespeicherte Anmeldung aus dieser App entfernen?",
+  "remote_load_failed": "Laden von {{server}} fehlgeschlagen.",
+  "mark_all_dms_read_server": "Alle Direktnachrichten auf {{server}} als gelesen markieren"
 }

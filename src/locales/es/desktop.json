@@ -46,5 +46,7 @@
   "well_menu": "Opciones del servidor",
   "sign_out_server": "Cerrar sesión",
   "remove_server": "Quitar servidor",
-  "remove_server_confirm": "¿Quitar {{server}} y su inicio de sesión guardado de esta aplicación?"
+  "remove_server_confirm": "¿Quitar {{server}} y su inicio de sesión guardado de esta aplicación?",
+  "remote_load_failed": "No se pudo cargar desde {{server}}.",
+  "mark_all_dms_read_server": "Marcar todos los mensajes directos en {{server}} como leídos"
 }

@@ -652,6 +652,7 @@ export function AddServerModal({
   healthyTimeoutMs = DEFAULT_HEALTHY_TIMEOUT_MS,
 }: AddServerModalProps) {
   const { t } = useTranslation("desktop");
+  const { notify } = useNotification();
 
   async function handleComplete(result: AddIdentityResult, close: () => void) {
     const bridge = getPlatformBridge();
@@ -675,7 +676,15 @@ export function AddServerModal({
 
     if (identityId && (await waitForHealthy(registry, identityId, healthyTimeoutMs))) {
       close();
-      switchTo(identityId).catch(() => undefined);
+      switchTo(identityId).catch(() => {
+        const connection = registry
+          .getSnapshot()
+          .connections.find((c) => c.identityId === identityId);
+        const server =
+          connection?.serverName ??
+          (connection ? formatHost(connection.origin) : result.serverInfo.name);
+        notify(t("switch_failed", { server }), "error");
+      });
       return;
     }
 

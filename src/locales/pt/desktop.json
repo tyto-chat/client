@@ -46,5 +46,7 @@
   "well_menu": "Opções do servidor",
   "sign_out_server": "Sair",
   "remove_server": "Remover servidor",
-  "remove_server_confirm": "Remover {{server}} e o login salvo deste aplicativo?"
+  "remove_server_confirm": "Remover {{server}} e o login salvo deste aplicativo?",
+  "remote_load_failed": "Não foi possível carregar de {{server}}.",
+  "mark_all_dms_read_server": "Marcar todas as mensagens diretas em {{server}} como lidas"
 }

@@ -46,5 +46,7 @@
   "well_menu": "Serveropties",
   "sign_out_server": "Uitloggen",
   "remove_server": "Server verwijderen",
-  "remove_server_confirm": "{{server}} en de opgeslagen aanmelding uit deze app verwijderen?"
+  "remove_server_confirm": "{{server}} en de opgeslagen aanmelding uit deze app verwijderen?",
+  "remote_load_failed": "Kan niet laden van {{server}}.",
+  "mark_all_dms_read_server": "Alle DM's op {{server}} als gelezen markeren"
 }

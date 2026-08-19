@@ -495,6 +495,84 @@ describe("CommunityManagerModal desktop variant", () => {
     expect(await screen.findByText("Beta Club")).toBeInTheDocument();
   });
 
+  it("issues an unpin request against the non-active identity's own origin and refreshes that connection", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    const user = userEvent.setup();
+    let unpinUrl: string | null = null;
+    server.use(
+      http.delete(`${ORIGIN_B}/api/v1/me/pinned-communities/:id`, ({ request }) => {
+        unpinUrl = request.url;
+        return HttpResponse.json({});
+      }),
+    );
+
+    const active = connectionSnapshot({ identityId: "ia", serverName: "Alpha" });
+    const other = connectionSnapshot({
+      identityId: "ib",
+      serverName: "Beta",
+      origin: ORIGIN_B,
+      communities: [
+        community({
+          id: 42,
+          identifier: "beta-town",
+          name: "Beta Town",
+          member: true,
+          pinned: true,
+        }),
+      ],
+    });
+    const refreshB = vi.fn();
+    const registry = makeRegistry([active, other], "ia", {
+      ia: { ctx: { origin: BASE, apiVersion: "v1", getToken: () => "jwt" }, refreshData: vi.fn() },
+      ib: {
+        ctx: { origin: ORIGIN_B, apiVersion: "v1", getToken: () => "jwt-b" },
+        refreshData: refreshB,
+      },
+    });
+
+    render(<CommunityManagerModal onClose={vi.fn()} />, { wrapper: makeWrapper(registry) });
+
+    await user.click(screen.getByTestId("manager-tab-your"));
+    const betaGroup = (await screen.findByText("Beta")).closest(
+      "[data-testid=manager-identity-group]",
+    );
+    await user.click(within(betaGroup as HTMLElement).getByRole("button", { name: "Unpin" }));
+
+    await waitFor(() => expect(unpinUrl).toBe(`${ORIGIN_B}/api/v1/me/pinned-communities/42`));
+    await waitFor(() => expect(refreshB).toHaveBeenCalled());
+  });
+
+  it("surfaces a remote browse failure instead of rendering it as an empty list", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    const user = userEvent.setup();
+    server.use(http.get(`${ORIGIN_B}/api/v1/communities`, () => HttpResponse.error()));
+
+    const active = connectionSnapshot({ identityId: "ia", serverName: "Alpha" });
+    const other = connectionSnapshot({
+      identityId: "ib",
+      serverName: "Beta",
+      origin: ORIGIN_B,
+      communities: [],
+    });
+    const registry = makeRegistry([active, other], "ia", {
+      ia: { ctx: { origin: BASE, apiVersion: "v1", getToken: () => "jwt" }, refreshData: vi.fn() },
+      ib: {
+        ctx: { origin: ORIGIN_B, apiVersion: "v1", getToken: () => "jwt-b" },
+        refreshData: vi.fn(),
+      },
+    });
+
+    render(<CommunityManagerModal onClose={vi.fn()} />, { wrapper: makeWrapper(registry) });
+
+    await user.click(screen.getByTestId("manager-tab-other"));
+    await user.selectOptions(await screen.findByTestId("manager-browse-select"), "ib");
+
+    expect(await screen.findByTestId("manager-remote-load-failed")).toHaveTextContent(
+      "Couldn't load from Beta.",
+    );
+    expect(screen.queryByText("No public communities available to join.")).not.toBeInTheDocument();
+  });
+
   it("joins a community on the selected non-active identity, posting to its own origin and refreshing that connection", async () => {
     vi.stubEnv("VITE_APP_MODE", "desktop");
     const user = userEvent.setup();

@@ -46,5 +46,7 @@
   "well_menu": "Opcje serwera",
   "sign_out_server": "Wyloguj się",
   "remove_server": "Usuń serwer",
-  "remove_server_confirm": "Usunąć {{server}} i zapisane dane logowania z tej aplikacji?"
+  "remove_server_confirm": "Usunąć {{server}} i zapisane dane logowania z tej aplikacji?",
+  "remote_load_failed": "Nie udało się pobrać danych z {{server}}.",
+  "mark_all_dms_read_server": "Oznacz wszystkie wiadomości na {{server}} jako przeczytane"
 }
