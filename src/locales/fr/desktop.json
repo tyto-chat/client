@@ -37,5 +37,6 @@
   "switch_failed": "Impossible de basculer vers {{server}}. Réessaie.",
   "call_on_server": "En appel : #{{channel}}",
   "browse_on_server": "Parcourir sur",
-  "compose_on_server": "Écrire sur"
+  "compose_on_server": "Écrire sur",
+  "continue_as_guest": "Continuer en tant qu'invité"
 }

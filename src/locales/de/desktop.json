@@ -37,5 +37,6 @@
   "switch_failed": "Wechsel zu {{server}} nicht möglich. Versuche es erneut.",
   "call_on_server": "Im Anruf: #{{channel}}",
   "browse_on_server": "Durchsuchen auf",
-  "compose_on_server": "Schreiben auf"
+  "compose_on_server": "Schreiben auf",
+  "continue_as_guest": "Als Gast fortfahren"
 }

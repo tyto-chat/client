@@ -109,7 +109,12 @@ function makeConnection(overrides: Partial<ConnectionSnapshot>): ConnectionSnaps
 
 function makeRegistryStub(
   snapshot: RegistrySnapshot,
-  overrides?: Partial<Pick<ConnectionRegistry, "getConnection" | "addIdentity">>,
+  overrides?: Partial<
+    Pick<
+      ConnectionRegistry,
+      "getConnection" | "addIdentity" | "downgradeToGuestSession" | "upgradeToIdentity" | "remove"
+    >
+  >,
 ): ConnectionRegistry {
   const listeners = new Set<() => void>();
   return {
@@ -120,6 +125,9 @@ function makeRegistryStub(
     },
     getConnection: overrides?.getConnection ?? vi.fn(() => undefined),
     addIdentity: overrides?.addIdentity ?? vi.fn(),
+    downgradeToGuestSession: overrides?.downgradeToGuestSession ?? vi.fn(),
+    upgradeToIdentity: overrides?.upgradeToIdentity ?? vi.fn(),
+    remove: overrides?.remove ?? vi.fn(),
   } as unknown as ConnectionRegistry;
 }
 
@@ -1103,6 +1111,43 @@ describe("DesktopRail", () => {
     const persisted = await loadDesktopConfig(bridge);
     const persistedProfile = persisted.profiles.find((p) => p.id === pid);
     expect(persistedProfile?.lastActiveIdentityId).toBe("ia");
+
+    setPlatformBridgeForTests(null);
+  });
+
+  it("dismisses the relogin modal to a guest session via continue-as-guest", async () => {
+    const ORIGIN = "https://relogin-guest.example";
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ia",
+      serverUrl: ORIGIN,
+      email: "active@b.c",
+      userId: null,
+      displayName: null,
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ia");
+    await saveDesktopConfig(bridge, cfg);
+
+    const downgrade = vi.fn();
+    const onClose = vi.fn();
+    const snapshot: RegistrySnapshot = {
+      connections: [makeConnection({ identityId: "ia", origin: ORIGIN, status: "auth-failed" })],
+      activeIdentityId: "ia",
+    };
+    const registry = makeRegistryStub(snapshot, { downgradeToGuestSession: downgrade });
+    const user = userEvent.setup();
+
+    render(<ReloginModal registry={registry} identityId="ia" onClose={onClose} />);
+
+    await user.click(await screen.findByTestId("desktop-continue-as-guest"));
+
+    expect(downgrade).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "ia", serverUrl: ORIGIN }),
+    );
 
     setPlatformBridgeForTests(null);
   });

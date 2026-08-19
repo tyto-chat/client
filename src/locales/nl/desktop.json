@@ -37,5 +37,6 @@
   "switch_failed": "Kon niet overschakelen naar {{server}}. Probeer het opnieuw.",
   "call_on_server": "In gesprek: #{{channel}}",
   "browse_on_server": "Bladeren op",
-  "compose_on_server": "Schrijven op"
+  "compose_on_server": "Schrijven op",
+  "continue_as_guest": "Doorgaan als gast"
 }

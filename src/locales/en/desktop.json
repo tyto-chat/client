@@ -37,5 +37,6 @@
   "switch_failed": "Couldn't switch to {{server}}. Try again.",
   "call_on_server": "In call: #{{channel}}",
   "browse_on_server": "Browse on",
-  "compose_on_server": "Message on"
+  "compose_on_server": "Message on",
+  "continue_as_guest": "Continue as guest"
 }

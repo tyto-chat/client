@@ -37,5 +37,6 @@
   "switch_failed": "Не вдалося перемкнутися на {{server}}. Спробуй ще раз.",
   "call_on_server": "У дзвінку: #{{channel}}",
   "browse_on_server": "Переглянути на",
-  "compose_on_server": "Написати на"
+  "compose_on_server": "Написати на",
+  "continue_as_guest": "Продовжити як гість"
 }

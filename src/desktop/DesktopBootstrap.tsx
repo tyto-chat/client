@@ -215,17 +215,29 @@ export function DesktopBootstrap({
   }
 
   if (state.kind === "relogin") {
+    const relogin = state;
     return (
       <FullScreenWizard>
         <AddIdentityWizard
           onComplete={(r) => void handleWizardComplete(r)}
-          initialServerUrl={state.identity.serverUrl}
-          initialEmail={state.identity.email}
-          initialDisplayName={state.identity.displayName}
-          initialAvatarDataUrl={state.identity.avatarDataUrl}
-          initialAvatarColorKey={state.identity.avatarColorKey}
+          initialServerUrl={relogin.identity.serverUrl}
+          initialEmail={relogin.identity.email}
+          initialDisplayName={relogin.identity.displayName}
+          initialAvatarDataUrl={relogin.identity.avatarDataUrl}
+          initialAvatarColorKey={relogin.identity.avatarColorKey}
           lockServer
         />
+        <button
+          type="button"
+          onClick={() => {
+            setState({ kind: "loading" });
+            void tryConnect(profileIdRef.current ?? "", relogin.identity, true);
+          }}
+          className="mt-3 w-full py-1.5 text-center text-[13px] font-medium text-fg-muted underline decoration-fg-muted/45 underline-offset-[3px] transition hover:text-fg"
+          data-testid="desktop-continue-as-guest"
+        >
+          {t("continue_as_guest")}
+        </button>
       </FullScreenWizard>
     );
   }

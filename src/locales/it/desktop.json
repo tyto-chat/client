@@ -37,5 +37,6 @@
   "switch_failed": "Impossibile passare a {{server}}. Riprova.",
   "call_on_server": "In chiamata: #{{channel}}",
   "browse_on_server": "Esplora su",
-  "compose_on_server": "Scrivi su"
+  "compose_on_server": "Scrivi su",
+  "continue_as_guest": "Continua come ospite"
 }

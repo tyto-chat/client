@@ -63,15 +63,28 @@ export function ReloginModal({ registry, identityId, onClose }: ReloginModalProp
   return (
     <Modal ariaLabel={t("relogin_title")} onClose={onClose} size="sm">
       {(close) => (
-        <AddIdentityWizard
-          onComplete={(result) => void handleComplete(result, close)}
-          initialServerUrl={identity.serverUrl}
-          initialEmail={identity.email}
-          initialDisplayName={identity.displayName}
-          initialAvatarDataUrl={identity.avatarDataUrl}
-          initialAvatarColorKey={identity.avatarColorKey}
-          lockServer
-        />
+        <>
+          <AddIdentityWizard
+            onComplete={(result) => void handleComplete(result, close)}
+            initialServerUrl={identity.serverUrl}
+            initialEmail={identity.email}
+            initialDisplayName={identity.displayName}
+            initialAvatarDataUrl={identity.avatarDataUrl}
+            initialAvatarColorKey={identity.avatarColorKey}
+            lockServer
+          />
+          <button
+            type="button"
+            onClick={() => {
+              registry.downgradeToGuestSession(identity);
+              close();
+            }}
+            className="mt-3 w-full py-1.5 text-center text-[13px] font-medium text-fg-muted underline decoration-fg-muted/45 underline-offset-[3px] transition hover:text-fg"
+            data-testid="desktop-continue-as-guest"
+          >
+            {t("continue_as_guest")}
+          </button>
+        </>
       )}
     </Modal>
   );
