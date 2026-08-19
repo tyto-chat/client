@@ -67,6 +67,9 @@ export function ReloginModal({ registry, identityId, onClose }: ReloginModalProp
           onComplete={(result) => void handleComplete(result, close)}
           initialServerUrl={identity.serverUrl}
           initialEmail={identity.email}
+          initialDisplayName={identity.displayName}
+          initialAvatarDataUrl={identity.avatarDataUrl}
+          initialAvatarColorKey={identity.avatarColorKey}
           lockServer
         />
       )}

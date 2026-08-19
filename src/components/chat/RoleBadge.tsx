@@ -21,7 +21,7 @@ export function RoleBadge({ kind }: { kind: "admin" | "mod" }) {
       <span className="block cap-trim">{label}</span>
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-0 z-40 mb-2 w-52 max-w-[calc(100vw-1.5rem)] translate-y-1 rounded-xl border border-line-strong bg-overlay p-2.5 text-left opacity-0 shadow-soft-md transition-all duration-150 group-hover/role:translate-y-0 group-hover/role:opacity-100"
+        className="pointer-events-none absolute bottom-full left-0 z-40 mb-2 hidden w-52 max-w-[calc(100vw-1.5rem)] rounded-xl border border-line-strong bg-overlay p-2.5 text-left shadow-soft-md transition-all transition-discrete duration-150 group-hover/role:block starting:translate-y-1 starting:opacity-0"
       >
         <span className="flex items-center gap-1.5 text-[0.8125rem] font-bold normal-case tracking-normal text-fg">
           <span className={`h-2 w-2 rounded-full ${admin ? "bg-amber-500" : "bg-accent"}`} />

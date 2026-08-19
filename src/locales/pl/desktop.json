@@ -33,5 +33,9 @@
   "server_status_auth_failed": "Sesja wygasła. Kliknij, aby połączyć się ponownie.",
   "server_status_unreachable": "ponowne łączenie…",
   "relogin_title": "Zaloguj się ponownie",
-  "boot_error_title": "Nie udało się uruchomić tyto desktop"
+  "boot_error_title": "Nie udało się uruchomić tyto desktop",
+  "switch_failed": "Nie udało się przełączyć na {{server}}. Spróbuj ponownie.",
+  "call_on_server": "Na rozmowie: #{{channel}}",
+  "browse_on_server": "Przeglądaj na",
+  "compose_on_server": "Napisz na"
 }

@@ -27,12 +27,14 @@ vi.mock("@/components/chat/MessageGroup", () => ({
     onEditMessage,
     onDeleteMessage,
     readOnly,
+    canReact,
   }: {
     group: { msgs: Array<{ "@id": string; text: string | null }> };
     onToggleReaction: (iri: string, emoji: string) => void;
     onEditMessage: (iri: string, text: string) => void;
     onDeleteMessage: (iri: string) => void;
     readOnly?: boolean;
+    canReact?: boolean;
   }) => (
     <div data-testid="msg">
       {/* Mirror the real MessageGroup's per-row `data-message-id`, which the
@@ -44,12 +46,14 @@ vi.mock("@/components/chat/MessageGroup", () => ({
       ))}
       {!readOnly && (
         <>
-          <button
-            data-testid={`react-${group.msgs[0]!["@id"]}`}
-            onClick={() => onToggleReaction(group.msgs[0]!["@id"], "🎉")}
-          >
-            react
-          </button>
+          {canReact !== false && (
+            <button
+              data-testid={`react-${group.msgs[0]!["@id"]}`}
+              onClick={() => onToggleReaction(group.msgs[0]!["@id"], "🎉")}
+            >
+              react
+            </button>
+          )}
           <button
             data-testid={`edit-${group.msgs[0]!["@id"]}`}
             onClick={() => onEditMessage(group.msgs[0]!["@id"], "edited body")}
@@ -240,6 +244,29 @@ describe("ThreadPanel", () => {
     await userEvent.click(screen.getByTestId(`react-${replyMsg["@id"]}`));
 
     await waitFor(() => expect(reactionCalls).toBe(1));
+  });
+
+  it("hides the composer and reply reactions when canParticipate is false", async () => {
+    const replyMsg = msg("reply-a", "first reply");
+    server.use(http.get(`${BASE}${ROOT_IRI}/thread`, () => threadResponse([replyMsg])));
+
+    render(
+      <ThreadPanel
+        communityId={COMMUNITY}
+        channelIdentifier={CHANNEL}
+        rootIri={ROOT_IRI}
+        members={[]}
+        channels={[]}
+        allowAttachments={false}
+        onClose={vi.fn()}
+        canParticipate={false}
+      />,
+      { wrapper: makeWrapper() },
+    );
+
+    await waitFor(() => expect(screen.getByText("first reply")).toBeInTheDocument());
+    expect(screen.queryByText("send-stub")).not.toBeInTheDocument();
+    expect(screen.queryByTestId(`react-${replyMsg["@id"]}`)).not.toBeInTheDocument();
   });
 
   it("renders the root read-only (no reaction control)", async () => {

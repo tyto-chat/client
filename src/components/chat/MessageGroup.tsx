@@ -14,6 +14,7 @@ import { useMessagePopover } from "@/context/MessagePopoverContext";
 import { useViewportClamp } from "@/hooks/useViewportClamp";
 import { copyMessageLinkToClipboard } from "@/utils/messageLink";
 import { stableMessageKey } from "@/utils/messageKey";
+import { isOptimisticMessage } from "@/utils/optimisticMessage";
 import { getUserTextColor } from "@/utils/userColor";
 import { isBirthdayToday } from "@/utils/birthday";
 import { avatarUrl } from "@/api/client";
@@ -42,6 +43,7 @@ export interface MessageGroupProps {
   onDeleteAttachment: (attachmentIri: string) => void;
   readOnly?: boolean;
   frozen?: boolean;
+  canReact?: boolean;
   highlightTerms?: readonly string[];
   canPin?: boolean;
   onPinMessage?: (messageIri: string) => void;
@@ -75,6 +77,7 @@ export function MessageGroup({
   onDeleteAttachment,
   readOnly = false,
   frozen = false,
+  canReact: allowReactions = true,
   highlightTerms,
   canPin = false,
   onPinMessage,
@@ -115,7 +118,7 @@ export function MessageGroup({
   if (!first) return null;
 
   if (first.kind === "system") {
-    const canReact = !!user && !readOnly && !frozen;
+    const canReact = allowReactions && !!user && !readOnly && !frozen;
     const canDelete = canDeleteSystem && !readOnly && !frozen;
     const sysKey = stableMessageKey(first["@id"]);
     const sysTouchOpen = isTouch && touchOwner === sysKey;
@@ -244,7 +247,7 @@ export function MessageGroup({
           message={first}
           currentUserId={user?.id ?? 0}
           communityIdentifier={communityId ?? ""}
-          disabled={!user || readOnly || frozen}
+          disabled={!user || readOnly || frozen || !allowReactions}
           onToggle={(emoji, existingId) => onToggleReaction(first["@id"], emoji, existingId)}
         />
       </div>
@@ -364,7 +367,7 @@ export function MessageGroup({
                   {formatTimeOnly(msg.createdAt, timezone)}
                 </span>
               )}
-              {isTouch && !readOnly && hasTouchActions && (
+              {isTouch && !readOnly && hasTouchActions && !isOptimisticMessage(msg["@id"]) && (
                 <>
                   {/* z-9: must stay below the z-10 action bar it dismisses. */}
                   {isTouchActive && (
@@ -389,11 +392,11 @@ export function MessageGroup({
                   )}
                 </>
               )}
-              {!readOnly && (
+              {!readOnly && !isOptimisticMessage(msg["@id"]) && (
                 <MessageActions
                   ownerKey={ownerKey}
                   show={showActions || isTouchActive}
-                  canReact={!!user && !frozen}
+                  canReact={allowReactions && !!user && !frozen}
                   canEdit={canEdit && !msg.isDeleted && !frozen}
                   canDelete={canDelete && !msg.isDeleted && !frozen}
                   canViewHistory={(isAdmin || canModerate) && (msg.edited || msg.isDeleted)}
@@ -512,8 +515,7 @@ export function MessageGroup({
                 message={msg}
                 currentUserId={user?.id ?? 0}
                 communityIdentifier={communityId ?? ""}
-                disabled={!user || readOnly || frozen}
-                reserveSpace={!readOnly && !compact && i === group.msgs.length - 1}
+                disabled={!user || readOnly || frozen || !allowReactions}
                 onToggle={(emoji, existingId) => onToggleReaction(msg["@id"], emoji, existingId)}
               />
             </div>

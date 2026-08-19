@@ -3,6 +3,7 @@ import {
   addIdentity,
   createDefaultConfig,
   DuplicateServerIdentityError,
+  getServerOrder,
   InvalidServerUrlError,
   loadDesktopConfig,
   normalizeServerUrl,
@@ -10,6 +11,7 @@ import {
   saveDesktopConfig,
   secretKey,
   setLastActiveIdentity,
+  setServerOrder,
 } from "@/desktop/desktopConfig";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 
@@ -88,6 +90,31 @@ describe("persistence", () => {
     await bridge.config.set("{not json");
     const cfg = await loadDesktopConfig(bridge);
     expect(cfg.version).toBe(1);
+  });
+});
+
+describe("server order", () => {
+  it("returns [] when unset", () => {
+    const cfg = createDefaultConfig();
+    expect(getServerOrder(cfg.profiles[0]!)).toEqual([]);
+  });
+
+  it("round-trips through setServerOrder without mutating the source config", () => {
+    const cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    const next = setServerOrder(cfg, pid, ["ib", "ia"]);
+    expect(getServerOrder(next.profiles[0]!)).toEqual(["ib", "ia"]);
+    expect(getServerOrder(cfg.profiles[0]!)).toEqual([]);
+  });
+
+  it("round-trips through save/load", async () => {
+    const bridge = createFakePlatformBridge();
+    const base = await loadDesktopConfig(bridge);
+    const pid = base.profiles[0]!.id;
+    const next = setServerOrder(base, pid, ["ib", "ia"]);
+    await saveDesktopConfig(bridge, next);
+    const loaded = await loadDesktopConfig(bridge);
+    expect(getServerOrder(loaded.profiles[0]!)).toEqual(["ib", "ia"]);
   });
 });
 

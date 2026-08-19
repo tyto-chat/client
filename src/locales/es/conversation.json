@@ -12,7 +12,6 @@
   "write_private_message": "Escribe un mensaje privado",
   "message_tab": "Mensaje",
   "create_failed": "No se pudo crear la conversación.",
-  "settings": "Ajustes de la conversación",
   "members": "Miembros",
   "no_conversations": "Aún no hay mensajes directos.",
   "no_conversations_hint": "Empieza un chat con alguien de cualquier comunidad.",
@@ -21,10 +20,8 @@
   "message_placeholder": "Enviar mensaje a {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Tú",
-  "mute": "Silenciar",
   "muted": "Silenciada",
   "mute_notifications": "Silenciar notificaciones",
-  "mute_notifications_hint": "No recibirás alertas mientras esta conversación esté silenciada.",
   "beginning_of_history": "Inicio de esta conversación",
   "no_messages": "Aún no hay mensajes",
   "be_first": "Saluda para romper el hielo."

@@ -61,7 +61,7 @@ export function ConnectionNotificationBridge() {
       );
 
       const serverName = event.serverName ?? event.origin;
-      notify(t("from_server", { server: serverName, text }), "info");
+      notify(isDm ? text : t("from_server", { server: serverName, text }), "info");
 
       showDesktopNotification(t("desktop_title"), {
         body: text,

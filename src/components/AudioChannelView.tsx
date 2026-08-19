@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { useTranslation } from "react-i18next";
 import { fetchLiveKitToken } from "@/api/livekit";
 import { getServerInfo } from "@/api/serverInfo";
+import { getActiveIdentityKey } from "@/platform/activeIdentity";
 import { useChannelParticipantsQuery } from "@/hooks/useChannelParticipants";
+import { useCommunityMembership } from "@/queries/membershipQueries";
 import { useAudioCall } from "@/context/AudioCallContext";
 import { formatKey } from "@/utils/voiceSettings";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,22 +27,17 @@ import {
 } from "@/components/icons";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import type { Channel } from "@/types/api";
-import type { LocalVideoTrack } from "livekit-client";
-import type { BackgroundProcessorWrapper } from "@livekit/track-processors";
 import { DeviceSelect } from "@/components/DeviceSelect";
 import { BlurLevelPicker } from "@/components/BlurLevelPicker";
 import { useMediaDevices } from "@/hooks/useMediaDevices";
-import { usePreferredDevice } from "@/utils/deviceSettings";
 import {
-  BLUR_RADII,
-  MEDIAPIPE_ASSET_PATHS,
   setJoinMuted,
   setJoinWithCamera,
-  useBackgroundBlur,
   useJoinMuted,
   useJoinWithCamera,
   useMirrorSelf,
 } from "@/utils/mediaEffects";
+import { useCameraPreviewTrack } from "@/hooks/useCameraPreviewTrack";
 
 function CallSettingsButton({ cameraActive }: { cameraActive: boolean }) {
   const { t } = useTranslation(["channel", "settings"]);
@@ -191,85 +188,8 @@ export function VoiceControls() {
 function PreJoinCameraPreview({ enabled }: { enabled: boolean }) {
   const { t } = useTranslation(["channel", "settings"]);
   const { user } = useAuth();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const cameraDevice = usePreferredDevice("videoinput");
-  const blur = useBackgroundBlur();
   const mirrorSelf = useMirrorSelf();
-  const [track, setTrack] = useState<LocalVideoTrack | null>(null);
-  const [failed, setFailed] = useState(false);
-  const processorRef = useRef<BackgroundProcessorWrapper | null>(null);
-
-  useEffect(() => {
-    if (!enabled) return;
-    let cancelled = false;
-    let created: LocalVideoTrack | undefined;
-    void (async () => {
-      try {
-        const { createLocalVideoTrack } = await import("livekit-client");
-        created = await createLocalVideoTrack({ deviceId: cameraDevice || undefined });
-        if (cancelled) {
-          created.stop();
-          return;
-        }
-        setFailed(false);
-        setTrack(created);
-      } catch {
-        if (!cancelled) setFailed(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-      processorRef.current = null;
-      if (created) {
-        void created.stopProcessor().catch(() => {});
-        created.stop();
-      }
-      setTrack(null);
-    };
-  }, [cameraDevice, enabled]);
-
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!track || !el) return;
-    track.attach(el);
-    return () => {
-      track.detach(el);
-    };
-  }, [track, failed]);
-
-  useEffect(() => {
-    if (!track) return;
-    let cancelled = false;
-    void (async () => {
-      const { BackgroundProcessor, supportsBackgroundProcessors } =
-        await import("@livekit/track-processors");
-      if (cancelled) return;
-      if (blur !== "off" && supportsBackgroundProcessors()) {
-        const blurRadius = BLUR_RADII[blur];
-        if (!processorRef.current) {
-          const processor = BackgroundProcessor({
-            mode: "background-blur",
-            blurRadius,
-            assetPaths: MEDIAPIPE_ASSET_PATHS,
-          });
-          processorRef.current = processor;
-          await track.setProcessor(processor).catch(() => {
-            processorRef.current = null;
-          });
-        } else {
-          await processorRef.current
-            .switchTo({ mode: "background-blur", blurRadius })
-            .catch(() => {});
-        }
-      } else if (track.getProcessor()) {
-        await track.stopProcessor().catch(() => {});
-        processorRef.current = null;
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [track, blur]);
+  const { videoRef, ready, failed } = useCameraPreviewTrack(enabled);
 
   return (
     <div className="w-full">
@@ -289,13 +209,22 @@ function PreJoinCameraPreview({ enabled }: { enabled: boolean }) {
             {t("channel:camera_preview_failed")}
           </div>
         ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className={`h-full w-full object-cover ${mirrorSelf ? "-scale-x-100" : ""}`}
-          />
+          <>
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className={`h-full w-full object-cover ${mirrorSelf ? "-scale-x-100" : ""} ${
+                ready ? "" : "invisible"
+              }`}
+            />
+            {!ready && (
+              <div className="absolute inset-0 flex items-center justify-center text-xs text-white/70">
+                {t("channel:camera_preview_starting")}
+              </div>
+            )}
+          </>
         )}
         <PreJoinOverlayControls />
       </div>
@@ -396,14 +325,25 @@ export function AudioChannelView({ channel }: Props) {
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { openLogin, openRegister } = useAuthModal();
   const { activeCall, join, setCallSlot } = useAudioCall();
   const joinMuted = useJoinMuted();
-  const isInThisCall = activeCall?.channel.identifier === channel.identifier;
-  const isInAnotherCall = !!activeCall && !isInThisCall;
   const { communityId } = useParams({ strict: false }) as { communityId: string };
-  const { data: participants = [] } = useChannelParticipantsQuery(communityId, channel.identifier);
+  const { data: membership } = useCommunityMembership(communityId);
+  const isGlobalAdmin = user?.roles?.includes("ROLE_ADMIN") ?? false;
+  const canJoinVoice = isGlobalAdmin || (membership?.hasMembership ?? false);
+  const isInThisCall =
+    !!activeCall &&
+    (activeCall.identityKey ?? null) === getActiveIdentityKey() &&
+    activeCall.communityId === communityId &&
+    activeCall.channel.identifier === channel.identifier;
+  const isInAnotherCall = !!activeCall && !isInThisCall;
+  const { data: participants = [] } = useChannelParticipantsQuery(
+    communityId,
+    channel.identifier,
+    canJoinVoice,
+  );
 
   async function handleJoin() {
     setJoining(true);
@@ -475,9 +415,12 @@ export function AudioChannelView({ channel }: Props) {
 
           {error && <p className="text-sm text-danger">{error}</p>}
 
-          {token ? (
+          {token && !canJoinVoice && (
+            <p className="text-sm text-fg-muted">{t("voice_members_only")}</p>
+          )}
+          {token && canJoinVoice ? (
             <PreJoinSettings />
-          ) : (
+          ) : token ? null : (
             <div className="flex w-full flex-col items-center gap-3">
               <p className="text-sm text-fg-muted">{t("guest_voice_prompt")}</p>
               <div className="flex w-full gap-2">
@@ -498,7 +441,7 @@ export function AudioChannelView({ channel }: Props) {
           )}
         </div>
 
-        {token && (
+        {token && canJoinVoice && (
           <div className="flex flex-none flex-col items-center gap-2 border-t border-line bg-surface/95 p-4 backdrop-blur-md md:border-0 md:bg-transparent md:px-8 md:pb-8 md:pt-0">
             {isInAnotherCall && <p className="text-xs text-fg-muted">{t("already_in_call")}</p>}
             <button

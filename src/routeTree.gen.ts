@@ -21,6 +21,7 @@ import { Route as AdminReportsRouteImport } from './routes/admin/reports'
 import { Route as AdminHealthRouteImport } from './routes/admin/health'
 import { Route as AdminCommunitiesRouteImport } from './routes/admin/communities'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
+import { Route as AppSwitchingRouteImport } from './routes/_app/switching'
 import { Route as AppRegisterRouteImport } from './routes/_app/register'
 import { Route as AppLoginRouteImport } from './routes/_app/login'
 import { Route as AppDmRouteImport } from './routes/_app/dm'
@@ -92,6 +93,11 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
+const AppSwitchingRoute = AppSwitchingRouteImport.update({
+  id: '/switching',
+  path: '/switching',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppRegisterRoute = AppRegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/dm': typeof AppDmRouteWithChildren
   '/login': typeof AppLoginRoute
   '/register': typeof AppRegisterRoute
+  '/switching': typeof AppSwitchingRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/communities': typeof AdminCommunitiesRoute
   '/admin/health': typeof AdminHealthRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/login': typeof AppLoginRoute
   '/register': typeof AppRegisterRoute
+  '/switching': typeof AppSwitchingRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/communities': typeof AdminCommunitiesRoute
   '/admin/health': typeof AdminHealthRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/_app/dm': typeof AppDmRouteWithChildren
   '/_app/login': typeof AppLoginRoute
   '/_app/register': typeof AppRegisterRoute
+  '/_app/switching': typeof AppSwitchingRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/communities': typeof AdminCommunitiesRoute
   '/admin/health': typeof AdminHealthRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/dm'
     | '/login'
     | '/register'
+    | '/switching'
     | '/admin/audit'
     | '/admin/communities'
     | '/admin/health'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/login'
     | '/register'
+    | '/switching'
     | '/admin/audit'
     | '/admin/communities'
     | '/admin/health'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/_app/dm'
     | '/_app/login'
     | '/_app/register'
+    | '/_app/switching'
     | '/admin/audit'
     | '/admin/communities'
     | '/admin/health'
@@ -387,6 +399,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/audit'
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/_app/switching': {
+      id: '/_app/switching'
+      path: '/switching'
+      fullPath: '/switching'
+      preLoaderRoute: typeof AppSwitchingRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/register': {
       id: '/_app/register'
@@ -500,6 +519,7 @@ interface AppRouteChildren {
   AppDmRoute: typeof AppDmRouteWithChildren
   AppLoginRoute: typeof AppLoginRoute
   AppRegisterRoute: typeof AppRegisterRoute
+  AppSwitchingRoute: typeof AppSwitchingRoute
   AppInviteTokenRoute: typeof AppInviteTokenRoute
   AppMMessageIdRoute: typeof AppMMessageIdRoute
 }
@@ -509,6 +529,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDmRoute: AppDmRouteWithChildren,
   AppLoginRoute: AppLoginRoute,
   AppRegisterRoute: AppRegisterRoute,
+  AppSwitchingRoute: AppSwitchingRoute,
   AppInviteTokenRoute: AppInviteTokenRoute,
   AppMMessageIdRoute: AppMMessageIdRoute,
 }

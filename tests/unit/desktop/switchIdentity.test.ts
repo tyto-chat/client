@@ -274,4 +274,35 @@ describe("performIdentitySwitch", () => {
 
     registry.stopAll();
   });
+
+  it("refreshes the outgoing connection's rail data so its well reflects pins made while active", async () => {
+    stubServerInfo(ORIGIN_A, "Alpha");
+    stubServerInfo(ORIGIN_B, "Beta");
+    stubData(ORIGIN_A, 1);
+    stubData(ORIGIN_B, 2);
+    server.use(stubRefresh(ORIGIN_A, "rotated-a"), stubRefresh(ORIGIN_B, "rotated-b"));
+
+    const identityA = makeIdentity("ia", ORIGIN_A);
+    const identityB = makeIdentity("ib", ORIGIN_B);
+
+    const { registry, bridge } = await bootWithFakeBridge([identityA, identityB], "ia");
+    await vi.waitFor(() => {
+      expect(registry.getSnapshot().connections.map((a) => a.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
+    });
+
+    const connectionA = registry.getConnection("ia")!;
+    const connectionB = registry.getConnection("ib")!;
+    const railA = vi.spyOn(connectionA, "refreshRailData").mockResolvedValue(undefined);
+    const railB = vi.spyOn(connectionB, "refreshRailData").mockResolvedValue(undefined);
+
+    await performIdentitySwitch(registry, bridge, { identityId: "ib" });
+
+    expect(railA).toHaveBeenCalledTimes(1);
+    expect(railB).not.toHaveBeenCalled();
+
+    registry.stopAll();
+  });
 });

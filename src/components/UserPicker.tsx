@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/Avatar";
+import { PlusIcon } from "@/components/icons";
 
 export interface PickerItem {
   id: number;
@@ -18,6 +19,7 @@ interface Props {
   isPending?: boolean;
   buttonClass?: string;
   autoFocus?: boolean;
+  layout?: "rows" | "chips";
 }
 
 const DEFAULT_BUTTON_CLASS =
@@ -33,6 +35,7 @@ export function UserPicker({
   isPending = false,
   buttonClass = DEFAULT_BUTTON_CLASS,
   autoFocus = false,
+  layout = "rows",
 }: Props) {
   const { t } = useTranslation(["community", "common"]);
 
@@ -52,7 +55,32 @@ export function UserPicker({
         onChange={(e) => onQueryChange(e.target.value)}
         className="w-full rounded-lg bg-surface px-3 py-2 text-sm text-fg outline-none focus:ring-2 focus:ring-[var(--accent)] dark:text-white"
       />
-      {results.length > 0 && (
+      {results.length > 0 && layout === "chips" && (
+        <ul className="flex flex-wrap gap-1.5 max-md:flex-nowrap max-md:overflow-x-auto max-md:pb-1">
+          {results.map((item) => (
+            <li key={item.id} className="shrink-0">
+              <button
+                type="button"
+                data-testid={`picker-chip-${item.id}`}
+                onClick={() => handleAdd(item)}
+                disabled={isPending}
+                title={item.name}
+                className="flex items-center gap-1.5 rounded-full bg-surface py-1 pl-1 pr-2 text-xs font-medium text-fg ring-1 ring-inset ring-line transition hover:bg-raised disabled:opacity-50 dark:text-white"
+              >
+                <Avatar
+                  name={item.name}
+                  colorKey={String(item.id)}
+                  imageUrl={item.avatarUrl ?? null}
+                  size="xs"
+                />
+                <span className="max-w-32 truncate">{item.name}</span>
+                <PlusIcon size={11} className="shrink-0 text-fg-subtle" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {results.length > 0 && layout === "rows" && (
         <ul className="divide-y divide-line overflow-hidden rounded-lg bg-canvas ring-1 ring-inset ring-line">
           {results.map((item) => (
             <li key={item.id} className="flex items-center justify-between gap-3 px-3 py-2">

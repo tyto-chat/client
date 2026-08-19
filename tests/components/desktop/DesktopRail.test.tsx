@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { AddServerModal, DesktopRailGroups } from "@/desktop/DesktopRail";
+import { useOtherServersDmUnread } from "@/desktop/useOtherServersDmUnread";
 import { ReloginModal } from "@/desktop/ReloginModal";
 import {
   ConnectionsContext,
@@ -20,6 +21,7 @@ import type {
 } from "@/desktop/connections/IdentityConnection";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { setPlatformBridgeForTests } from "@/platform/bridge";
+import { NotificationProvider } from "@/context/NotificationContext";
 import {
   addIdentity,
   createDefaultConfig,
@@ -32,6 +34,20 @@ import {
 import { _resetNegotiationForTests } from "@/api/apiVersion";
 import { __resetRefreshStateForTests, refreshAccessToken } from "@/api/auth";
 import { setAccessToken } from "@/api/tokenStore";
+import {
+  __resetServerOrderStoreForTests,
+  setServerOrderSnapshot,
+} from "@/desktop/serverOrderStore";
+
+let mockActiveCall: {
+  identityKey?: string | null;
+  communityId: string;
+  channel: { identifier: string };
+} | null = null;
+
+vi.mock("@/context/AudioCallContext", () => ({
+  useAudioCall: () => ({ activeCall: mockActiveCall }),
+}));
 
 function makeToken(exp: number): string {
   const header = btoa(JSON.stringify({ alg: "none" }));
@@ -84,6 +100,7 @@ function makeConnection(overrides: Partial<ConnectionSnapshot>): ConnectionSnaps
     userId: 1,
     communities: [],
     unreadCounts: {},
+    conversationActivityAt: null,
     error: null,
     ...overrides,
   };
@@ -149,25 +166,32 @@ function renderWithContext(
   {
     registry,
     switchTo,
-  }: { registry: ConnectionRegistry; switchTo?: ConnectionsContextValue["switchTo"] },
+    wrapNotifications = true,
+  }: {
+    registry: ConnectionRegistry;
+    switchTo?: ConnectionsContextValue["switchTo"];
+    wrapNotifications?: boolean;
+  },
 ) {
   const contextValue: ConnectionsContextValue = {
     registry,
     switchTo: switchTo ?? vi.fn().mockResolvedValue(undefined),
   };
-  return render(
-    <ConnectionsContext.Provider value={contextValue}>{ui}</ConnectionsContext.Provider>,
-  );
+  const tree = <ConnectionsContext.Provider value={contextValue}>{ui}</ConnectionsContext.Provider>;
+  return render(wrapNotifications ? <NotificationProvider>{tree}</NotificationProvider> : tree);
 }
 
 describe("DesktopRail", () => {
   beforeEach(() => {
     vi.stubEnv("VITE_APP_MODE", "desktop");
+    mockActiveCall = null;
+    __resetServerOrderStoreForTests();
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
+    __resetServerOrderStoreForTests();
   });
 
   it("renders a group header for the active identity", () => {
@@ -180,6 +204,51 @@ describe("DesktopRail", () => {
     const headers = screen.getAllByTestId("desktop-server-header");
     expect(headers).toHaveLength(1);
     expect(headers[0]).toHaveAccessibleName("Alpha");
+  });
+
+  it("sums dm unread across background servers for the shared DM tile badge", () => {
+    const active = makeConnection({
+      identityId: "ia",
+      serverName: "Alpha",
+      unreadCounts: { dm: 4 },
+    });
+    const beta = makeConnection({
+      identityId: "ib",
+      serverName: "Beta",
+      unreadCounts: { dm: 2 },
+    });
+    const gamma = makeConnection({
+      identityId: "ic",
+      serverName: "Gamma",
+      unreadCounts: { dm: 3, "7": 9 },
+    });
+    const snapshot: RegistrySnapshot = {
+      connections: [active, beta, gamma],
+      activeIdentityId: "ia",
+    };
+    const registry = makeRegistryStub(snapshot);
+
+    function Probe() {
+      return <span data-testid="dm-total">{useOtherServersDmUnread()}</span>;
+    }
+
+    renderWithContext(<Probe />, { registry });
+
+    expect(screen.getByTestId("dm-total")).toHaveTextContent("5");
+  });
+
+  it("reports no background dm unread outside managed identity mode", () => {
+    vi.stubEnv("VITE_APP_MODE", "web");
+    const beta = makeConnection({ identityId: "ib", unreadCounts: { dm: 2 } });
+    const registry = makeRegistryStub({ connections: [beta], activeIdentityId: "ia" });
+
+    function Probe() {
+      return <span data-testid="dm-total">{useOtherServersDmUnread()}</span>;
+    }
+
+    renderWithContext(<Probe />, { registry });
+
+    expect(screen.getByTestId("dm-total")).toHaveTextContent("0");
   });
 
   it("captions the group with a middle-ellipsized host when the server has no name", () => {
@@ -213,6 +282,7 @@ describe("DesktopRail", () => {
           iri: null,
           member: true,
           pinned: true,
+          isPrivate: false,
         },
         {
           id: 11,
@@ -223,6 +293,7 @@ describe("DesktopRail", () => {
           iri: null,
           member: true,
           pinned: true,
+          isPrivate: false,
         },
       ],
       unreadCounts: { "10": 3, "11": 0, dm: 2 },
@@ -250,6 +321,46 @@ describe("DesktopRail", () => {
     expect(screen.getByTestId("desktop-server-header-dm")).toBeInTheDocument();
   });
 
+  it("fades non-member community tiles in inactive wells like the web rail", () => {
+    const active = makeConnection({ identityId: "ia", serverName: "Alpha" });
+    const other = makeConnection({
+      identityId: "ib",
+      serverName: "Beta",
+      communities: [
+        {
+          id: 10,
+          identifier: "sw",
+          name: "Software",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: true,
+          pinned: true,
+          isPrivate: false,
+        },
+        {
+          id: 11,
+          identifier: "gm",
+          name: "Games",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: false,
+          pinned: true,
+          isPrivate: false,
+        },
+      ],
+    });
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
+    const registry = makeRegistryStub(snapshot);
+
+    renderWithContext(<DesktopRailGroups />, { registry });
+
+    const tiles = screen.getAllByTestId("desktop-rail-community");
+    expect(tiles[0]!.className).not.toContain("opacity-50");
+    expect(tiles[1]!.className).toContain("opacity-50");
+  });
+
   it("keeps registry order when the active identity is not first — active well moves, groups do not", () => {
     const first = makeConnection({
       identityId: "ia",
@@ -264,6 +375,7 @@ describe("DesktopRail", () => {
           iri: null,
           member: true,
           pinned: true,
+          isPrivate: false,
         },
       ],
     });
@@ -287,6 +399,36 @@ describe("DesktopRail", () => {
     expect(screen.getAllByTestId("desktop-rail-community")).toHaveLength(1);
   });
 
+  it("renders wells in the configured server order instead of registry order", () => {
+    const first = makeConnection({ identityId: "ia", serverName: "Alpha" });
+    const second = makeConnection({ identityId: "ib", serverName: "Beta" });
+    const snapshot: RegistrySnapshot = { connections: [first, second], activeIdentityId: "ia" };
+    const registry = makeRegistryStub(snapshot);
+    setServerOrderSnapshot(["ib", "ia"]);
+
+    renderWithContext(<DesktopRailGroups />, { registry });
+
+    const headers = screen.getAllByTestId("desktop-server-header");
+    expect(headers.map((h) => h.getAttribute("aria-label"))).toEqual(["Beta", "Alpha"]);
+  });
+
+  it("appends an identity absent from the configured order at the end, in registry order", () => {
+    const first = makeConnection({ identityId: "ia", serverName: "Alpha" });
+    const second = makeConnection({ identityId: "ib", serverName: "Beta" });
+    const third = makeConnection({ identityId: "ic", serverName: "Gamma" });
+    const snapshot: RegistrySnapshot = {
+      connections: [first, second, third],
+      activeIdentityId: "ia",
+    };
+    const registry = makeRegistryStub(snapshot);
+    setServerOrderSnapshot(["ib"]);
+
+    renderWithContext(<DesktopRailGroups />, { registry });
+
+    const headers = screen.getAllByTestId("desktop-server-header");
+    expect(headers.map((h) => h.getAttribute("aria-label"))).toEqual(["Beta", "Alpha", "Gamma"]);
+  });
+
   it("mirrors the rail overflow rule in inactive wells: pinned tiles, single unpinned as tile, several as +N", async () => {
     const mk = (id: number, name: string, pinned: boolean) => ({
       id,
@@ -297,6 +439,7 @@ describe("DesktopRail", () => {
       iri: null,
       member: true,
       pinned,
+      isPrivate: false,
     });
     const active = makeConnection({ identityId: "ia", serverName: "Alpha" });
     const other = makeConnection({
@@ -342,6 +485,7 @@ describe("DesktopRail", () => {
           iri: null,
           member: true,
           pinned: false,
+          isPrivate: false,
         },
       ],
     });
@@ -370,6 +514,7 @@ describe("DesktopRail", () => {
           iri: null,
           member: true,
           pinned: true,
+          isPrivate: false,
         },
       ],
     });
@@ -385,6 +530,67 @@ describe("DesktopRail", () => {
       to: "/$communityId",
       params: { communityId: "sw" },
     });
+  });
+
+  it("fires a switch_failed toast when a community tile's switchTo rejects", async () => {
+    const user = userEvent.setup();
+    const active = makeConnection({ identityId: "ia" });
+    const other = makeConnection({
+      identityId: "ib",
+      serverName: "Beta",
+      communities: [
+        {
+          id: 10,
+          identifier: "sw",
+          name: "Software",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: true,
+          pinned: true,
+          isPrivate: false,
+        },
+      ],
+    });
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
+    const registry = makeRegistryStub(snapshot);
+    const switchTo = vi.fn().mockRejectedValue(new Error("identity_switch_target_not_healthy"));
+
+    renderWithContext(<DesktopRailGroups />, { registry, switchTo });
+
+    await user.click(screen.getByTestId("desktop-rail-community"));
+
+    expect(await screen.findByText("Couldn't switch to Beta. Try again.")).toBeInTheDocument();
+  });
+
+  it("fires a switch_failed toast when an overflow tile's switchTo rejects", async () => {
+    const user = userEvent.setup();
+    const active = makeConnection({ identityId: "ia" });
+    const mk = (id: number, name: string) => ({
+      id,
+      identifier: name.toLowerCase(),
+      name,
+      logoUrl: null,
+      accentColor: null,
+      iri: null,
+      member: true,
+      pinned: false,
+      isPrivate: false,
+    });
+    const other = makeConnection({
+      identityId: "ib",
+      serverName: "Beta",
+      communities: [mk(1, "Ov1"), mk(2, "Ov2")],
+    });
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
+    const registry = makeRegistryStub(snapshot);
+    const switchTo = vi.fn().mockRejectedValue(new Error("identity_switch_target_not_healthy"));
+
+    renderWithContext(<DesktopRailGroups />, { registry, switchTo });
+
+    await user.click(screen.getByTestId("desktop-rail-overflow"));
+
+    expect(await screen.findByText("Couldn't switch to Beta. Try again.")).toBeInTheDocument();
   });
 
   it("disables community tiles for a non-healthy connection and fires nothing on click", async () => {
@@ -404,6 +610,7 @@ describe("DesktopRail", () => {
           iri: null,
           member: true,
           pinned: true,
+          isPrivate: false,
         },
       ],
     });
@@ -449,7 +656,7 @@ describe("DesktopRail", () => {
         <DesktopRailGroups />
         <DesktopRailGroups />
       </>,
-      { registry },
+      { registry, wrapNotifications: false },
     );
 
     expect(container).toBeEmptyDOMElement();
@@ -946,5 +1153,109 @@ describe("DesktopRail", () => {
 
     const headers = screen.getAllByTestId("desktop-server-header");
     expect(headers[1]!.className).toContain("animate-pulse");
+  });
+
+  it("shows a green call dot on the owning community tile and no well-level indicator", () => {
+    const active = makeConnection({ identityId: "ia", serverName: "Alpha" });
+    const other = makeConnection({
+      identityId: "ib",
+      serverName: "Beta",
+      communities: [
+        {
+          id: 10,
+          identifier: "sw",
+          name: "Software",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: true,
+          pinned: true,
+          isPrivate: false,
+        },
+      ],
+    });
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
+    const registry = makeRegistryStub(snapshot);
+    mockActiveCall = { identityKey: "ib", communityId: "sw", channel: { identifier: "general" } };
+
+    renderWithContext(<DesktopRailGroups />, { registry });
+
+    expect(screen.queryByTestId("well-call-indicator")).not.toBeInTheDocument();
+
+    const headers = screen.getAllByTestId("desktop-server-header");
+    const betaWell = headers[1]!.parentElement!;
+    const dot = within(betaWell).getByTestId("community-call-dot");
+    expect(dot).toHaveAttribute("title", "In call: #general");
+    expect(dot.className).toContain("bg-success");
+  });
+
+  it("force-shows an unpinned call community as a tile in its well, out of the +N overflow", () => {
+    const active = makeConnection({ identityId: "ia", serverName: "Alpha" });
+    const unpinned = (id: number, identifier: string, name: string) => ({
+      id,
+      identifier,
+      name,
+      logoUrl: null,
+      accentColor: null,
+      iri: null,
+      member: true,
+      pinned: false,
+      isPrivate: false,
+    });
+    const other = makeConnection({
+      identityId: "ib",
+      serverName: "Beta",
+      communities: [
+        {
+          id: 10,
+          identifier: "gm",
+          name: "Games",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: true,
+          pinned: true,
+          isPrivate: false,
+        },
+        unpinned(11, "sw", "Software"),
+        unpinned(12, "xx", "Xtra"),
+        unpinned(13, "yy", "Ygg"),
+      ],
+    });
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
+    const registry = makeRegistryStub(snapshot);
+    mockActiveCall = { identityKey: "ib", communityId: "sw", channel: { identifier: "general" } };
+
+    renderWithContext(<DesktopRailGroups />, { registry });
+
+    const tiles = screen.getAllByTestId("desktop-rail-community");
+    expect(tiles.map((t) => t.getAttribute("title"))).toEqual(["Games", "Software"]);
+    const swWrapper = tiles[1]!.parentElement!;
+    expect(within(swWrapper).getByTestId("community-call-dot")).toBeInTheDocument();
+    expect(screen.getByTestId("desktop-rail-overflow")).toHaveTextContent("+2");
+  });
+
+  it("renders no call dot when there is no active call", () => {
+    const active = makeConnection({ identityId: "ia", serverName: "Alpha" });
+    const other = makeConnection({ identityId: "ib", serverName: "Beta" });
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
+    const registry = makeRegistryStub(snapshot);
+    mockActiveCall = null;
+
+    renderWithContext(<DesktopRailGroups />, { registry });
+
+    expect(screen.queryByTestId("community-call-dot")).not.toBeInTheDocument();
+  });
+
+  it("renders no call dot in the wells when the call has no identityKey (joined in web mode)", () => {
+    const active = makeConnection({ identityId: "ia", serverName: "Alpha" });
+    const other = makeConnection({ identityId: "ib", serverName: "Beta" });
+    const snapshot: RegistrySnapshot = { connections: [active, other], activeIdentityId: "ia" };
+    const registry = makeRegistryStub(snapshot);
+    mockActiveCall = { identityKey: null, communityId: "sw", channel: { identifier: "general" } };
+
+    renderWithContext(<DesktopRailGroups />, { registry });
+
+    expect(screen.queryByTestId("community-call-dot")).not.toBeInTheDocument();
   });
 });

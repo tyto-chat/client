@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { MessageGroup } from "@/components/chat/MessageGroup";
 import { MessageEditor } from "@/components/chat/MessageEditor";
 import { XIcon, Spinner, ReplyIcon } from "@/components/icons";
+import { ThreadRepliesSkeleton } from "@/components/ui/Skeleton";
 import { useAuthContext } from "@/context/AuthContext";
 import { useTimezone } from "@/context/TimezoneContext";
 import { useMessage } from "@/queries/messageQueries";
@@ -47,6 +48,7 @@ interface Props {
   focusReplyId?: string | null;
   onReplyFocusComplete?: () => void;
   frozen?: boolean;
+  canParticipate?: boolean;
 }
 
 export function ThreadPanel({
@@ -65,6 +67,7 @@ export function ThreadPanel({
   focusReplyId = null,
   onReplyFocusComplete,
   frozen = false,
+  canParticipate = true,
 }: Props) {
   const { t } = useTranslation(["channel", "common"]);
   const { user } = useAuthContext();
@@ -119,15 +122,14 @@ export function ThreadPanel({
     const oldest = replies?.[0];
     if (!oldest || loadEarlier.isPending) return;
     const container = scrollContainerRef.current;
-    const prevHeight = container?.scrollHeight ?? 0;
     const prevTop = container?.scrollTop ?? 0;
     void loadEarlier
       .mutateAsync(oldest["@id"])
       .then((earlier) => {
         if (earlier.length < THREAD_PAGE_SIZE) setNoEarlier(true);
         requestAnimationFrame(() => {
-          const el = scrollContainerRef.current;
-          if (el) el.scrollTop = prevTop + (el.scrollHeight - prevHeight);
+          // At the scroll extreme Chromium pins to the edge through prepends; restoring scrollTop restores the view.
+          if (container) container.scrollTop = prevTop;
         });
       })
       .catch(() => {});
@@ -197,6 +199,7 @@ export function ThreadPanel({
     onUserClick: noop,
     onDeleteAttachment: noop,
     frozen,
+    canReact: canParticipate,
     canModerate,
     canEmbed,
     onEmbedMessage,
@@ -222,23 +225,14 @@ export function ThreadPanel({
       </header>
 
       <div className="relative min-h-0 flex-1">
-        <div ref={scrollContainerRef} className="absolute inset-0 overflow-y-auto pb-20">
-          {root && (
-            <div className="border-b border-l-2 border-line border-l-[var(--accent)] bg-surface px-4 py-3.5">
-              <MessageGroup
-                group={{ isOwn: root.createdBy?.id === user?.id, msgs: [root] }}
-                groupIndex={0}
-                {...rootGroupProps}
-              />
-            </div>
-          )}
-          <div className="px-4 pb-0.5 pt-3 text-[0.6875rem] font-bold uppercase tracking-wider text-fg-subtle">
-            {t("thread_replies_count", { count: replies?.length ?? root?.replyCount ?? 0 })}
-          </div>
+        <div
+          ref={scrollContainerRef}
+          className="absolute inset-0 flex flex-col-reverse overflow-y-auto"
+        >
+          <div className="h-20 shrink-0" />
+          <div className="flex-1" />
           {isLoading ? (
-            <div className="flex justify-center py-6 text-fg-subtle">
-              <Spinner />
-            </div>
+            <ThreadRepliesSkeleton />
           ) : (replies?.length ?? 0) === 0 ? (
             <p className="px-4 py-4 text-sm text-fg-muted">{t("thread_empty")}</p>
           ) : (
@@ -267,9 +261,21 @@ export function ThreadPanel({
               ))}
             </div>
           )}
+          <div className="px-4 pb-0.5 pt-3 text-[0.6875rem] font-bold uppercase tracking-wider text-fg-subtle">
+            {t("thread_replies_count", { count: replies?.length ?? root?.replyCount ?? 0 })}
+          </div>
+          {root && (
+            <div className="border-b border-l-2 border-line border-l-[var(--accent)] bg-surface px-4 py-3.5">
+              <MessageGroup
+                group={{ isOwn: root.createdBy?.id === user?.id, msgs: [root] }}
+                groupIndex={0}
+                {...rootGroupProps}
+              />
+            </div>
+          )}
         </div>
 
-        {!frozen && user && (
+        {!frozen && user && canParticipate && (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 px-3 pb-2 pt-1">
             <div className="pointer-events-auto">
               <MessageEditor

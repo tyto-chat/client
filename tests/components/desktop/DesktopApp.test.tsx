@@ -24,6 +24,7 @@ import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { __resetRefreshStateForTests, refreshAccessToken } from "@/api/auth";
 import { _resetNegotiationForTests } from "@/api/apiVersion";
 import { getBaseUrl } from "@/api/client";
+import { executeIdentityRequest } from "@/platform/activeIdentity";
 
 const ORIGIN_A = "https://a.example";
 const ORIGIN_B = "https://b.example";
@@ -279,7 +280,7 @@ describe("DesktopApp", () => {
     });
 
     const clientForA = renders.at(-1)!.queryClient;
-    clientForA.setQueryData(["notifications", "unread-counts"], { counts: { "1": 3 } });
+    clientForA.setQueryData(["communities"], [{ id: 1, name: "Alpha club" }]);
     const navigateSpy = vi.spyOn(router, "navigate").mockResolvedValue(undefined);
 
     await act(async () => {
@@ -291,12 +292,12 @@ describe("DesktopApp", () => {
     });
 
     expect(renders.at(-1)!.queryClient).toBe(clientForA);
-    expect(clientForA.getQueryData(["notifications", "unread-counts"])).toBeUndefined();
+    expect(clientForA.getQueryData(["communities"])).not.toEqual([{ id: 1, name: "Alpha club" }]);
     expect(getBaseUrl()).toBe(`${ORIGIN_B}/api`);
     expect(getAccessToken()).toBe("jwt-live");
 
     await waitFor(() => {
-      expect(navigateSpy).toHaveBeenCalledWith({ to: "/" });
+      expect(navigateSpy).toHaveBeenCalledWith({ to: "/", replace: true });
     });
 
     await act(async () => {
@@ -305,9 +306,62 @@ describe("DesktopApp", () => {
     await waitFor(() => {
       expect(renders.at(-1)?.activeIdentityId).toBe("ia");
     });
-    expect(clientForA.getQueryData(["notifications", "unread-counts"])).toEqual({
-      counts: { "1": 3 },
+    expect(clientForA.getQueryData(["communities"])).toEqual([{ id: 1, name: "Alpha club" }]);
+
+    navigateSpy.mockRestore();
+  });
+
+  it("drops transplanted entries except rail keys so route loaders fetch fresh after a dormancy gap", async () => {
+    stubHealthyServer(ORIGIN_A, "Alpha");
+    stubHealthyServer(ORIGIN_B, "Beta");
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    await seedTwoIdentities(bridge);
+
+    const renders: ProbeInfo[] = [];
+    render(
+      <DesktopApp
+        renderApp={(activeIdentityId) => (
+          <Probe activeIdentityId={activeIdentityId} onRender={(info) => renders.push(info)} />
+        )}
+      />,
+    );
+
+    await screen.findByTestId("probe");
+    await waitFor(() => {
+      expect(
+        renders
+          .at(-1)
+          ?.registry.getSnapshot()
+          .connections.map((a) => a.status),
+      ).toEqual(["healthy", "healthy"]);
     });
+
+    const client = renders.at(-1)!.queryClient;
+    const participantsKey = ["channels", "alpha", "general", "participants"];
+    client.setQueryData(participantsKey, [{ userId: 1 }]);
+    client.setQueryData(["notifications", "unread-counts"], { counts: {} });
+    client.setQueryData(["communities"], [{ id: 1 }]);
+    client.setQueryData(["me", "pinned-communities"], { items: [] });
+    client.setQueryData(["me", "community-memberships"], []);
+    const navigateSpy = vi.spyOn(router, "navigate").mockResolvedValue(undefined);
+
+    await act(async () => {
+      await renders.at(-1)!.switchTo("ib");
+    });
+    await act(async () => {
+      await renders.at(-1)!.switchTo("ia");
+    });
+    await waitFor(() => {
+      expect(renders.at(-1)?.activeIdentityId).toBe("ia");
+    });
+
+    expect(client.getQueryData(participantsKey)).toBeUndefined();
+    expect(client.getQueryData(["notifications", "unread-counts"])).toBeUndefined();
+    expect(client.getQueryData(["communities"])).toEqual([{ id: 1 }]);
+    expect(client.getQueryState(["communities"])?.isInvalidated).toBe(true);
+    expect(client.getQueryData(["me", "pinned-communities"])).toEqual({ items: [] });
+    expect(client.getQueryData(["me", "community-memberships"])).toEqual([]);
 
     navigateSpy.mockRestore();
   });
@@ -351,9 +405,201 @@ describe("DesktopApp", () => {
       expect(navigateSpy).toHaveBeenCalledWith({
         to: "/$communityId",
         params: { communityId: "x" },
+        replace: true,
       });
     });
 
     navigateSpy.mockRestore();
+  });
+
+  it("parks the router on /switching before the identity flips so the old route's observers unmount", async () => {
+    stubHealthyServer(ORIGIN_A, "Alpha");
+    stubHealthyServer(ORIGIN_B, "Beta");
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    await seedTwoIdentities(bridge);
+
+    const renders: ProbeInfo[] = [];
+    render(
+      <DesktopApp
+        renderApp={(activeIdentityId) => (
+          <Probe activeIdentityId={activeIdentityId} onRender={(info) => renders.push(info)} />
+        )}
+      />,
+    );
+
+    await screen.findByTestId("probe");
+    await waitFor(() => {
+      expect(
+        renders
+          .at(-1)
+          ?.registry.getSnapshot()
+          .connections.map((a) => a.status),
+      ).toEqual(["healthy", "healthy"]);
+    });
+
+    const activeAtHop: (string | null)[] = [];
+    const navigateSpy = vi.spyOn(router, "navigate").mockImplementation((opts) => {
+      if ((opts as { to?: string }).to === "/switching") {
+        activeAtHop.push(renders.at(-1)!.registry.getSnapshot().activeIdentityId);
+      }
+      return Promise.resolve(undefined);
+    });
+
+    await act(async () => {
+      await renders.at(-1)!.switchTo("ib", { to: "/$communityId", params: { communityId: "x" } });
+    });
+    await waitFor(() => {
+      expect(renders.at(-1)?.activeIdentityId).toBe("ib");
+    });
+
+    expect(navigateSpy.mock.calls[0]![0]).toEqual({ to: "/switching" });
+    expect(activeAtHop).toEqual(["ia"]);
+    await waitFor(() => {
+      expect(navigateSpy).toHaveBeenCalledWith({
+        to: "/$communityId",
+        params: { communityId: "x" },
+        replace: true,
+      });
+    });
+
+    navigateSpy.mockRestore();
+  });
+
+  it("returns the router to the previous location when the switch fails after the hop", async () => {
+    stubHealthyServer(ORIGIN_A, "Alpha");
+    stubHealthyServer(ORIGIN_B, "Beta");
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    await seedTwoIdentities(bridge);
+
+    const renders: ProbeInfo[] = [];
+    render(
+      <DesktopApp
+        renderApp={(activeIdentityId) => (
+          <Probe activeIdentityId={activeIdentityId} onRender={(info) => renders.push(info)} />
+        )}
+      />,
+    );
+
+    await screen.findByTestId("probe");
+    await waitFor(() => {
+      expect(
+        renders
+          .at(-1)
+          ?.registry.getSnapshot()
+          .connections.map((a) => a.status),
+      ).toEqual(["healthy", "healthy"]);
+    });
+
+    const navigateSpy = vi.spyOn(router, "navigate").mockResolvedValue(undefined);
+    const backSpy = vi.spyOn(router.history, "back").mockImplementation(() => {});
+    const connectionB = renders.at(-1)!.registry.getConnection("ib")!;
+    vi.spyOn(connectionB, "getAccessToken").mockReturnValue(null);
+    server.use(
+      http.post(`${ORIGIN_B}/api/token/refresh`, () =>
+        HttpResponse.json({ error: "invalid_refresh_token" }, { status: 401 }),
+      ),
+    );
+
+    await expect(
+      act(async () => {
+        await renders.at(-1)!.switchTo("ib");
+      }),
+    ).rejects.toThrow();
+
+    expect(navigateSpy.mock.calls[0]![0]).toEqual({ to: "/switching" });
+    expect(backSpy).toHaveBeenCalledTimes(1);
+    expect(renders.at(-1)?.activeIdentityId).toBe("ia");
+
+    navigateSpy.mockRestore();
+    backSpy.mockRestore();
+  });
+
+  it("switchTo to the already-active identity navigates directly without a pending re-render", async () => {
+    stubHealthyServer(ORIGIN_A, "Alpha");
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    await seedOneIdentity(bridge);
+
+    const renders: ProbeInfo[] = [];
+    render(
+      <DesktopApp
+        renderApp={(activeIdentityId) => (
+          <Probe activeIdentityId={activeIdentityId} onRender={(info) => renders.push(info)} />
+        )}
+      />,
+    );
+
+    await screen.findByTestId("probe");
+    await waitFor(() => {
+      expect(renders.at(-1)?.registry.getSnapshot().connections[0]?.status).toBe("healthy");
+    });
+
+    const navigateSpy = vi.spyOn(router, "navigate").mockResolvedValue(undefined);
+
+    await act(async () => {
+      await renders.at(-1)!.switchTo("ia", { to: "/$communityId", params: { communityId: "x" } });
+    });
+
+    expect(navigateSpy).toHaveBeenCalledWith({
+      to: "/$communityId",
+      params: { communityId: "x" },
+    });
+    expect(renders.at(-1)?.activeIdentityId).toBe("ia");
+
+    navigateSpy.mockRestore();
+  });
+
+  it("routes a cross-identity executeIdentityRequest through the registered executor to the owning server's correctly versioned URL", async () => {
+    stubHealthyServer(ORIGIN_A, "Alpha");
+    stubHealthyServer(ORIGIN_B, "Beta");
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    await seedTwoIdentities(bridge);
+
+    let received: { url: string; method: string; authorization: string | null } | null = null;
+    server.use(
+      http.delete(`${ORIGIN_B}/api/v1/communities/alpha/channels/general/call`, ({ request }) => {
+        received = {
+          url: request.url,
+          method: request.method,
+          authorization: request.headers.get("Authorization"),
+        };
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const renders: ProbeInfo[] = [];
+    render(
+      <DesktopApp
+        renderApp={(activeIdentityId) => (
+          <Probe activeIdentityId={activeIdentityId} onRender={(info) => renders.push(info)} />
+        )}
+      />,
+    );
+
+    await screen.findByTestId("probe");
+    await waitFor(() => {
+      expect(
+        renders
+          .at(-1)
+          ?.registry.getSnapshot()
+          .connections.map((a) => a.status),
+      ).toEqual(["healthy", "healthy"]);
+    });
+
+    const handled = await executeIdentityRequest("ib", "/communities/alpha/channels/general/call", {
+      method: "DELETE",
+      keepalive: true,
+    });
+
+    expect(handled).toBe(true);
+    await waitFor(() => expect(received).not.toBeNull());
+    expect(received).toEqual({
+      url: `${ORIGIN_B}/api/v1/communities/alpha/channels/general/call`,
+      method: "DELETE",
+      authorization: "Bearer jwt-live",
+    });
   });
 });

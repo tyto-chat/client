@@ -1,13 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse, delay } from "msw";
 import { server } from "../../mocks/server";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { AddIdentityWizard } from "@/desktop/AddIdentityWizard";
+import { _resetNegotiationForTests } from "@/api/apiVersion";
+import { getUserColor } from "@/utils/userColor";
 
 const ORIGIN = "https://srv.example";
 const ORIGIN_2 = "https://srv2.example";
+
+beforeEach(() => _resetNegotiationForTests());
 
 function stubServerResolution(serverInfo: Record<string, unknown> = {}) {
   server.use(
@@ -94,6 +98,41 @@ describe("AddIdentityWizard", () => {
     await user.click(screen.getByTestId("wizard-server-submit"));
     expect(await screen.findByText(/could not reach|unreachable/i)).toBeInTheDocument();
     expect(screen.getByTestId("wizard-server-input")).toBeInTheDocument();
+  });
+
+  it("shows server_unreachable, not invalid_credentials, when the login request gets a 503", async () => {
+    stubServerResolution();
+    server.use(http.post(`${ORIGIN}/api/auth`, () => new HttpResponse(null, { status: 503 })));
+    const onComplete = vi.fn();
+    const user = userEvent.setup();
+    render(<AddIdentityWizard onComplete={onComplete} />);
+
+    await user.type(screen.getByTestId("wizard-server-input"), "srv.example");
+    await user.click(screen.getByTestId("wizard-server-submit"));
+    await user.type(await screen.findByTestId("wizard-email-input"), "a@b.c");
+    await user.type(screen.getByTestId("wizard-password-input"), "pw");
+    await user.click(screen.getByTestId("wizard-credentials-submit"));
+
+    expect(await screen.findByText(/could not reach|unreachable/i)).toBeInTheDocument();
+    expect(screen.queryByText(/invalid email or password/i)).not.toBeInTheDocument();
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it("shows invalid_credentials when the login request gets a 401", async () => {
+    stubServerResolution();
+    server.use(http.post(`${ORIGIN}/api/auth`, () => new HttpResponse(null, { status: 401 })));
+    const onComplete = vi.fn();
+    const user = userEvent.setup();
+    render(<AddIdentityWizard onComplete={onComplete} />);
+
+    await user.type(screen.getByTestId("wizard-server-input"), "srv.example");
+    await user.click(screen.getByTestId("wizard-server-submit"));
+    await user.type(await screen.findByTestId("wizard-email-input"), "a@b.c");
+    await user.type(screen.getByTestId("wizard-password-input"), "pw");
+    await user.click(screen.getByTestId("wizard-credentials-submit"));
+
+    expect(await screen.findByText(/invalid email or password/i)).toBeInTheDocument();
+    expect(onComplete).not.toHaveBeenCalled();
   });
 
   it("skips the server step when locked for re-login", async () => {
@@ -379,5 +418,46 @@ describe("AddIdentityWizard", () => {
     expect(screen.getByText("a@b.c")).toBeInTheDocument();
     expect(screen.getByTestId("wizard-email-input")).toHaveValue("a@b.c");
     expect(screen.queryByTestId("wizard-server-input")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("wizard-identity-name")).not.toBeInTheDocument();
+  });
+
+  it("shows the cached display name and avatar when the identity has them", async () => {
+    stubServerResolution();
+    render(
+      <AddIdentityWizard
+        onComplete={vi.fn()}
+        initialServerUrl={ORIGIN}
+        initialEmail="a@b.c"
+        initialDisplayName="Ada Lovelace"
+        initialAvatarDataUrl="data:image/png;base64,iVBORw0KGgo="
+        lockServer
+      />,
+    );
+
+    expect(await screen.findByTestId("wizard-identity-name")).toHaveTextContent("Ada Lovelace");
+    expect(screen.getByTestId("wizard-identity-avatar")).toHaveAttribute(
+      "src",
+      "data:image/png;base64,iVBORw0KGgo=",
+    );
+    expect(screen.getByTestId("wizard-email-input")).toHaveValue("a@b.c");
+    expect(screen.queryByText("a@b.c")).not.toBeInTheDocument();
+  });
+
+  it("colors the avatar placeholder from the same key the app uses for this user", async () => {
+    stubServerResolution();
+    render(
+      <AddIdentityWizard
+        onComplete={vi.fn()}
+        initialServerUrl={ORIGIN}
+        initialEmail="a@b.c"
+        initialDisplayName="Ada Lovelace"
+        initialAvatarColorKey="/api/profiles/7"
+        lockServer
+      />,
+    );
+
+    const placeholder = await screen.findByTestId("wizard-identity-initial");
+    expect(placeholder).toHaveTextContent("A");
+    expect(placeholder).toHaveStyle({ backgroundColor: getUserColor("/api/profiles/7") });
   });
 });

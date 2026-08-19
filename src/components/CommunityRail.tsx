@@ -11,7 +11,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useNotification } from "@/context/NotificationContext";
 import { useMyCommunityMemberships } from "@/queries/membershipQueries";
-import { communityMemberIdSet, isCommunityMember } from "@/utils/membership";
+import { useAudioCall } from "@/context/AudioCallContext";
+import { getActiveIdentityKey } from "@/platform/activeIdentity";
+import { communityMemberIdSet } from "@/utils/membership";
 import { logoUrl } from "@/api/client";
 import { communityTileStyle } from "@/utils/communityTile";
 import { PinIcon } from "@/components/icons";
@@ -33,12 +35,8 @@ export function CommunityRail({ unreadCounts, renderTileExtra }: Props) {
   const pinMutation = usePinCommunity();
   const canPin = !!user;
 
-  const isGlobalAdmin = user?.roles?.includes("ROLE_ADMIN") ?? false;
   const memberIds = useMemo(() => communityMemberIdSet(myMemberships), [myMemberships]);
-  const isMemberOf = useMemo(
-    () => (c: Community) => isCommunityMember(c.id, memberIds, isGlobalAdmin),
-    [memberIds, isGlobalAdmin],
-  );
+  const isMemberOf = useMemo(() => (c: Community) => memberIds.has(c.id), [memberIds]);
 
   const pinned = useMemo(() => pinnedData?.items ?? [], [pinnedData]);
   const pinnedIdSet = useMemo(() => new Set(pinned.map((p) => p.community.id)), [pinned]);
@@ -51,9 +49,27 @@ export function CommunityRail({ unreadCounts, renderTileExtra }: Props) {
     return active;
   }, [params.communityId, communities, pinnedIdSet]);
 
+  const { activeCall } = useAudioCall();
+  const callHere =
+    activeCall && (activeCall.identityKey ?? null) === getActiveIdentityKey() ? activeCall : null;
+  const callDot = (c: Community) =>
+    callHere && c.identifier === callHere.communityId ? (
+      <CommunityCallDot channelIdentifier={callHere.channel.identifier} />
+    ) : null;
+
+  const callUnpinned = useMemo(() => {
+    if (!callHere) return null;
+    const c = communities.find((x) => x.identifier === callHere.communityId);
+    if (!c || pinnedIdSet.has(c.id) || c.id === activeUnpinned?.id) return null;
+    return c;
+  }, [callHere, communities, pinnedIdSet, activeUnpinned]);
+
   const overflow = useMemo(
-    () => communities.filter((c) => !pinnedIdSet.has(c.id) && c.id !== activeUnpinned?.id),
-    [communities, pinnedIdSet, activeUnpinned],
+    () =>
+      communities.filter(
+        (c) => !pinnedIdSet.has(c.id) && c.id !== activeUnpinned?.id && c.id !== callUnpinned?.id,
+      ),
+    [communities, pinnedIdSet, activeUnpinned, callUnpinned],
   );
 
   const isAnon = !user;
@@ -92,7 +108,11 @@ export function CommunityRail({ unreadCounts, renderTileExtra }: Props) {
   const dragFromRef = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  function onDragStart(i: number) {
+  function onDragStart(e: React.DragEvent, i: number) {
+    if (e.dataTransfer) {
+      e.dataTransfer.setData("text/plain", "");
+      e.dataTransfer.effectAllowed = "move";
+    }
     dragFromRef.current = i;
   }
 
@@ -161,7 +181,7 @@ export function CommunityRail({ unreadCounts, renderTileExtra }: Props) {
           key={c["@id"]}
           className="relative"
           draggable
-          onDragStart={() => onDragStart(i)}
+          onDragStart={(e) => onDragStart(e, i)}
           onDragOver={(e) => onDragOver(e, i)}
           onDrop={() => onDrop(i)}
           onDragEnd={() => {
@@ -176,6 +196,7 @@ export function CommunityRail({ unreadCounts, renderTileExtra }: Props) {
             isMember={isMemberOf(c)}
             isActive={c.identifier === params.communityId}
           />
+          {callDot(c)}
           {renderTileExtra?.(c)}
         </div>
       ))}
@@ -197,7 +218,19 @@ export function CommunityRail({ unreadCounts, renderTileExtra }: Props) {
               <PinIcon size={10} />
             </button>
           )}
+          {callDot(activeUnpinned)}
           {renderTileExtra?.(activeUnpinned)}
+        </div>
+      )}
+      {callUnpinned && (
+        <div className="relative">
+          <CommunityTile
+            community={callUnpinned}
+            unread={unreadCounts[String(callUnpinned.id)] ?? 0}
+            isMember={isMemberOf(callUnpinned)}
+          />
+          {callDot(callUnpinned)}
+          {renderTileExtra?.(callUnpinned)}
         </div>
       )}
       {overflow.length === 1 && overflow[0] ? (
@@ -221,6 +254,17 @@ export function CommunityRail({ unreadCounts, renderTileExtra }: Props) {
         )
       )}
     </>
+  );
+}
+
+export function CommunityCallDot({ channelIdentifier }: { channelIdentifier: string }) {
+  const { t } = useTranslation("desktop");
+  return (
+    <span
+      data-testid="community-call-dot"
+      title={t("call_on_server", { channel: channelIdentifier })}
+      className="pointer-events-none absolute -bottom-0.5 -right-0.5 h-3 w-3 animate-pulse rounded-full bg-success ring-2 ring-rail"
+    />
   );
 }
 

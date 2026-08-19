@@ -6,7 +6,7 @@ import { secretKey } from "@/desktop/desktopConfig";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { setRefreshExecutor } from "@/api/auth";
 import { getServerInfo } from "@/api/serverInfo";
-import { _resetNegotiationForTests } from "@/api/apiVersion";
+import { _resetNegotiationForTests, negotiateApiVersion, supportsFeature } from "@/api/apiVersion";
 
 const ORIGIN = "https://srv.example";
 const identity = { id: "i1", serverUrl: ORIGIN, email: "a@b.c", userId: null, displayName: null };
@@ -85,5 +85,18 @@ describe("resolveServerQuiet", () => {
   it("throws VersionMismatchError when the server only offers unsupported versions", async () => {
     server.use(http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v99"] })));
     await expect(resolveServerQuiet(ORIGIN)).rejects.toMatchObject({ direction: "server-newer" });
+  });
+
+  it("does not repoint the active api version origin", async () => {
+    const OTHER_ORIGIN = "https://other.example";
+    server.use(
+      http.get(`${OTHER_ORIGIN}/api/versions`, () =>
+        HttpResponse.json({ versions: ["v1"], features: { voice: ["v1"] } }),
+      ),
+    );
+    stubServer();
+    await negotiateApiVersion(OTHER_ORIGIN);
+    await resolveServerQuiet(ORIGIN);
+    expect(supportsFeature("voice")).toBe(true);
   });
 });

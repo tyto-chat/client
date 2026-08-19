@@ -9,6 +9,7 @@ import {
   __resetRefreshStateForTests,
   isRefreshRateLimited,
   setRefreshExecutor,
+  LoginRequestError,
 } from "@/api/auth";
 import { ApiError, configureApiClient } from "@/api/client";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
@@ -28,13 +29,17 @@ describe("login", () => {
     expect(result.token).toBe("jwt-abc");
   });
 
-  it("throws when the server returns a non-ok response", async () => {
+  it("throws a LoginRequestError classifying a 401 as auth", async () => {
     server.use(
       http.post(`${BASE}/auth`, () =>
         HttpResponse.json({ message: "Invalid credentials" }, { status: 401 }),
       ),
     );
-    await expect(login("bad@example.com", "wrong")).rejects.toThrow("Invalid credentials");
+    await expect(login("bad@example.com", "wrong")).rejects.toMatchObject({
+      kind: "auth",
+      status: 401,
+    });
+    await expect(login("bad@example.com", "wrong")).rejects.toBeInstanceOf(LoginRequestError);
   });
 });
 

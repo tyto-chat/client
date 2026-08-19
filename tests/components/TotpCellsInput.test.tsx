@@ -34,6 +34,20 @@ describe("TotpCellsInput", () => {
     expect(screen.getByTestId("totp-cell-3")).toHaveTextContent("");
   });
 
+  it("focuses itself when mounted after the surrounding step changes", async () => {
+    function StepHarness() {
+      const [showCode, setShowCode] = useState(false);
+      return showCode ? (
+        <Harness onSubmit={vi.fn()} />
+      ) : (
+        <button onClick={() => setShowCode(true)}>Sign in</button>
+      );
+    }
+    render(<StepHarness />);
+    await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(screen.getByTestId("totp-input")).toHaveFocus();
+  });
+
   it("filters non-digits and caps at 6", async () => {
     render(<Harness onSubmit={vi.fn()} />);
     const input = screen.getByTestId<HTMLInputElement>("totp-input");

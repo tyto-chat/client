@@ -12,7 +12,6 @@
   "write_private_message": "Private Nachricht schreiben",
   "message_tab": "Nachricht",
   "create_failed": "Unterhaltung konnte nicht erstellt werden.",
-  "settings": "Unterhaltungseinstellungen",
   "members": "Mitglieder",
   "no_conversations": "Noch keine Direktnachrichten.",
   "no_conversations_hint": "Starte einen Chat mit jemandem aus einer beliebigen Community.",
@@ -21,10 +20,8 @@
   "message_placeholder": "Nachricht an {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Du",
-  "mute": "Stummschalten",
   "muted": "Stummgeschaltet",
   "mute_notifications": "Benachrichtigungen stummschalten",
-  "mute_notifications_hint": "Keine Hinweise, solange diese Unterhaltung stummgeschaltet ist.",
   "beginning_of_history": "Beginn dieser Unterhaltung",
   "no_messages": "Noch keine Nachrichten",
   "be_first": "Sag Hallo, um loszulegen."

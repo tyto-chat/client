@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AudioTrack,
   LiveKitRoom,
+  useConnectionState,
   useLocalParticipant,
   useParticipants,
   useRoomContext,
@@ -13,6 +14,7 @@ import type { DeviceKind } from "@/utils/deviceSettings";
 import {
   BLUR_RADII,
   MEDIAPIPE_ASSET_PATHS,
+  getBackgroundBlur,
   getJoinMuted,
   getJoinWithCamera,
   getMicGain,
@@ -28,7 +30,16 @@ import {
   supportsBackgroundProcessors,
   type BackgroundProcessorWrapper,
 } from "@livekit/track-processors";
-import { LocalAudioTrack, LocalVideoTrack, Track } from "livekit-client";
+import {
+  ConnectionState,
+  LocalAudioTrack,
+  LocalVideoTrack,
+  ParticipantEvent,
+  Track,
+} from "livekit-client";
+import type { TrackPublication } from "livekit-client";
+import { applyMicrophoneEnabled } from "@/utils/micControl";
+import { shouldDeferCameraForBlur } from "@/utils/cameraJoin";
 import { VideoTileGrid } from "@/components/VideoTileGrid";
 import { useMemberAudioStore } from "@/utils/memberAudio";
 import { setSpeakingUsers } from "@/utils/speakingUsers";
@@ -41,8 +52,10 @@ import { queryKeys } from "@/queries/queryKeys";
 import type { ChannelParticipant } from "@/types/api";
 
 function MicHandler() {
-  const { voiceMode, pttKey, setIsPttActive, isMuted } = useAudioCall();
+  const { voiceMode, pttKey, setIsPttActive, isMuted, setMuted } = useAudioCall();
   const { localParticipant } = useLocalParticipant();
+  const { notify } = useNotification();
+  const { t } = useTranslation("channel");
 
   useEffect(() => {
     if (voiceMode === "ptt") {
@@ -56,8 +69,30 @@ function MicHandler() {
 
   useEffect(() => {
     if (voiceMode !== "open") return;
-    void localParticipant.setMicrophoneEnabled(!isMuted);
-  }, [voiceMode, isMuted, localParticipant]);
+    let cancelled = false;
+    void applyMicrophoneEnabled(localParticipant, !isMuted).then((applied) => {
+      if (applied || cancelled) return;
+      notify(t("voice_mic_error"), "error");
+      setMuted(!localParticipant.isMicrophoneEnabled);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [voiceMode, isMuted, localParticipant, notify, t, setMuted]);
+
+  useEffect(() => {
+    if (voiceMode !== "open") return;
+    const sync = (publication: TrackPublication) => {
+      if (publication.source !== Track.Source.Microphone) return;
+      setMuted(publication.isMuted);
+    };
+    localParticipant.on(ParticipantEvent.TrackMuted, sync);
+    localParticipant.on(ParticipantEvent.TrackUnmuted, sync);
+    return () => {
+      localParticipant.off(ParticipantEvent.TrackMuted, sync);
+      localParticipant.off(ParticipantEvent.TrackUnmuted, sync);
+    };
+  }, [voiceMode, localParticipant, setMuted]);
 
   useEffect(() => {
     if (voiceMode !== "ptt") return;
@@ -252,6 +287,35 @@ function EffectsSync({
   return null;
 }
 
+function BlurredCameraJoin({
+  processorRef,
+}: {
+  processorRef: React.MutableRefObject<BackgroundProcessorWrapper | null>;
+}) {
+  const connectionState = useConnectionState();
+  const { localParticipant } = useLocalParticipant();
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (startedRef.current || connectionState !== ConnectionState.Connected) return;
+    const blur = getBackgroundBlur();
+    if (blur === "off") return;
+    startedRef.current = true;
+    if (!processorRef.current) {
+      processorRef.current = BackgroundProcessor({
+        mode: "background-blur",
+        blurRadius: BLUR_RADII[blur],
+        assetPaths: MEDIAPIPE_ASSET_PATHS,
+      });
+    }
+    void localParticipant
+      .setCameraEnabled(true, { processor: processorRef.current })
+      .catch(() => {});
+  }, [connectionState, localParticipant, processorRef]);
+
+  return null;
+}
+
 function DeviceSync() {
   const room = useRoomContext();
   const mic = usePreferredDevice("audioinput");
@@ -302,6 +366,15 @@ export function LiveKitRoomContent() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const blurProcessorRef = useRef<BackgroundProcessorWrapper | null>(null);
+  const [joinWithCamera] = useState(getJoinWithCamera);
+  const [deferCameraForBlur] = useState(() =>
+    shouldDeferCameraForBlur(
+      getJoinWithCamera(),
+      getBackgroundBlur(),
+      supportsBackgroundProcessors(),
+    ),
+  );
+
   function handleConnected() {
     if (!user || !activeCall) return;
     const self: ChannelParticipant = {
@@ -328,7 +401,7 @@ export function LiveKitRoomContent() {
       token={activeCall!.token}
       serverUrl={activeCall!.liveKitUrl}
       audio={voiceMode !== "ptt" && !getJoinMuted()}
-      video={getJoinWithCamera()}
+      video={joinWithCamera && !deferCameraForBlur}
       options={{
         audioCaptureDefaults: {
           deviceId: getPreferredDevice("audioinput") || undefined,
@@ -345,6 +418,7 @@ export function LiveKitRoomContent() {
       {!isDeafened && <CallAudioRenderer />}
       <SpeakingStateSync />
       <MicHandler />
+      {deferCameraForBlur && <BlurredCameraJoin processorRef={blurProcessorRef} />}
       <MediaControlSync processorRef={blurProcessorRef} />
       <DeviceSync />
       <EffectsSync processorRef={blurProcessorRef} />

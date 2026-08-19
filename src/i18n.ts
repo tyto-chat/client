@@ -55,10 +55,19 @@ export const i18nReady = i18n
       lookupLocalStorage: "tyto_language",
     },
   })
-  .then(() => loadEmojiLabels(i18n.language))
+  .then(() => {
+    applyDocumentLanguage(i18n.language);
+    return loadEmojiLabels(i18n.language);
+  })
   .catch(() => {});
 
+export function applyDocumentLanguage(lng: string): void {
+  if (typeof document === "undefined" || !lng) return;
+  document.documentElement.lang = lng.split("-")[0] ?? lng;
+}
+
 i18n.on("languageChanged", (lng) => {
+  applyDocumentLanguage(lng);
   void loadEmojiLabels(lng);
 });
 

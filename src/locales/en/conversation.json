@@ -12,7 +12,6 @@
   "write_private_message": "Write a private message",
   "message_tab": "Message",
   "create_failed": "Failed to create conversation.",
-  "settings": "Conversation settings",
   "members": "Members",
   "no_conversations": "No direct messages yet.",
   "no_conversations_hint": "Start a chat with someone from any community.",
@@ -21,10 +20,8 @@
   "message_placeholder": "Message {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "You",
-  "mute": "Mute",
   "muted": "Muted",
   "mute_notifications": "Mute notifications",
-  "mute_notifications_hint": "No alerts when this conversation is muted.",
   "beginning_of_history": "Beginning of this conversation",
   "no_messages": "No messages yet",
   "be_first": "Say hi to get things started."

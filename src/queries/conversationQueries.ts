@@ -16,6 +16,7 @@ import {
   useDeleteMessageForKey,
   useDeleteAttachmentForKey,
 } from "@/queries/messageQueries";
+import { bumpDmListRevision } from "@/platform/dmListRevision";
 import { queryKeys } from "@/queries/queryKeys";
 import type { User } from "@/types/api";
 
@@ -47,7 +48,10 @@ export function useCreateConversation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (memberUserIds: number[]) => createConversation(memberUserIds),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.conversations() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
+      bumpDmListRevision();
+    },
   });
 }
 
@@ -58,6 +62,7 @@ export function useMuteConversation(identifier: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.conversation(identifier) });
       queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
+      bumpDmListRevision();
     },
   });
 }

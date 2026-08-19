@@ -33,5 +33,9 @@
   "server_status_auth_failed": "Sessie verlopen. Klik om opnieuw te verbinden.",
   "server_status_unreachable": "opnieuw verbinden…",
   "relogin_title": "Opnieuw inloggen",
-  "boot_error_title": "Kon tyto desktop niet starten"
+  "boot_error_title": "Kon tyto desktop niet starten",
+  "switch_failed": "Kon niet overschakelen naar {{server}}. Probeer het opnieuw.",
+  "call_on_server": "In gesprek: #{{channel}}",
+  "browse_on_server": "Bladeren op",
+  "compose_on_server": "Schrijven op"
 }

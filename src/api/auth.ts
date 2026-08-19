@@ -18,21 +18,40 @@ export interface LoginTokens {
   twoFactorRequired?: boolean;
 }
 
+export class LoginRequestError extends Error {
+  readonly kind: "auth" | "unreachable";
+  readonly status: number | null;
+
+  constructor(kind: "auth" | "unreachable", status: number | null) {
+    super(kind);
+    this.kind = kind;
+    this.status = status;
+  }
+}
+
 export async function loginAt(
   baseUrl: string,
   email: string,
   password: string,
   rememberMe = false,
 ): Promise<LoginTokens> {
-  const response = await fetch(baseUrl + "/auth", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...transportHeaders() },
-    credentials: "include",
-    body: JSON.stringify({ email, password, remember_me: rememberMe }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(baseUrl + "/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...transportHeaders() },
+      credentials: "include",
+      body: JSON.stringify({ email, password, remember_me: rememberMe }),
+    });
+  } catch {
+    throw new LoginRequestError("unreachable", null);
+  }
 
   if (!response.ok) {
-    throw new Error("Invalid credentials");
+    if (response.status === 401 || response.status === 403) {
+      throw new LoginRequestError("auth", response.status);
+    }
+    throw new LoginRequestError("unreachable", response.status);
   }
 
   const data = (await response.json()) as {

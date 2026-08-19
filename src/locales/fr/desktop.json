@@ -33,5 +33,9 @@
   "server_status_auth_failed": "Session expirée. Clique pour te reconnecter.",
   "server_status_unreachable": "reconnexion…",
   "relogin_title": "Se reconnecter",
-  "boot_error_title": "Impossible de démarrer tyto desktop"
+  "boot_error_title": "Impossible de démarrer tyto desktop",
+  "switch_failed": "Impossible de basculer vers {{server}}. Réessaie.",
+  "call_on_server": "En appel : #{{channel}}",
+  "browse_on_server": "Parcourir sur",
+  "compose_on_server": "Écrire sur"
 }

@@ -7,10 +7,13 @@ import { UserProfileButton } from "@/components/UserProfileButton";
 import { AccountPendingDeletionGate } from "@/components/AccountPendingDeletionGate";
 import { useAccountDeletionStatus } from "@/queries/accountDeletionQueries";
 import { CommunityRail } from "@/components/CommunityRail";
+import { useCommunities } from "@/queries/communityQueries";
 import { DesktopRailGroups } from "@/desktop/DesktopRail";
-import { isManagedIdentityMode } from "@/platform/appMode";
+import { useOtherServersDmUnread } from "@/desktop/useOtherServersDmUnread";
+import { isManagedIdentityMode, railWidthClass } from "@/platform/appMode";
 import {
   getActiveIdentityKey,
+  getIdentityDisplayInfo,
   requestIdentitySwitch,
   subscribeActiveIdentity,
 } from "@/platform/activeIdentity";
@@ -48,6 +51,7 @@ import { MenuItem } from "@/components/MenuItem";
 import { MobileNavProvider, useMobileNav } from "@/context/MobileNavContext";
 import { MessagePopoverProvider } from "@/context/MessagePopoverContext";
 import { cn } from "@/utils/cn";
+import { hostFromOrigin } from "@/utils/serverDisplay";
 
 export const Route = createFileRoute("/_app")({
   loader: ({ context: { queryClient, auth } }) => {
@@ -87,20 +91,29 @@ export function ActiveVoiceButton() {
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   useClickOutside(ref, closeMenu, menuOpen);
   const activeIdentityKey = useSyncExternalStore(subscribeActiveIdentity, getActiveIdentityKey);
+  const { data: communities = [] } = useCommunities();
 
   if (!activeCall) return null;
+
+  const channelName = activeCall.channel.name || activeCall.channel.identifier;
+  const communityName =
+    communities.find((c) => c.identifier === activeCall.communityId)?.name ??
+    activeCall.communityId;
 
   const callIdentityKey =
     activeCall.identityKey && activeCall.identityKey !== activeIdentityKey
       ? activeCall.identityKey
       : null;
+  const identityInfo = activeCall.identityKey
+    ? getIdentityDisplayInfo(activeCall.identityKey)
+    : null;
 
   const offAir = isDeafened || isMuted;
   const buttonTitle = isDeafened
-    ? t("voice_deafened", { channel: activeCall.channel.identifier })
+    ? t("voice_deafened", { channel: channelName })
     : isMuted
-      ? t("voice_muted", { channel: activeCall.channel.identifier })
-      : t("voice_in_call", { channel: activeCall.channel.identifier });
+      ? t("voice_muted", { channel: channelName })
+      : t("voice_in_call", { channel: channelName });
 
   return (
     <div ref={ref} className="relative flex w-full justify-center">
@@ -133,7 +146,12 @@ export function ActiveVoiceButton() {
         <div className="animate-menu-in absolute bottom-0 left-full ml-2 w-52 rounded-lg border border-line bg-overlay py-1 shadow-soft-lg z-50">
           <div className="border-b border-line px-3 py-2">
             <p className="text-xs font-semibold text-success">{t("voice_connected")}</p>
-            <p className="truncate text-sm font-medium text-fg">#{activeCall.channel.identifier}</p>
+            <p className="truncate text-sm font-medium text-fg">#{channelName}</p>
+            <p className="truncate text-xs text-fg-muted">
+              {communityName}
+              {identityInfo &&
+                ` · ${identityInfo.serverName ?? hostFromOrigin(identityInfo.origin)}`}
+            </p>
           </div>
 
           <MenuItem onClick={toggleMute} className="flex items-center gap-2">
@@ -207,7 +225,7 @@ function CommunityRailNav({ children }: { children: ReactNode }) {
   return (
     <nav
       className={cn(
-        `group/nav flex ${isManagedIdentityMode() ? "w-[72px]" : "w-16"} flex-col items-center gap-2.5 bg-rail py-3`,
+        `group/nav flex ${railWidthClass()} flex-col items-center gap-2.5 bg-rail py-3`,
         "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:transition-transform",
         navOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full",
         "md:static",
@@ -269,6 +287,7 @@ function AppShell() {
     enabled: !!token && !isPendingDeletion,
   });
   const unreadCounts = unreadData?.counts ?? {};
+  const otherServersDmUnread = useOtherServersDmUnread();
 
   if (isPendingDeletion) {
     return <AccountPendingDeletionGate purgeAt={deletionStatus?.purgeAt} />;
@@ -305,7 +324,7 @@ function AppShell() {
                       >
                         <ChatBubbleIcon size={20} />
                         {(() => {
-                          const badge = unreadCounts["dm"] ?? 0;
+                          const badge = (unreadCounts["dm"] ?? 0) + otherServersDmUnread;
                           if (badge === 0) return null;
                           return (
                             <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[0.625rem] font-bold text-white ring-2 ring-rail">
@@ -314,6 +333,13 @@ function AppShell() {
                           );
                         })()}
                       </Link>
+                    )}
+                    {token && !isManagedIdentityMode() && (
+                      <div
+                        data-testid="rail-divider"
+                        aria-hidden
+                        className="my-1.5 h-px w-8 shrink-0 rounded-full bg-line-strong"
+                      />
                     )}
                     <DesktopRailGroups>
                       <CommunityRail

@@ -12,7 +12,6 @@
   "write_private_message": "Napisz prywatną wiadomość",
   "message_tab": "Wiadomość",
   "create_failed": "Nie udało się utworzyć rozmowy.",
-  "settings": "Ustawienia rozmowy",
   "members": "Uczestnicy",
   "no_conversations": "Brak wiadomości prywatnych.",
   "no_conversations_hint": "Rozpocznij rozmowę z kimś z dowolnej społeczności.",
@@ -21,10 +20,8 @@
   "message_placeholder": "Wiadomość do {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Ty",
-  "mute": "Wycisz",
   "muted": "Wyciszone",
   "mute_notifications": "Wycisz powiadomienia",
-  "mute_notifications_hint": "Brak alertów, gdy rozmowa jest wyciszona.",
   "beginning_of_history": "Początek tej rozmowy",
   "no_messages": "Jeszcze nie ma wiadomości",
   "be_first": "Przywitaj się, żeby zacząć."

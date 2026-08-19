@@ -34,6 +34,7 @@ interface AudioCallContextValue {
   setIsPttActive: (active: boolean) => void;
   isMuted: boolean;
   isDeafened: boolean;
+  setMuted: (muted: boolean) => void;
   toggleMute: () => void;
   toggleDeafen: () => void;
   micLevelRef: React.MutableRefObject<number>;
@@ -166,6 +167,10 @@ export function AudioCallProvider({ children }: { children: React.ReactNode }) {
     [voiceSettings],
   );
 
+  const setMuted = useCallback((muted: boolean) => {
+    setIsMuted(muted);
+  }, []);
+
   const toggleMute = useCallback(() => {
     const next = !isMuted;
     setIsMuted(next);
@@ -191,6 +196,7 @@ export function AudioCallProvider({ children }: { children: React.ReactNode }) {
       setIsPttActive,
       isMuted,
       isDeafened,
+      setMuted,
       toggleMute,
       toggleDeafen,
       micLevelRef,
@@ -214,6 +220,7 @@ export function AudioCallProvider({ children }: { children: React.ReactNode }) {
       isPttActive,
       isMuted,
       isDeafened,
+      setMuted,
       toggleMute,
       toggleDeafen,
       callSlot,

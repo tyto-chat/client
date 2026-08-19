@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { loginAt, verifyTwoFactorAt } from "@/api/auth";
+import { loginAt, verifyTwoFactorAt, LoginRequestError } from "@/api/auth";
 import { isRateLimited, ApiError, configureApiClient } from "@/api/client";
+import { getUserColor } from "@/utils/userColor";
 import type { ServerInfo } from "@/types/api";
 import {
   ErrorBanner,
@@ -39,6 +40,9 @@ interface Props {
   onComplete: (result: AddIdentityResult) => void;
   initialServerUrl?: string;
   initialEmail?: string;
+  initialDisplayName?: string | null;
+  initialAvatarDataUrl?: string | null;
+  initialAvatarColorKey?: string | null;
   lockServer?: boolean;
 }
 
@@ -106,35 +110,77 @@ function IdentityBlock({
   email,
   origin,
   onEmailChange,
+  displayName,
+  avatarDataUrl,
+  avatarColorKey,
 }: {
   email: string;
   origin: string;
   onEmailChange: (value: string) => void;
+  displayName?: string | null;
+  avatarDataUrl?: string | null;
+  avatarColorKey?: string | null;
 }) {
   const { t } = useTranslation("desktop");
-  const initial = email.trim().charAt(0).toUpperCase() || "?";
+  const primary = displayName?.trim() || email;
+  const hasName = primary !== email;
   return (
     <div className="flex items-center gap-3">
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-gradient text-[17px] font-bold text-on-accent">
-        {initial}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="relative block rounded-[4px] focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)]">
-          <input
-            id="wizard-email"
-            type="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
-            aria-label={t("email_label")}
-            className="absolute inset-0 w-full cursor-text bg-transparent text-transparent caret-transparent outline-none"
-            data-testid="wizard-email-input"
-          />
-          <b aria-hidden="true" className="block truncate text-[14.5px] font-semibold text-fg">
-            {email}
-          </b>
+      {avatarDataUrl ? (
+        <img
+          src={avatarDataUrl}
+          alt=""
+          data-testid="wizard-identity-avatar"
+          className="h-11 w-11 shrink-0 rounded-full object-cover"
+        />
+      ) : (
+        <span
+          data-testid="wizard-identity-initial"
+          style={{ backgroundColor: getUserColor(avatarColorKey ?? email) }}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-[17px] font-bold text-white"
+        >
+          {primary.trim().charAt(0).toUpperCase() || "?"}
         </span>
+      )}
+      <span className="min-w-0 flex-1">
+        {hasName ? (
+          <>
+            <b
+              data-testid="wizard-identity-name"
+              className="block truncate text-[14.5px] font-semibold text-fg"
+            >
+              {primary}
+            </b>
+            <input
+              id="wizard-email"
+              type="email"
+              autoComplete="username"
+              required
+              value={email}
+              onChange={(e) => onEmailChange(e.target.value)}
+              aria-label={t("email_label")}
+              className="sr-only"
+              data-testid="wizard-email-input"
+            />
+          </>
+        ) : (
+          <span className="relative block rounded-[4px] focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)]">
+            <input
+              id="wizard-email"
+              type="email"
+              autoComplete="username"
+              required
+              value={email}
+              onChange={(e) => onEmailChange(e.target.value)}
+              aria-label={t("email_label")}
+              className="absolute inset-0 w-full cursor-text bg-transparent text-transparent caret-transparent outline-none"
+              data-testid="wizard-email-input"
+            />
+            <b aria-hidden="true" className="block truncate text-[14.5px] font-semibold text-fg">
+              {email}
+            </b>
+          </span>
+        )}
         <span
           aria-hidden="true"
           className="block truncate font-mono text-xs text-fg-subtle"
@@ -151,6 +197,9 @@ export function AddIdentityWizard({
   onComplete,
   initialServerUrl,
   initialEmail,
+  initialDisplayName,
+  initialAvatarDataUrl,
+  initialAvatarColorKey,
   lockServer,
 }: Props) {
   const { t } = useTranslation(["desktop", "auth"]);
@@ -246,7 +295,11 @@ export function AddIdentityWizard({
       });
     } catch (err) {
       if (err instanceof ServerResolutionFailedError) return;
-      setError(t("invalid_credentials"));
+      if (err instanceof LoginRequestError && err.kind === "unreachable") {
+        setError(t("server_unreachable"));
+      } else {
+        setError(t("invalid_credentials"));
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -364,6 +417,9 @@ export function AddIdentityWizard({
             email={email}
             origin={serverState?.origin ?? initialServerUrl ?? ""}
             onEmailChange={setEmail}
+            displayName={initialDisplayName}
+            avatarDataUrl={initialAvatarDataUrl}
+            avatarColorKey={initialAvatarColorKey}
           />
           {error && <ErrorBanner message={error} />}
           <div>

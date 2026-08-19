@@ -22,7 +22,12 @@ export function ServerBranding({ serverInfo, onRegister, onNavigate }: Props) {
   return (
     <>
       <div className="mb-2 space-y-1">
-        <p className="w-fit text-xl font-bold text-accent-gradient">{serverInfo.name}</p>
+        <div className="flex items-center gap-2.5">
+          <img src="/nebula-logo.svg" alt="" className="h-[34px] w-auto shrink-0" />
+          <p className="min-w-0 truncate text-xl font-bold text-accent-gradient">
+            {serverInfo.name}
+          </p>
+        </div>
         {serverInfo.description && (
           <p className="text-sm text-fg-muted">{serverInfo.description}</p>
         )}

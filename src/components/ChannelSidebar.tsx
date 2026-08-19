@@ -3,8 +3,10 @@ import { createPortal } from "react-dom";
 import { Link, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { getBaseUrl } from "@/api/client";
+import { sidebarRow, sidebarRowActive, sidebarRowUnread } from "@/components/ui/styles";
 import { isManagedIdentityMode } from "@/platform/appMode";
 import { useCommunity } from "@/queries/communityQueries";
+import { ChannelRowsSkeleton } from "@/components/ui/Skeleton";
 import { useCommunityMembership } from "@/queries/membershipQueries";
 import {
   useDeleteSection,
@@ -266,7 +268,8 @@ export function ChannelSidebar({ communityId }: Props) {
           </div>
         </div>
 
-        {!hasRealSections && (
+        {!community && <ChannelRowsSkeleton />}
+        {community && !hasRealSections && (
           <div className="flex flex-col items-center gap-2 px-4 py-8 text-center text-xs text-fg-muted">
             <p className="font-medium">{t("no_channels_yet")}</p>
             <p className="text-[0.6875rem] opacity-80">
@@ -570,15 +573,10 @@ function ChannelRow({
         to="/$communityId/$channelId"
         params={{ communityId, channelId: channel.identifier }}
         onClick={closeNav}
-        className={`my-px flex items-center gap-2 rounded-lg px-2.5 py-[5px] text-sm ${
-          effectiveUnread
-            ? "font-semibold text-fg hover:bg-raised"
-            : "text-fg-muted hover:bg-raised hover:text-fg"
-        }`}
+        className={effectiveUnread ? sidebarRowUnread : sidebarRow}
         activeProps={{
           "aria-current": "page",
-          className:
-            "my-px flex items-center gap-2 rounded-lg px-2.5 py-[5px] text-sm bg-raised text-accent shadow-soft-sm ring-1 ring-[var(--accent)]/15",
+          className: sidebarRowActive,
         }}
       >
         <span className="min-w-0 truncate"># {channel.name}</span>
@@ -685,7 +683,14 @@ function AudioChannelSidebarItem({
 }) {
   const { t } = useTranslation(["channel", "common"]);
   const { user } = useAuth();
-  const { data: participants = [] } = useChannelParticipants(communityId, channel.identifier);
+  const { data: membership } = useCommunityMembership(communityId);
+  const canSeeParticipants =
+    (user?.roles?.includes("ROLE_ADMIN") ?? false) || (membership?.hasMembership ?? false);
+  const { data: participants = [] } = useChannelParticipants(
+    communityId,
+    channel.identifier,
+    canSeeParticipants,
+  );
   const pinState = useChannelPinState(channel.id);
   const setPin = useSetChannelPinState();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -706,11 +711,10 @@ function AudioChannelSidebarItem({
         to="/$communityId/$channelId"
         params={{ communityId, channelId: channel.identifier }}
         onClick={closeNav}
-        className="my-px flex items-center gap-2 rounded-lg px-2.5 py-[5px] text-sm text-fg-muted hover:bg-raised hover:text-fg"
+        className={sidebarRow}
         activeProps={{
           "aria-current": "page",
-          className:
-            "my-px flex items-center gap-2 rounded-lg px-2.5 py-[5px] text-sm bg-raised text-accent shadow-soft-sm ring-1 ring-[var(--accent)]/15",
+          className: sidebarRowActive,
         }}
       >
         <HeadphonesIcon size={13} className="shrink-0 opacity-60" title={t("voice_channel")} />

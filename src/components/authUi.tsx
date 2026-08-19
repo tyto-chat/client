@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const inputClass =
   "w-full rounded-md border border-line-strong bg-raised px-3 py-2 text-fg outline-none placeholder:text-fg-subtle focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)] dark:text-white";
@@ -45,6 +45,12 @@ export function TotpCellsInput({
   id?: string;
 }) {
   const [focused, setFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
   return (
     <div className="relative">
       <div className="flex gap-2" aria-hidden="true">
@@ -68,7 +74,7 @@ export function TotpCellsInput({
       </div>
       <input
         id={id}
-        autoFocus
+        ref={inputRef}
         value={value}
         onChange={(e) => {
           const next = e.target.value.replace(/\D/g, "").slice(0, 6);

@@ -33,5 +33,9 @@
   "server_status_auth_failed": "Sitzung abgelaufen. Klicken, um erneut zu verbinden.",
   "server_status_unreachable": "Verbindung wird wiederhergestellt…",
   "relogin_title": "Erneut anmelden",
-  "boot_error_title": "tyto desktop konnte nicht gestartet werden"
+  "boot_error_title": "tyto desktop konnte nicht gestartet werden",
+  "switch_failed": "Wechsel zu {{server}} nicht möglich. Versuche es erneut.",
+  "call_on_server": "Im Anruf: #{{channel}}",
+  "browse_on_server": "Durchsuchen auf",
+  "compose_on_server": "Schreiben auf"
 }

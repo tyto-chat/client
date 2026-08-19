@@ -192,6 +192,59 @@ describe("IdentityConnection", () => {
     connection.stop();
   });
 
+  it("flags auth-failed when password login is rejected with 401", async () => {
+    stubServerInfo();
+    server.use(
+      http.post(`${ORIGIN}/api/token/refresh`, () =>
+        HttpResponse.json({ error: "invalid" }, { status: 401 }),
+      ),
+      http.post(`${ORIGIN}/api/auth`, () =>
+        HttpResponse.json({ error: "invalid" }, { status: 401 }),
+      ),
+    );
+    const bridge = createFakePlatformBridge();
+    await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "dead");
+    await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "password"), "secret-pw");
+    const callbacks = makeCallbacks();
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
+
+    connection.start();
+    await vi.waitFor(() => expect(connection.getSnapshot().status).toBe("auth-failed"));
+
+    connection.stop();
+  });
+
+  it("classifies a 503 from password login as unreachable, not auth-failed, and retries with backoff", async () => {
+    vi.useFakeTimers();
+    stubServerInfo();
+    let authHits = 0;
+    server.use(
+      http.post(`${ORIGIN}/api/token/refresh`, () =>
+        HttpResponse.json({ error: "invalid" }, { status: 401 }),
+      ),
+      http.post(`${ORIGIN}/api/auth`, () => {
+        authHits += 1;
+        return new HttpResponse(null, { status: 503 });
+      }),
+    );
+    const bridge = createFakePlatformBridge();
+    await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "dead");
+    await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "password"), "secret-pw");
+    const callbacks = makeCallbacks();
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), callbacks);
+
+    connection.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(connection.getSnapshot().status).toBe("unreachable");
+    expect(authHits).toBe(1);
+
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(authHits).toBe(2);
+    expect(connection.getSnapshot().status).toBe("unreachable");
+
+    connection.stop();
+  });
+
   it("flags auth-failed when neither a refresh token nor a password secret is stored", async () => {
     stubServerInfo();
     const bridge = createFakePlatformBridge();

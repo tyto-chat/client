@@ -33,5 +33,9 @@
   "server_status_auth_failed": "Oturum süresi doldu. Yeniden bağlanmak için tıkla.",
   "server_status_unreachable": "yeniden bağlanıyor…",
   "relogin_title": "Tekrar giriş yap",
-  "boot_error_title": "tyto desktop başlatılamadı"
+  "boot_error_title": "tyto desktop başlatılamadı",
+  "switch_failed": "{{server}} sunucusuna geçilemedi. Tekrar dene.",
+  "call_on_server": "Görüşmede: #{{channel}}",
+  "browse_on_server": "Sunucuda gözat",
+  "compose_on_server": "Sunucuda yaz"
 }

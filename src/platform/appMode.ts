@@ -8,3 +8,7 @@ export function getAppMode(): AppMode {
 export function isManagedIdentityMode(): boolean {
   return getAppMode() !== "web";
 }
+
+export function railWidthClass(): string {
+  return isManagedIdentityMode() ? "w-[72px]" : "w-16";
+}

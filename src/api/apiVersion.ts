@@ -17,7 +17,10 @@ const highestSupported = [...SUPPORTED_API_VERSIONS]
   .sort((a, b) => versionNumber(a) - versionNumber(b))
   .at(-1)!;
 
-export async function negotiateApiVersion(origin: string): Promise<Negotiation> {
+async function negotiate(origin: string): Promise<Negotiation> {
+  const cached = byOrigin.get(origin);
+  if (cached?.ok) return cached;
+
   const response = await fetch(`${origin}/api/versions`, {
     headers: { Accept: "application/json" },
   });
@@ -47,8 +50,17 @@ export async function negotiateApiVersion(origin: string): Promise<Negotiation> 
     };
   }
   byOrigin.set(origin, result);
+  return result;
+}
+
+export async function negotiateApiVersion(origin: string): Promise<Negotiation> {
+  const result = await negotiate(origin);
   activeOrigin = origin;
   return result;
+}
+
+export async function negotiateApiVersionQuiet(origin: string): Promise<Negotiation> {
+  return negotiate(origin);
 }
 
 function active(): Negotiation | null {

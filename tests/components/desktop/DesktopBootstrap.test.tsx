@@ -16,6 +16,7 @@ import {
   setLastActiveIdentity,
 } from "@/desktop/desktopConfig";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
+import { _resetNegotiationForTests } from "@/api/apiVersion";
 
 const ORIGIN = "https://srv.example";
 
@@ -36,6 +37,7 @@ describe("DesktopBootstrap", () => {
     localStorage.clear();
     setAccessToken(null);
     setPlatformBridgeForTests(createFakePlatformBridge());
+    _resetNegotiationForTests();
   });
 
   it("shows the wizard on first run (no identities)", async () => {

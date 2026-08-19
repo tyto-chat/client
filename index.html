@@ -7,9 +7,94 @@
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>Tyto</title>
     <script src="/theme-init.js"></script>
+    <style>
+      #root:not(:empty) ~ .boot-skel {
+        display: none;
+      }
+      html {
+        --bs-canvas: #ffffff;
+        --bs-surface: #f6f7f9;
+        --bs-rail: #eceef3;
+        --bs-line: #ebedf2;
+        --bs-block: rgba(29, 34, 48, 0.1);
+        background: var(--bs-canvas);
+      }
+      html.dark {
+        --bs-canvas: #1a1b21;
+        --bs-surface: #1e1f26;
+        --bs-rail: #131419;
+        --bs-line: #262830;
+        --bs-block: rgba(230, 232, 238, 0.1);
+      }
+      .boot-skel {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        background: var(--bs-canvas);
+        animation: boot-skel-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      @keyframes boot-skel-pulse {
+        50% {
+          opacity: 0.7;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-skel {
+          animation: none;
+        }
+      }
+      .boot-skel .bs-rail {
+        width: 64px;
+        background: var(--bs-rail);
+        padding: 12px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .boot-skel[data-mode="desktop"] .bs-rail {
+        width: 72px;
+      }
+      .boot-skel .bs-tile {
+        width: 42px;
+        height: 42px;
+        border-radius: 13px;
+        background: var(--bs-block);
+      }
+      .boot-skel .bs-side {
+        width: 240px;
+        background: var(--bs-surface);
+        padding: 14px 16px;
+      }
+      .boot-skel .bs-main {
+        flex: 1;
+        border-left: 1px solid var(--bs-line);
+      }
+      .boot-skel .bs-bar {
+        height: 12px;
+        border-radius: 6px;
+        background: var(--bs-block);
+        margin-bottom: 14px;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div class="boot-skel" data-mode="%VITE_APP_MODE%" aria-hidden="true">
+      <div class="bs-rail">
+        <div class="bs-tile"></div>
+        <div class="bs-tile"></div>
+        <div class="bs-tile"></div>
+      </div>
+      <div class="bs-side">
+        <div class="bs-bar" style="width: 60%; height: 16px; margin-bottom: 22px"></div>
+        <div class="bs-bar" style="width: 45%"></div>
+        <div class="bs-bar" style="width: 65%"></div>
+        <div class="bs-bar" style="width: 40%"></div>
+        <div class="bs-bar" style="width: 55%"></div>
+      </div>
+      <div class="bs-main"></div>
+    </div>
     <script src="/config.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

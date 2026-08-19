@@ -12,7 +12,6 @@
   "write_private_message": "Написати приватне повідомлення",
   "message_tab": "Повідомлення",
   "create_failed": "Не вдалося створити розмову.",
-  "settings": "Налаштування розмови",
   "members": "Учасники",
   "no_conversations": "Поки що немає особистих повідомлень.",
   "no_conversations_hint": "Почни розмову з кимось із будь-якої спільноти.",
@@ -21,10 +20,8 @@
   "message_placeholder": "Повідомлення для {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Ти",
-  "mute": "Вимкнути звук",
   "muted": "Без звуку",
   "mute_notifications": "Вимкнути сповіщення",
-  "mute_notifications_hint": "Жодних сповіщень, поки ця розмова без звуку.",
   "beginning_of_history": "Початок цієї розмови",
   "no_messages": "Повідомлень ще немає",
   "be_first": "Привітайся, щоб почати."

@@ -11,17 +11,21 @@ import { useHasAccessToken } from "@/api/tokenStore";
 
 const PARTICIPANTS_STALE_TIME = StaleTime.static;
 
-export function useChannelParticipantsQuery(communityId: string, channelId: string) {
+export function useChannelParticipantsQuery(
+  communityId: string,
+  channelId: string,
+  enabled = true,
+) {
   const hasToken = useHasAccessToken();
   return useQuery({
     queryKey: queryKeys.channelParticipants(communityId, channelId),
     queryFn: () => fetchChannelParticipants(communityId, channelId),
     staleTime: PARTICIPANTS_STALE_TIME,
-    enabled: hasToken,
+    enabled: hasToken && enabled,
   });
 }
 
-export function useChannelParticipants(communityId: string, channelId: string) {
+export function useChannelParticipants(communityId: string, channelId: string, enabled = true) {
   const queryClient = useQueryClient();
   const { t } = useTranslation("channel");
   const hasToken = useHasAccessToken();
@@ -32,11 +36,11 @@ export function useChannelParticipants(communityId: string, channelId: string) {
     queryKey: queryKeys.channelParticipants(communityId, channelId),
     queryFn: () => fetchChannelParticipants(communityId, channelId),
     staleTime: PARTICIPANTS_STALE_TIME,
-    enabled: hasToken,
+    enabled: hasToken && enabled,
   });
 
   useMercureSubscription(
-    topic,
+    enabled ? topic : null,
     (event) => {
       const data = parseMercureEvent<ChannelParticipantsMercureEvent>(event);
       if (!data || data.type !== "channel.participants") return;

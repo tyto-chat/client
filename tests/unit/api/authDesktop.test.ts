@@ -4,6 +4,7 @@ import { server } from "../../mocks/server";
 import {
   __resetRefreshStateForTests,
   loginAt,
+  LoginRequestError,
   refreshAccessToken,
   refreshWithToken,
   setRefreshExecutor,
@@ -46,6 +47,53 @@ describe("loginAt", () => {
     const result = await loginAt(BASE, "a@b.c", "pw");
     expect(result.twoFactorRequired).toBe(true);
     expect(result.refreshToken).toBeNull();
+  });
+});
+
+describe("loginAt error classification", () => {
+  it("classifies a network failure as unreachable with a null status", async () => {
+    server.use(http.post(`${BASE}/auth`, () => HttpResponse.error()));
+    await expect(loginAt(BASE, "a@b.c", "pw")).rejects.toMatchObject({
+      kind: "unreachable",
+      status: null,
+    });
+  });
+
+  it("classifies a 401 response as auth", async () => {
+    server.use(http.post(`${BASE}/auth`, () => new HttpResponse(null, { status: 401 })));
+    await expect(loginAt(BASE, "a@b.c", "pw")).rejects.toMatchObject({
+      kind: "auth",
+      status: 401,
+    });
+  });
+
+  it("classifies a 403 response as auth", async () => {
+    server.use(http.post(`${BASE}/auth`, () => new HttpResponse(null, { status: 403 })));
+    await expect(loginAt(BASE, "a@b.c", "pw")).rejects.toMatchObject({
+      kind: "auth",
+      status: 403,
+    });
+  });
+
+  it("classifies a 429 response as unreachable with its status", async () => {
+    server.use(http.post(`${BASE}/auth`, () => new HttpResponse(null, { status: 429 })));
+    await expect(loginAt(BASE, "a@b.c", "pw")).rejects.toMatchObject({
+      kind: "unreachable",
+      status: 429,
+    });
+  });
+
+  it("classifies a 503 response as unreachable with its status", async () => {
+    server.use(http.post(`${BASE}/auth`, () => new HttpResponse(null, { status: 503 })));
+    await expect(loginAt(BASE, "a@b.c", "pw")).rejects.toMatchObject({
+      kind: "unreachable",
+      status: 503,
+    });
+  });
+
+  it("throws instances of LoginRequestError", async () => {
+    server.use(http.post(`${BASE}/auth`, () => new HttpResponse(null, { status: 401 })));
+    await expect(loginAt(BASE, "a@b.c", "pw")).rejects.toBeInstanceOf(LoginRequestError);
   });
 });
 

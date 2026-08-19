@@ -33,5 +33,9 @@
   "server_status_auth_failed": "Sessione scaduta. Fai clic per riconnetterti.",
   "server_status_unreachable": "riconnessione…",
   "relogin_title": "Accedi di nuovo",
-  "boot_error_title": "Impossibile avviare tyto desktop"
+  "boot_error_title": "Impossibile avviare tyto desktop",
+  "switch_failed": "Impossibile passare a {{server}}. Riprova.",
+  "call_on_server": "In chiamata: #{{channel}}",
+  "browse_on_server": "Esplora su",
+  "compose_on_server": "Scrivi su"
 }
