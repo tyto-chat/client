@@ -42,5 +42,9 @@
   "guest_badge": "Convidado",
   "sign_in_to_server": "Entrar",
   "browse_without_signing_in": "Explorar sem entrar",
-  "sign_in_different_user": "Entrar com outra conta"
+  "sign_in_different_user": "Entrar com outra conta",
+  "well_menu": "Opções do servidor",
+  "sign_out_server": "Sair",
+  "remove_server": "Remover servidor",
+  "remove_server_confirm": "Remover {{server}} e o login salvo deste aplicativo?"
 }

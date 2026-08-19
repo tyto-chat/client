@@ -42,5 +42,9 @@
   "guest_badge": "Guest",
   "sign_in_to_server": "Sign in",
   "browse_without_signing_in": "Browse without signing in",
-  "sign_in_different_user": "Sign in as a different user"
+  "sign_in_different_user": "Sign in as a different user",
+  "well_menu": "Server options",
+  "sign_out_server": "Sign out",
+  "remove_server": "Remove server",
+  "remove_server_confirm": "Remove {{server}} and its saved sign-in from this app?"
 }

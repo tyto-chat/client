@@ -42,5 +42,9 @@
   "guest_badge": "Гість",
   "sign_in_to_server": "Увійти",
   "browse_without_signing_in": "Переглядати без входу",
-  "sign_in_different_user": "Увійти як інший користувач"
+  "sign_in_different_user": "Увійти як інший користувач",
+  "well_menu": "Параметри сервера",
+  "sign_out_server": "Вийти",
+  "remove_server": "Видалити сервер",
+  "remove_server_confirm": "Видалити {{server}} і збережений вхід із цього застосунку?"
 }

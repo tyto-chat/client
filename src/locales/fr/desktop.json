@@ -42,5 +42,9 @@
   "guest_badge": "Invité",
   "sign_in_to_server": "Se connecter",
   "browse_without_signing_in": "Parcourir sans se connecter",
-  "sign_in_different_user": "Se connecter avec un autre compte"
+  "sign_in_different_user": "Se connecter avec un autre compte",
+  "well_menu": "Options du serveur",
+  "sign_out_server": "Se déconnecter",
+  "remove_server": "Supprimer le serveur",
+  "remove_server_confirm": "Supprimer {{server}} et sa connexion enregistrée de cette application ?"
 }

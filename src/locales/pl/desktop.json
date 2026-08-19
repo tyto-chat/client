@@ -42,5 +42,9 @@
   "guest_badge": "Gość",
   "sign_in_to_server": "Zaloguj się",
   "browse_without_signing_in": "Przeglądaj bez logowania",
-  "sign_in_different_user": "Zaloguj się jako inny użytkownik"
+  "sign_in_different_user": "Zaloguj się jako inny użytkownik",
+  "well_menu": "Opcje serwera",
+  "sign_out_server": "Wyloguj się",
+  "remove_server": "Usuń serwer",
+  "remove_server_confirm": "Usunąć {{server}} i zapisane dane logowania z tej aplikacji?"
 }

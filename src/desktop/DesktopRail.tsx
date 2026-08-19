@@ -1,7 +1,18 @@
 import { useCallback, useContext, useRef, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/Modal";
-import { AlertTriangleIcon, CloudOffIcon, LockIcon, LogInIcon, PlusIcon } from "@/components/icons";
+import {
+  AlertTriangleIcon,
+  CloudOffIcon,
+  LockIcon,
+  LogInIcon,
+  MoreVerticalIcon,
+  PlusIcon,
+} from "@/components/icons";
+import { MenuItem } from "@/components/MenuItem";
+import { useClickOutside } from "@/hooks/useClickOutside";
+import { useConfirm } from "@/hooks/useConfirm";
+import { useOptionalAuthContext } from "@/context/AuthContext";
 import { useAudioCall } from "@/context/AudioCallContext";
 import { CommunityCallDot } from "@/components/CommunityRail";
 import { useNotification } from "@/context/NotificationContext";
@@ -14,6 +25,7 @@ import type { ConnectionCommunity, ConnectionSnapshot } from "./connections/Iden
 import { AddIdentityWizard, type AddIdentityResult } from "./AddIdentityWizard";
 import { ReloginModal } from "./ReloginModal";
 import { persistWizardResult } from "./identitySetup";
+import { removeServer, signOutIdentity } from "./identityLifecycle";
 import { loadDesktopConfig, saveDesktopConfig, setLastActiveIdentity } from "./desktopConfig";
 import { orderConnections, refreshIdentityData } from "./managerData";
 import { identityPost } from "./connections/identityFetch";
@@ -143,13 +155,25 @@ function formatHost(origin: string): string {
 function ServerCaption({
   connection,
   showDmDot,
+  onSignIn,
+  onSignOut,
+  onRemove,
 }: {
   connection: ConnectionSnapshot;
   showDmDot?: boolean;
+  onSignIn?: () => void;
+  onSignOut?: () => void;
+  onRemove?: () => void;
 }) {
   const { t } = useTranslation("desktop");
   const name = connection.serverName ?? formatHost(connection.origin);
   const dmUnread = connection.unreadCounts["dm"] ?? 0;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(menuRef, () => setMenuOpen(false), menuOpen, {
+    onEscape: () => setMenuOpen(false),
+  });
+  const isGuest = connection.kind === "guest";
   return (
     <div
       role="group"
@@ -160,7 +184,7 @@ function ServerCaption({
           : connection.origin
       }
       data-testid="desktop-server-header"
-      className={`flex max-w-[64px] items-center gap-1 ${
+      className={`group/well relative flex max-w-[64px] items-center gap-1 ${
         connection.status === "connecting" ? "animate-pulse" : ""
       }`}
     >
@@ -178,6 +202,60 @@ function ServerCaption({
           data-testid="desktop-server-header-dm"
           className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
         />
+      )}
+      {onRemove && (
+        <div ref={menuRef} className="shrink-0">
+          <button
+            type="button"
+            data-testid="desktop-well-menu"
+            title={t("well_menu")}
+            aria-label={t("well_menu")}
+            onClick={() => setMenuOpen((open) => !open)}
+            className="text-fg-subtle opacity-0 transition-opacity group-hover/well:opacity-100 focus-visible:opacity-100 hover:text-fg"
+          >
+            <MoreVerticalIcon size={11} />
+          </button>
+          {menuOpen && (
+            <div
+              role="menu"
+              className="absolute top-full left-0 z-20 mt-1 min-w-[132px] overflow-hidden rounded-md border border-line bg-overlay py-1 shadow-soft-lg"
+            >
+              {isGuest
+                ? onSignIn && (
+                    <MenuItem
+                      data-testid="desktop-well-sign-in"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onSignIn();
+                      }}
+                    >
+                      {t("sign_in_to_server")}
+                    </MenuItem>
+                  )
+                : onSignOut && (
+                    <MenuItem
+                      data-testid="desktop-well-sign-out"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onSignOut();
+                      }}
+                    >
+                      {t("sign_out_server")}
+                    </MenuItem>
+                  )}
+              <MenuItem
+                data-testid="desktop-well-remove"
+                className="text-danger"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onRemove();
+                }}
+              >
+                {t("remove_server")}
+              </MenuItem>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -422,7 +500,51 @@ export function DesktopRailGroups({ children }: { children?: React.ReactNode }) 
   const { activeCall } = useAudioCall();
   const [modalOpen, setModalOpen] = useState(false);
   const [signInIdentityId, setSignInIdentityId] = useState<string | null>(null);
+  const { confirm, confirmDialog } = useConfirm();
+  const auth = useOptionalAuthContext();
   if (!isManagedIdentityMode() || !contextValue || !snapshot) return <>{children}</>;
+
+  const registry = contextValue.registry;
+
+  async function resolveWellIdentity(identityId: string) {
+    const bridge = getPlatformBridge();
+    const config = await loadDesktopConfig(bridge);
+    const profileId = config.lastActiveProfileId ?? config.profiles[0]?.id ?? null;
+    if (!profileId) return null;
+    const identity = config.profiles
+      .find((p) => p.id === profileId)
+      ?.identities.find((i) => i.id === identityId);
+    return identity ? { bridge, profileId, identity } : null;
+  }
+
+  async function handleSignOut(connection: ConnectionSnapshot) {
+    if (connection.identityId === snapshot?.activeIdentityId && auth) {
+      await auth.logout();
+      return;
+    }
+    const resolved = await resolveWellIdentity(connection.identityId);
+    if (!resolved) return;
+    await signOutIdentity(resolved.bridge, registry, resolved.profileId, resolved.identity);
+  }
+
+  async function handleRemove(connection: ConnectionSnapshot) {
+    const server = connection.serverName ?? formatHost(connection.origin);
+    const ok = await confirm({
+      title: t("remove_server"),
+      message: t("remove_server_confirm", { server }),
+      confirmLabel: t("remove_server"),
+      destructive: true,
+    });
+    if (!ok) return;
+    const resolved = await resolveWellIdentity(connection.identityId);
+    if (!resolved) return;
+    const wasActive = connection.identityId === registry.getSnapshot().activeIdentityId;
+    await removeServer(resolved.bridge, registry, resolved.profileId, resolved.identity);
+    if (!wasActive) return;
+    const next = registry.getSnapshot().connections[0];
+    if (next) void contextValue?.switchTo(next.identityId).catch(() => undefined);
+    else window.location.replace("/");
+  }
 
   const hasActive = snapshot.connections.some((a) => a.identityId === snapshot.activeIdentityId);
   const orderedConnections = orderConnections(snapshot.connections, serverOrder);
@@ -443,7 +565,13 @@ export function DesktopRailGroups({ children }: { children?: React.ReactNode }) 
             : null;
         return (
           <div key={connection.identityId} className="flex flex-col items-center gap-1">
-            <ServerCaption connection={connection} showDmDot={!isActive} />
+            <ServerCaption
+              connection={connection}
+              showDmDot={!isActive}
+              onSignIn={() => setSignInIdentityId(connection.identityId)}
+              onSignOut={() => void handleSignOut(connection)}
+              onRemove={() => void handleRemove(connection)}
+            />
             <div className={wellClass} data-testid={isActive ? "desktop-active-group" : undefined}>
               <ServerStatusOverlay
                 connection={connection}
@@ -498,6 +626,7 @@ export function DesktopRailGroups({ children }: { children?: React.ReactNode }) 
           onClose={() => setModalOpen(false)}
         />
       )}
+      {confirmDialog}
       {signInIdentityId && (
         <ReloginModal
           registry={contextValue.registry}

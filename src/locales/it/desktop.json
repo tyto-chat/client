@@ -42,5 +42,9 @@
   "guest_badge": "Ospite",
   "sign_in_to_server": "Accedi",
   "browse_without_signing_in": "Esplora senza accedere",
-  "sign_in_different_user": "Accedi con un altro account"
+  "sign_in_different_user": "Accedi con un altro account",
+  "well_menu": "Opzioni del server",
+  "sign_out_server": "Esci",
+  "remove_server": "Rimuovi server",
+  "remove_server_confirm": "Rimuovere {{server}} e l'accesso salvato da questa app?"
 }

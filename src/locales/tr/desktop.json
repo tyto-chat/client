@@ -42,5 +42,9 @@
   "guest_badge": "Misafir",
   "sign_in_to_server": "Giriş yap",
   "browse_without_signing_in": "Giriş yapmadan göz at",
-  "sign_in_different_user": "Başka bir kullanıcı olarak giriş yap"
+  "sign_in_different_user": "Başka bir kullanıcı olarak giriş yap",
+  "well_menu": "Sunucu seçenekleri",
+  "sign_out_server": "Çıkış yap",
+  "remove_server": "Sunucuyu kaldır",
+  "remove_server_confirm": "{{server}} ve kayıtlı girişi bu uygulamadan kaldırılsın mı?"
 }

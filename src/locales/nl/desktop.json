@@ -42,5 +42,9 @@
   "guest_badge": "Gast",
   "sign_in_to_server": "Inloggen",
   "browse_without_signing_in": "Bekijken zonder in te loggen",
-  "sign_in_different_user": "Inloggen als andere gebruiker"
+  "sign_in_different_user": "Inloggen als andere gebruiker",
+  "well_menu": "Serveropties",
+  "sign_out_server": "Uitloggen",
+  "remove_server": "Server verwijderen",
+  "remove_server_confirm": "{{server}} en de opgeslagen aanmelding uit deze app verwijderen?"
 }

@@ -42,5 +42,9 @@
   "guest_badge": "Invitado",
   "sign_in_to_server": "Iniciar sesión",
   "browse_without_signing_in": "Explorar sin iniciar sesión",
-  "sign_in_different_user": "Iniciar sesión con otra cuenta"
+  "sign_in_different_user": "Iniciar sesión con otra cuenta",
+  "well_menu": "Opciones del servidor",
+  "sign_out_server": "Cerrar sesión",
+  "remove_server": "Quitar servidor",
+  "remove_server_confirm": "¿Quitar {{server}} y su inicio de sesión guardado de esta aplicación?"
 }

@@ -42,5 +42,9 @@
   "guest_badge": "Gast",
   "sign_in_to_server": "Anmelden",
   "browse_without_signing_in": "Ohne Anmeldung stöbern",
-  "sign_in_different_user": "Als anderer Benutzer anmelden"
+  "sign_in_different_user": "Als anderer Benutzer anmelden",
+  "well_menu": "Serveroptionen",
+  "sign_out_server": "Abmelden",
+  "remove_server": "Server entfernen",
+  "remove_server_confirm": "{{server}} und die gespeicherte Anmeldung aus dieser App entfernen?"
 }
