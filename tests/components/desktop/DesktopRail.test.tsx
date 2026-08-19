@@ -94,6 +94,7 @@ function stubOriginFull(
 function makeConnection(overrides: Partial<ConnectionSnapshot>): ConnectionSnapshot {
   return {
     identityId: "ia",
+    kind: "identity" as const,
     status: "healthy",
     serverName: "Alpha",
     origin: "https://a.example",

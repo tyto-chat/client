@@ -72,6 +72,7 @@ vi.mock("@/hooks/useAuth", () => ({
 function connectionSnapshot(overrides: Partial<ConnectionSnapshot>): ConnectionSnapshot {
   return {
     identityId: "ia",
+    kind: "identity" as const,
     status: "healthy",
     serverName: "Alpha",
     origin: BASE,

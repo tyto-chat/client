@@ -76,6 +76,7 @@ function community(overrides: Partial<ConnectionCommunity>): ConnectionCommunity
 function connectionSnapshot(overrides: Partial<ConnectionSnapshot>): ConnectionSnapshot {
   return {
     identityId: "ia",
+    kind: "identity" as const,
     status: "healthy",
     serverName: "Alpha",
     origin: BASE,

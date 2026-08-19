@@ -9,6 +9,7 @@ import {
   secretKey,
   setIdentityProfile,
   type DesktopIdentity,
+  type IdentityKind,
 } from "@/desktop/desktopConfig";
 import type { PlatformBridge } from "@/platform/PlatformBridge";
 import type {
@@ -53,6 +54,7 @@ export interface ConnectionRailSeed {
 
 export interface ConnectionSnapshot {
   identityId: string;
+  kind: IdentityKind;
   status: ConnectionStatus;
   serverName: string | null;
   origin: string;
@@ -107,7 +109,7 @@ async function fetchAvatarDataUrl(ctx: ServerContext, source: string): Promise<s
   }
 }
 
-const RETRY_DELAYS_MS = [15_000, 30_000, 60_000, 120_000, 300_000];
+export const RETRY_DELAYS_MS = [15_000, 30_000, 60_000, 120_000, 300_000];
 const REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const REALTIME_TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const REALTIME_TOKEN_MIN_DELAY_MS = 30_000;
@@ -119,7 +121,7 @@ class AuthFailedError extends Error {
   }
 }
 
-function buildConnectionCommunities(
+export function buildConnectionCommunities(
   memberships: MyCommunityMembership[],
   communities: Community[],
   pinned: PinnedCommunity[],
@@ -448,6 +450,7 @@ export class IdentityConnection {
   private buildSnapshot(): ConnectionSnapshot {
     return {
       identityId: this.identity.id,
+      kind: "identity",
       status: this.status,
       serverName: this.serverInfoValue?.name ?? null,
       origin: this.identity.serverUrl,

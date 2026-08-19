@@ -22,6 +22,7 @@ const PROFILE_ID = "p1";
 function makeConnectionSnapshot(overrides: Partial<ConnectionSnapshot>): ConnectionSnapshot {
   return {
     identityId: "ia",
+    kind: "identity" as const,
     status: "healthy",
     serverName: "Alpha",
     origin: ORIGIN_A,
