@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { createEvent, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { configureApiClient } from "@/api/client";
@@ -85,5 +85,23 @@ describe("MessageComposer collapsed mode", () => {
     fireEvent.mouseDown(send);
 
     expect(screen.queryByTitle("Bold")).not.toBeInTheDocument();
+  });
+});
+
+describe("MessageComposer disabled send button", () => {
+  it("keeps focus on the editor when the disabled send button is pressed", async () => {
+    const { container } = render(<MessageComposer onSend={vi.fn()} />, { wrapper: makeWrapper() });
+
+    const shell = container.querySelector(".rounded-xl")!;
+    fireEvent.mouseDown(shell);
+    expect(await screen.findByTitle("Bold")).toBeInTheDocument();
+
+    const send = screen.getByLabelText("Send") as HTMLButtonElement;
+    expect(send.disabled).toBe(true);
+    const event = createEvent.mouseDown(send, { bubbles: true });
+    fireEvent(send, event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(screen.getByTitle("Bold")).toBeInTheDocument();
   });
 });

@@ -358,7 +358,13 @@ function MessageComposer({
       <div
         onMouseDown={(e) => {
           const target = e.target as HTMLElement;
-          if (target.closest("button, a, input, .ProseMirror")) return;
+          if (target.closest(".ProseMirror")) return;
+          const control = target.closest("button, a, input");
+          const inert =
+            control instanceof HTMLButtonElement || control instanceof HTMLInputElement
+              ? control.disabled
+              : false;
+          if (control && !inert) return;
           e.preventDefault();
           editor?.commands.focus("end");
         }}
@@ -375,7 +381,7 @@ function MessageComposer({
           />
         )}
 
-        <div className="flex items-center gap-2 pr-2">
+        <div className={`flex items-center gap-2 pr-2 ${expanded ? "" : "min-h-[3.375rem]"}`}>
           <div
             className={`min-w-0 flex-1 cap-trim overflow-y-auto px-3.5 text-sm text-fg ${
               expanded ? "py-2.5" : "py-3.5"
