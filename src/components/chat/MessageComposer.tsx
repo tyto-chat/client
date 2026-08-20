@@ -381,7 +381,7 @@ function MessageComposer({
           />
         )}
 
-        <div className={`flex items-center gap-2 pr-2 ${expanded ? "" : "min-h-[3.375rem]"}`}>
+        <div className={`flex items-center gap-2 pr-2 ${expanded ? "" : "min-h-[3.5rem]"}`}>
           <div
             className={`min-w-0 flex-1 cap-trim overflow-y-auto px-3.5 text-sm text-fg ${
               expanded ? "py-2.5" : "py-3.5"
@@ -409,7 +409,7 @@ function MessageComposer({
         </div>
         <AttachmentPreviewStrip attachments={pendingAttachments} onRemove={removeAttachment} />
         {expanded && (
-          <div className="flex items-center gap-0.5 px-2 pb-2 pt-1">
+          <div className="flex items-center gap-0.5 px-2 pb-2.5 pt-1">
             {allowAttachments && !isEditMode && (
               <ToolbarButton
                 onClick={() => fileInputRef.current?.click()}
