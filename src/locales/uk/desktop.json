@@ -57,5 +57,13 @@
   "identity_switch_to": "Перемкнутися на",
   "remove_identity": "Видалити особу",
   "remove_identity_confirm": "Видалити твою особу на {{server}} і збережений вхід із цього застосунку?",
-  "identity_signed_out": "Вихід виконано"
+  "identity_signed_out": "Вихід виконано",
+  "identity_filter_all": "Усі",
+  "identity_filter_signed_in": "Виконано вхід",
+  "identity_filter_signed_out": "Вихід виконано",
+  "identity_filter_problem": "Проблема",
+  "identity_search_placeholder": "Пошук за іменем, е-поштою або сервером",
+  "identity_no_matches": "Немає відповідних осіб.",
+  "identity_problem_hint": "Цей сервер недоступний або не вдалося увійти.",
+  "remove_identity_short": "Видалити"
 }

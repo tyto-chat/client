@@ -57,5 +57,13 @@
   "identity_switch_to": "Przełącz na",
   "remove_identity": "Usuń tożsamość",
   "remove_identity_confirm": "Usunąć twoją tożsamość na {{server}} i zapisane dane logowania z tej aplikacji?",
-  "identity_signed_out": "Wylogowany"
+  "identity_signed_out": "Wylogowany",
+  "identity_filter_all": "Wszystkie",
+  "identity_filter_signed_in": "Zalogowane",
+  "identity_filter_signed_out": "Wylogowane",
+  "identity_filter_problem": "Problem",
+  "identity_search_placeholder": "Szukaj nazwy, e-maila lub serwera",
+  "identity_no_matches": "Brak pasujących tożsamości.",
+  "identity_problem_hint": "Nie można połączyć się z serwerem lub logowanie się nie powiodło.",
+  "remove_identity_short": "Usuń"
 }

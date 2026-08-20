@@ -57,5 +57,13 @@
   "identity_switch_to": "Passa a",
   "remove_identity": "Rimuovi identità",
   "remove_identity_confirm": "Rimuovere la tua identità su {{server}} e l'accesso salvato da questa app?",
-  "identity_signed_out": "Disconnesso"
+  "identity_signed_out": "Disconnesso",
+  "identity_filter_all": "Tutte",
+  "identity_filter_signed_in": "Connesse",
+  "identity_filter_signed_out": "Disconnesse",
+  "identity_filter_problem": "Problema",
+  "identity_search_placeholder": "Cerca nome, email o server",
+  "identity_no_matches": "Nessuna identità corrispondente.",
+  "identity_problem_hint": "Questo server non è raggiungibile o l'accesso non è riuscito.",
+  "remove_identity_short": "Rimuovi"
 }

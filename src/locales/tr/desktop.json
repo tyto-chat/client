@@ -57,5 +57,13 @@
   "identity_switch_to": "Şuna geç",
   "remove_identity": "Kimliği kaldır",
   "remove_identity_confirm": "{{server}} üzerindeki kimliğin ve kayıtlı girişin bu uygulamadan kaldırılsın mı?",
-  "identity_signed_out": "Çıkış yapıldı"
+  "identity_signed_out": "Çıkış yapıldı",
+  "identity_filter_all": "Tümü",
+  "identity_filter_signed_in": "Giriş yapıldı",
+  "identity_filter_signed_out": "Çıkış yapıldı",
+  "identity_filter_problem": "Sorun",
+  "identity_search_placeholder": "Ad, e-posta veya sunucu ara",
+  "identity_no_matches": "Eşleşen kimlik yok.",
+  "identity_problem_hint": "Bu sunucuya ulaşılamıyor veya giriş başarısız oldu.",
+  "remove_identity_short": "Kaldır"
 }

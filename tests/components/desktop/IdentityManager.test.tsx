@@ -144,14 +144,11 @@ describe("IdentityManagerModal", () => {
 
     const card = await screen.findByTestId("identity-card");
     expect(within(card).getByTestId("identity-card-name")).toHaveTextContent("Ada Lovelace");
-    expect(within(card).getByText("ada@example.com")).toBeInTheDocument();
-    expect(within(card).getByText("Alpha")).toBeInTheDocument();
-    expect(within(card).getByText(ORIGIN_A)).toBeInTheDocument();
+    expect(within(card).getByText(/Alpha · ada@example\.com/)).toBeInTheDocument();
     expect(within(card).getByTestId("identity-card-active")).toBeInTheDocument();
 
-    const tiles = within(card).getByTestId("identity-card-communities");
-    expect(within(tiles).getAllByRole("listitem")).toHaveLength(1);
-    expect(within(tiles).getByTitle("Design")).toBeInTheDocument();
+    expect(screen.queryByTestId("identity-card-communities")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("identity-filters")).not.toBeInTheDocument();
   });
 
   it("keeps the cached identity visible on a signed-out entry, labelled as signed out", async () => {
@@ -162,7 +159,7 @@ describe("IdentityManagerModal", () => {
 
     const card = await screen.findByTestId("identity-card");
     expect(within(card).getByTestId("identity-card-name")).toHaveTextContent("Ada Lovelace");
-    expect(within(card).getByText("ada@example.com")).toBeInTheDocument();
+    expect(within(card).getByText(/Alpha · ada@example\.com/)).toBeInTheDocument();
     expect(within(card).getByTestId("identity-card-signed-out")).toHaveTextContent("Signed out");
     expect(within(card).getByTestId("identity-sign-in")).toBeInTheDocument();
     expect(within(card).queryByText("Not signed in")).not.toBeInTheDocument();
@@ -271,5 +268,91 @@ describe("IdentityManagerModal", () => {
     await waitFor(() => expect(remove).toHaveBeenCalledWith("ib"));
     const saved = await loadDesktopConfig(bridge);
     expect(saved.profiles[0]!.identities.map((i) => i.id)).toEqual(["ia"]);
+  });
+  it("hides the filter bar for a short list and shows it past the threshold", async () => {
+    const many = Array.from({ length: 6 }, (_, i) => ({
+      ...alpha,
+      id: `i${i}`,
+      serverUrl: `https://s${i}.example`,
+      email: `user${i}@example.com`,
+      displayName: `User ${i}`,
+    }));
+    await seed(many);
+    const registry = makeRegistry(
+      many.map((identity, i) =>
+        connectionSnapshot({
+          identityId: identity.id,
+          serverName: `Server ${i}`,
+          origin: identity.serverUrl,
+        }),
+      ),
+      "i0",
+    );
+
+    render(<IdentityManagerModal onClose={vi.fn()} />, { wrapper: wrapper(registry) });
+
+    expect(await screen.findByTestId("identity-filters")).toBeInTheDocument();
+    expect(await screen.findAllByTestId("identity-card")).toHaveLength(6);
+  });
+
+  it("filters by search text and by status", async () => {
+    const many = [
+      { ...alpha, id: "i0", displayName: "Ada Lovelace", email: "ada@example.com" },
+      {
+        ...alpha,
+        id: "i1",
+        serverUrl: "https://s1.example",
+        displayName: "Grace Hopper",
+        email: "grace@example.com",
+      },
+      {
+        ...alpha,
+        id: "i2",
+        serverUrl: "https://s2.example",
+        displayName: null,
+        email: "signed-out@example.com",
+        kind: "guest" as const,
+      },
+      { ...alpha, id: "i3", serverUrl: "https://s3.example", email: "d@example.com" },
+      { ...alpha, id: "i4", serverUrl: "https://s4.example", email: "e@example.com" },
+      { ...alpha, id: "i5", serverUrl: "https://s5.example", email: "f@example.com" },
+    ];
+    await seed(many);
+    const registry = makeRegistry(
+      many.map((identity, i) =>
+        connectionSnapshot({
+          identityId: identity.id,
+          serverName: `Server ${i}`,
+          origin: identity.serverUrl,
+          kind: identity.kind ?? "identity",
+          status: i === 5 ? "unreachable" : "healthy",
+        }),
+      ),
+      "i0",
+    );
+    const user = userEvent.setup();
+
+    render(<IdentityManagerModal onClose={vi.fn()} />, { wrapper: wrapper(registry) });
+
+    await user.type(await screen.findByTestId("identity-search"), "grace");
+    let cards = screen.getAllByTestId("identity-card");
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toHaveAttribute("data-identity-id", "i1");
+
+    await user.clear(screen.getByTestId("identity-search"));
+    await user.click(screen.getByTestId("identity-filter-signed-out"));
+    cards = screen.getAllByTestId("identity-card");
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toHaveAttribute("data-identity-id", "i2");
+
+    await user.click(screen.getByTestId("identity-filter-problem"));
+    cards = screen.getAllByTestId("identity-card");
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toHaveAttribute("data-identity-id", "i5");
+    expect(within(cards[0]!).getByTestId("identity-card-problem")).toBeInTheDocument();
+
+    await user.type(screen.getByTestId("identity-search"), "nothing-matches");
+    expect(screen.queryAllByTestId("identity-card")).toHaveLength(0);
+    expect(screen.getByText("No identities match.")).toBeInTheDocument();
   });
 });

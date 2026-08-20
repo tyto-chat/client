@@ -57,5 +57,13 @@
   "identity_switch_to": "Basculer vers",
   "remove_identity": "Supprimer l'identité",
   "remove_identity_confirm": "Supprimer ton identité sur {{server}} et sa connexion enregistrée de cette application ?",
-  "identity_signed_out": "Déconnecté"
+  "identity_signed_out": "Déconnecté",
+  "identity_filter_all": "Toutes",
+  "identity_filter_signed_in": "Connectées",
+  "identity_filter_signed_out": "Déconnectées",
+  "identity_filter_problem": "Problème",
+  "identity_search_placeholder": "Rechercher un nom, un e-mail ou un serveur",
+  "identity_no_matches": "Aucune identité correspondante.",
+  "identity_problem_hint": "Ce serveur est injoignable ou la connexion a échoué.",
+  "remove_identity_short": "Supprimer"
 }

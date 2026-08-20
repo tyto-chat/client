@@ -57,5 +57,13 @@
   "identity_switch_to": "Mudar para",
   "remove_identity": "Remover identidade",
   "remove_identity_confirm": "Remover sua identidade em {{server}} e o login salvo deste aplicativo?",
-  "identity_signed_out": "Desconectado"
+  "identity_signed_out": "Desconectado",
+  "identity_filter_all": "Todas",
+  "identity_filter_signed_in": "Conectadas",
+  "identity_filter_signed_out": "Desconectadas",
+  "identity_filter_problem": "Problema",
+  "identity_search_placeholder": "Buscar nome, e-mail ou servidor",
+  "identity_no_matches": "Nenhuma identidade corresponde.",
+  "identity_problem_hint": "Não é possível acessar este servidor ou o login falhou.",
+  "remove_identity_short": "Remover"
 }

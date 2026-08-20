@@ -57,5 +57,13 @@
   "identity_switch_to": "Switch to",
   "remove_identity": "Remove identity",
   "remove_identity_confirm": "Remove your identity on {{server}} and its saved sign-in from this app?",
-  "identity_signed_out": "Signed out"
+  "identity_signed_out": "Signed out",
+  "identity_filter_all": "All",
+  "identity_filter_signed_in": "Signed in",
+  "identity_filter_signed_out": "Signed out",
+  "identity_filter_problem": "Problem",
+  "identity_search_placeholder": "Search name, email or server",
+  "identity_no_matches": "No identities match.",
+  "identity_problem_hint": "This server can't be reached or the sign-in failed.",
+  "remove_identity_short": "Remove"
 }
