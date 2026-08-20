@@ -48,5 +48,13 @@
   "remove_server": "Remove server",
   "remove_server_confirm": "Remove {{server}} and its saved sign-in from this app?",
   "remote_load_failed": "Couldn't load from {{server}}.",
-  "mark_all_dms_read_server": "Mark all DMs on {{server}} as read"
+  "mark_all_dms_read_server": "Mark all DMs on {{server}} as read",
+  "identity_manager_title": "Manage identities",
+  "identity_manager_menu": "Manage identities",
+  "identity_manager_empty": "No identities yet.",
+  "identity_not_signed_in": "Not signed in",
+  "identity_active": "Active",
+  "identity_switch_to": "Switch to",
+  "remove_identity": "Remove identity",
+  "remove_identity_confirm": "Remove your identity on {{server}} and its saved sign-in from this app?"
 }

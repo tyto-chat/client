@@ -48,5 +48,13 @@
   "remove_server": "Rimuovi server",
   "remove_server_confirm": "Rimuovere {{server}} e l'accesso salvato da questa app?",
   "remote_load_failed": "Impossibile caricare da {{server}}.",
-  "mark_all_dms_read_server": "Segna come letti tutti i messaggi diretti su {{server}}"
+  "mark_all_dms_read_server": "Segna come letti tutti i messaggi diretti su {{server}}",
+  "identity_manager_title": "Gestisci identità",
+  "identity_manager_menu": "Gestisci identità",
+  "identity_manager_empty": "Nessuna identità.",
+  "identity_not_signed_in": "Non hai effettuato l'accesso",
+  "identity_active": "Attiva",
+  "identity_switch_to": "Passa a",
+  "remove_identity": "Rimuovi identità",
+  "remove_identity_confirm": "Rimuovere la tua identità su {{server}} e l'accesso salvato da questa app?"
 }

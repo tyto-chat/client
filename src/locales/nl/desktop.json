@@ -48,5 +48,13 @@
   "remove_server": "Server verwijderen",
   "remove_server_confirm": "{{server}} en de opgeslagen aanmelding uit deze app verwijderen?",
   "remote_load_failed": "Kan niet laden van {{server}}.",
-  "mark_all_dms_read_server": "Alle DM's op {{server}} als gelezen markeren"
+  "mark_all_dms_read_server": "Alle DM's op {{server}} als gelezen markeren",
+  "identity_manager_title": "Identiteiten beheren",
+  "identity_manager_menu": "Identiteiten beheren",
+  "identity_manager_empty": "Nog geen identiteiten.",
+  "identity_not_signed_in": "Niet ingelogd",
+  "identity_active": "Actief",
+  "identity_switch_to": "Wisselen naar",
+  "remove_identity": "Identiteit verwijderen",
+  "remove_identity_confirm": "Je identiteit op {{server}} en de opgeslagen aanmelding uit deze app verwijderen?"
 }

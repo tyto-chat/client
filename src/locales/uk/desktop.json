@@ -48,5 +48,13 @@
   "remove_server": "Видалити сервер",
   "remove_server_confirm": "Видалити {{server}} і збережений вхід із цього застосунку?",
   "remote_load_failed": "Не вдалося завантажити з {{server}}.",
-  "mark_all_dms_read_server": "Позначити всі особисті повідомлення на {{server}} як прочитані"
+  "mark_all_dms_read_server": "Позначити всі особисті повідомлення на {{server}} як прочитані",
+  "identity_manager_title": "Керування особами",
+  "identity_manager_menu": "Керування особами",
+  "identity_manager_empty": "Ще немає жодної особи.",
+  "identity_not_signed_in": "Не виконано вхід",
+  "identity_active": "Активна",
+  "identity_switch_to": "Перемкнутися на",
+  "remove_identity": "Видалити особу",
+  "remove_identity_confirm": "Видалити твою особу на {{server}} і збережений вхід із цього застосунку?"
 }

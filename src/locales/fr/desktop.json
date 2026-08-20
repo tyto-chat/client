@@ -48,5 +48,13 @@
   "remove_server": "Supprimer le serveur",
   "remove_server_confirm": "Supprimer {{server}} et sa connexion enregistrée de cette application ?",
   "remote_load_failed": "Impossible de charger depuis {{server}}.",
-  "mark_all_dms_read_server": "Marquer tous les messages privés sur {{server}} comme lus"
+  "mark_all_dms_read_server": "Marquer tous les messages privés sur {{server}} comme lus",
+  "identity_manager_title": "Gérer les identités",
+  "identity_manager_menu": "Gérer les identités",
+  "identity_manager_empty": "Aucune identité pour le moment.",
+  "identity_not_signed_in": "Non connecté",
+  "identity_active": "Active",
+  "identity_switch_to": "Basculer vers",
+  "remove_identity": "Supprimer l'identité",
+  "remove_identity_confirm": "Supprimer ton identité sur {{server}} et sa connexion enregistrée de cette application ?"
 }

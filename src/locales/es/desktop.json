@@ -48,5 +48,13 @@
   "remove_server": "Quitar servidor",
   "remove_server_confirm": "¿Quitar {{server}} y su inicio de sesión guardado de esta aplicación?",
   "remote_load_failed": "No se pudo cargar desde {{server}}.",
-  "mark_all_dms_read_server": "Marcar todos los mensajes directos en {{server}} como leídos"
+  "mark_all_dms_read_server": "Marcar todos los mensajes directos en {{server}} como leídos",
+  "identity_manager_title": "Gestionar identidades",
+  "identity_manager_menu": "Gestionar identidades",
+  "identity_manager_empty": "Todavía no hay identidades.",
+  "identity_not_signed_in": "Sin iniciar sesión",
+  "identity_active": "Activa",
+  "identity_switch_to": "Cambiar a",
+  "remove_identity": "Quitar identidad",
+  "remove_identity_confirm": "¿Quitar tu identidad en {{server}} y su inicio de sesión guardado de esta aplicación?"
 }

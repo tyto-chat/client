@@ -48,5 +48,13 @@
   "remove_server": "Sunucuyu kaldır",
   "remove_server_confirm": "{{server}} ve kayıtlı girişi bu uygulamadan kaldırılsın mı?",
   "remote_load_failed": "{{server}} sunucusundan yüklenemedi.",
-  "mark_all_dms_read_server": "{{server}} üzerindeki tüm DM'leri okundu işaretle"
+  "mark_all_dms_read_server": "{{server}} üzerindeki tüm DM'leri okundu işaretle",
+  "identity_manager_title": "Kimlikleri yönet",
+  "identity_manager_menu": "Kimlikleri yönet",
+  "identity_manager_empty": "Henüz kimlik yok.",
+  "identity_not_signed_in": "Giriş yapılmadı",
+  "identity_active": "Etkin",
+  "identity_switch_to": "Şuna geç",
+  "remove_identity": "Kimliği kaldır",
+  "remove_identity_confirm": "{{server}} üzerindeki kimliğin ve kayıtlı girişin bu uygulamadan kaldırılsın mı?"
 }

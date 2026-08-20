@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { loginAt, verifyTwoFactorAt, LoginRequestError } from "@/api/auth";
 import { isRateLimited, ApiError, configureApiClient } from "@/api/client";
-import { getUserColor } from "@/utils/userColor";
 import type { ServerInfo } from "@/types/api";
 import {
   ErrorBanner,
@@ -19,6 +18,7 @@ import { LegalFooterLinks } from "@/components/LegalLinks";
 import { normalizeServerUrl, InvalidServerUrlError } from "./desktopConfig";
 import { resolveServer } from "./connectIdentity";
 import { ServerTile } from "./ServerTile";
+import { IdentityAvatar } from "./IdentityAvatar";
 
 type Step = "server" | "credentials" | "totp" | "register";
 
@@ -127,22 +127,14 @@ function IdentityBlock({
   const hasName = primary !== email;
   return (
     <div className="flex items-center gap-3">
-      {avatarDataUrl ? (
-        <img
-          src={avatarDataUrl}
-          alt=""
-          data-testid="wizard-identity-avatar"
-          className="h-11 w-11 shrink-0 rounded-full object-cover"
-        />
-      ) : (
-        <span
-          data-testid="wizard-identity-initial"
-          style={{ backgroundColor: getUserColor(avatarColorKey ?? email) }}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-[17px] font-bold text-white"
-        >
-          {primary.trim().charAt(0).toUpperCase() || "?"}
-        </span>
-      )}
+      <IdentityAvatar
+        displayName={displayName}
+        email={email}
+        avatarDataUrl={avatarDataUrl}
+        avatarColorKey={avatarColorKey}
+        imageTestId="wizard-identity-avatar"
+        initialTestId="wizard-identity-initial"
+      />
       <span className="min-w-0 flex-1">
         {hasName ? (
           <>

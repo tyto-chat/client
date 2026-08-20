@@ -1164,7 +1164,7 @@ describe("DesktopRail", () => {
     setPlatformBridgeForTests(null);
   });
 
-  it("marks a guest well with a badge and a sign-in button, and never locks it", () => {
+  it("marks a guest well with a badge and never locks it", () => {
     const guest = makeConnection({
       identityId: "ig",
       kind: "guest",
@@ -1194,12 +1194,11 @@ describe("DesktopRail", () => {
     renderWithContext(<DesktopRailGroups />, { registry: makeRegistryStub(snapshot) });
 
     expect(screen.getByTestId("desktop-guest-badge")).toHaveTextContent("Guest");
-    expect(screen.getByTestId("desktop-guest-sign-in")).toBeInTheDocument();
     expect(screen.queryByTestId("desktop-server-lock")).not.toBeInTheDocument();
     expect(screen.getByTestId("desktop-rail-community")).not.toHaveClass("opacity-50");
   });
 
-  it("renders no guest chrome on an identity well", () => {
+  it("keeps the caption free of action chrome — lifecycle lives in the identity manager", () => {
     const snapshot: RegistrySnapshot = {
       connections: [makeConnection({ identityId: "ia" })],
       activeIdentityId: "ia",
@@ -1209,193 +1208,7 @@ describe("DesktopRail", () => {
 
     expect(screen.queryByTestId("desktop-guest-badge")).not.toBeInTheDocument();
     expect(screen.queryByTestId("desktop-guest-sign-in")).not.toBeInTheDocument();
-  });
-
-  it("opens the sign-in modal for the guest well the button belongs to", async () => {
-    const ORIGIN = "https://guest-well.example";
-    const bridge = createFakePlatformBridge();
-    setPlatformBridgeForTests(bridge);
-
-    let cfg = createDefaultConfig();
-    const pid = cfg.profiles[0]!.id;
-    cfg = addIdentity(cfg, pid, {
-      id: "ig",
-      serverUrl: ORIGIN,
-      email: "old@b.c",
-      userId: null,
-      displayName: null,
-      kind: "guest",
-    });
-    cfg = setLastActiveIdentity(cfg, pid, "ig");
-    await saveDesktopConfig(bridge, cfg);
-
-    const snapshot: RegistrySnapshot = {
-      connections: [
-        makeConnection({ identityId: "ia" }),
-        makeConnection({ identityId: "ig", kind: "guest", origin: ORIGIN }),
-      ],
-      activeIdentityId: "ia",
-    };
-    const user = userEvent.setup();
-
-    renderWithContext(<DesktopRailGroups />, { registry: makeRegistryStub(snapshot) });
-    await user.click(screen.getByTestId("desktop-guest-sign-in"));
-
-    expect(await screen.findByTestId("wizard-password-input")).toBeInTheDocument();
-
-    setPlatformBridgeForTests(null);
-  });
-
-  it("offers sign-out and remove on an identity well, sign-in and remove on a guest well", async () => {
-    const snapshot: RegistrySnapshot = {
-      connections: [
-        makeConnection({ identityId: "ia" }),
-        makeConnection({ identityId: "ig", kind: "guest", serverName: "Beta" }),
-      ],
-      activeIdentityId: "ia",
-    };
-    const user = userEvent.setup();
-
-    renderWithContext(<DesktopRailGroups />, { registry: makeRegistryStub(snapshot) });
-
-    const [identityMenu, guestMenu] = screen.getAllByTestId("desktop-well-menu");
-    await user.click(identityMenu!);
-    expect(screen.getByTestId("desktop-well-sign-out")).toBeInTheDocument();
-    expect(screen.getByTestId("desktop-well-remove")).toBeInTheDocument();
-    expect(screen.queryByTestId("desktop-well-sign-in")).not.toBeInTheDocument();
-
-    await user.keyboard("{Escape}");
-    await user.click(guestMenu!);
-    expect(screen.getByTestId("desktop-well-sign-in")).toBeInTheDocument();
-    expect(screen.queryByTestId("desktop-well-sign-out")).not.toBeInTheDocument();
-  });
-
-  it("signs a background well out in place, without reloading", async () => {
-    const ORIGIN = "https://bg-signout.example";
-    server.use(
-      http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
-      http.post(`${ORIGIN}/api/logout`, () => new HttpResponse(null, { status: 204 })),
-    );
-    const bridge = createFakePlatformBridge();
-    setPlatformBridgeForTests(bridge);
-
-    let cfg = createDefaultConfig();
-    const pid = cfg.profiles[0]!.id;
-    cfg = addIdentity(cfg, pid, {
-      id: "ia",
-      serverUrl: "https://active.example",
-      email: "active@b.c",
-      userId: null,
-      displayName: null,
-    });
-    cfg = addIdentity(cfg, pid, {
-      id: "ib",
-      serverUrl: ORIGIN,
-      email: "bg@b.c",
-      userId: null,
-      displayName: null,
-    });
-    cfg = setLastActiveIdentity(cfg, pid, "ia");
-    await saveDesktopConfig(bridge, cfg);
-    await bridge.secrets.set(secretKey(pid, "ib", "refreshToken"), "refresh-bg");
-    await bridge.secrets.set(secretKey(pid, "ib", "password"), "pw-bg");
-
-    const downgrade = vi.fn();
-    const snapshot: RegistrySnapshot = {
-      connections: [
-        makeConnection({ identityId: "ia" }),
-        makeConnection({ identityId: "ib", serverName: "Beta", origin: ORIGIN }),
-      ],
-      activeIdentityId: "ia",
-    };
-    const registry = makeRegistryStub(snapshot, { downgradeToGuestSession: downgrade });
-    const user = userEvent.setup();
-
-    renderWithContext(<DesktopRailGroups />, { registry });
-
-    await user.click(screen.getAllByTestId("desktop-well-menu")[1]!);
-    await user.click(screen.getByTestId("desktop-well-sign-out"));
-
-    await waitFor(() =>
-      expect(downgrade).toHaveBeenCalledWith(expect.objectContaining({ id: "ib" })),
-    );
-    const saved = await loadDesktopConfig(bridge);
-    expect(saved.profiles[0]!.identities.find((i) => i.id === "ib")?.kind).toBe("guest");
-    expect(await bridge.secrets.get(secretKey(pid, "ib", "password"))).toBeNull();
-
-    setPlatformBridgeForTests(null);
-  });
-
-  it("removes a well after confirmation, pruning the saved server order", async () => {
-    const ORIGIN = "https://bg-remove.example";
-    server.use(http.post(`${ORIGIN}/api/logout`, () => new HttpResponse(null, { status: 204 })));
-    const bridge = createFakePlatformBridge();
-    setPlatformBridgeForTests(bridge);
-
-    let cfg = createDefaultConfig();
-    const pid = cfg.profiles[0]!.id;
-    cfg = addIdentity(cfg, pid, {
-      id: "ia",
-      serverUrl: "https://active.example",
-      email: "active@b.c",
-      userId: null,
-      displayName: null,
-    });
-    cfg = addIdentity(cfg, pid, {
-      id: "ib",
-      serverUrl: ORIGIN,
-      email: "bg@b.c",
-      userId: null,
-      displayName: null,
-    });
-    cfg = setLastActiveIdentity(cfg, pid, "ia");
-    await saveDesktopConfig(bridge, cfg);
-
-    const remove = vi.fn();
-    const snapshot: RegistrySnapshot = {
-      connections: [
-        makeConnection({ identityId: "ia" }),
-        makeConnection({ identityId: "ib", serverName: "Beta", origin: ORIGIN }),
-      ],
-      activeIdentityId: "ia",
-    };
-    const registry = makeRegistryStub(snapshot, { remove });
-    const user = userEvent.setup();
-    setServerOrderSnapshot(["ia", "ib"]);
-
-    renderWithContext(<DesktopRailGroups />, { registry });
-
-    await user.click(screen.getAllByTestId("desktop-well-menu")[1]!);
-    await user.click(screen.getByTestId("desktop-well-remove"));
-    await user.click(await screen.findByRole("button", { name: "Remove server" }));
-
-    await waitFor(() => expect(remove).toHaveBeenCalledWith("ib"));
-    const saved = await loadDesktopConfig(bridge);
-    expect(saved.profiles[0]!.identities.map((i) => i.id)).toEqual(["ia"]);
-
-    setPlatformBridgeForTests(null);
-  });
-
-  it("keeps the well when the remove confirmation is cancelled", async () => {
-    const snapshot: RegistrySnapshot = {
-      connections: [makeConnection({ identityId: "ia" })],
-      activeIdentityId: "ia",
-    };
-    const remove = vi.fn();
-    const bridge = createFakePlatformBridge();
-    setPlatformBridgeForTests(bridge);
-    const user = userEvent.setup();
-
-    renderWithContext(<DesktopRailGroups />, { registry: makeRegistryStub(snapshot, { remove }) });
-
-    await user.click(screen.getByTestId("desktop-well-menu"));
-    await user.click(screen.getByTestId("desktop-well-remove"));
-    const dialog = await screen.findByRole("dialog");
-    await user.click(within(dialog).getByRole("button", { name: /cancel/i }));
-
-    expect(remove).not.toHaveBeenCalled();
-
-    setPlatformBridgeForTests(null);
+    expect(screen.queryByTestId("desktop-well-menu")).not.toBeInTheDocument();
   });
 
   it("upgrades a background guest well in place when its sign-in completes", async () => {

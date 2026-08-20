@@ -48,5 +48,13 @@
   "remove_server": "Server entfernen",
   "remove_server_confirm": "{{server}} und die gespeicherte Anmeldung aus dieser App entfernen?",
   "remote_load_failed": "Laden von {{server}} fehlgeschlagen.",
-  "mark_all_dms_read_server": "Alle Direktnachrichten auf {{server}} als gelesen markieren"
+  "mark_all_dms_read_server": "Alle Direktnachrichten auf {{server}} als gelesen markieren",
+  "identity_manager_title": "Identitäten verwalten",
+  "identity_manager_menu": "Identitäten verwalten",
+  "identity_manager_empty": "Noch keine Identitäten.",
+  "identity_not_signed_in": "Nicht angemeldet",
+  "identity_active": "Aktiv",
+  "identity_switch_to": "Wechseln zu",
+  "remove_identity": "Identität entfernen",
+  "remove_identity_confirm": "Deine Identität auf {{server}} und die gespeicherte Anmeldung aus dieser App entfernen?"
 }

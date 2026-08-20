@@ -48,5 +48,13 @@
   "remove_server": "Usuń serwer",
   "remove_server_confirm": "Usunąć {{server}} i zapisane dane logowania z tej aplikacji?",
   "remote_load_failed": "Nie udało się pobrać danych z {{server}}.",
-  "mark_all_dms_read_server": "Oznacz wszystkie wiadomości na {{server}} jako przeczytane"
+  "mark_all_dms_read_server": "Oznacz wszystkie wiadomości na {{server}} jako przeczytane",
+  "identity_manager_title": "Zarządzaj tożsamościami",
+  "identity_manager_menu": "Zarządzaj tożsamościami",
+  "identity_manager_empty": "Brak tożsamości.",
+  "identity_not_signed_in": "Niezalogowany",
+  "identity_active": "Aktywna",
+  "identity_switch_to": "Przełącz na",
+  "remove_identity": "Usuń tożsamość",
+  "remove_identity_confirm": "Usunąć twoją tożsamość na {{server}} i zapisane dane logowania z tej aplikacji?"
 }

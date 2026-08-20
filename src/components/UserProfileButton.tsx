@@ -26,10 +26,13 @@ import { useAuthModal } from "@/context/AuthModalContext";
 import { useMarkEverythingRead } from "@/queries/readStateQueries";
 import { useSetupStatus } from "@/queries/adminSetupQueries";
 import { MenuItem } from "@/components/MenuItem";
+import { isManagedIdentityMode } from "@/platform/appMode";
+import { IdentityManagerModal } from "@/desktop/IdentityManagerModal";
 
 export function UserProfileButton() {
   const { t } = useTranslation(["settings", "auth", "common"]);
   const { t: tCommon } = useTranslation(["common", "auth"]);
+  const { t: tDesktop } = useTranslation("desktop");
   const { user, token, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const { notify } = useNotification();
@@ -41,7 +44,7 @@ export function UserProfileButton() {
   const { data: setup } = useSetupStatus(isAdmin);
   const needsAttention = setup?.needsAttention ?? false;
   const [modal, setModal] = useState<
-    "profile" | "preferences" | "admin" | "communities" | "groups" | null
+    "profile" | "preferences" | "admin" | "communities" | "groups" | "identities" | null
   >(null);
   const ref = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -80,12 +83,14 @@ export function UserProfileButton() {
           {theme === "dark" ? <SunIcon size={15} /> : <MoonIcon size={15} />}
         </button>
         <button
-          onClick={openLogin}
-          title={t("auth:sign_in")}
+          onClick={() => (isManagedIdentityMode() ? setModal("identities") : openLogin())}
+          title={isManagedIdentityMode() ? tDesktop("identity_manager_menu") : t("auth:sign_in")}
+          data-testid="guest-sign-in"
           className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-strong)] text-[var(--accent-on)] shadow-md transition hover:opacity-90"
         >
           <LogInIcon size={18} />
         </button>
+        {modal === "identities" && <IdentityManagerModal onClose={() => setModal(null)} />}
       </div>
     );
   }
@@ -185,6 +190,17 @@ export function UserProfileButton() {
           >
             {t("preferences_menu")}
           </MenuItem>
+          {isManagedIdentityMode() && (
+            <MenuItem
+              data-testid="manage-identities-menu-entry"
+              onClick={() => {
+                setModal("identities");
+                closeMenu();
+              }}
+            >
+              {tDesktop("identity_manager_menu")}
+            </MenuItem>
+          )}
           {isAdmin && (
             <button
               onClick={() => {
@@ -252,6 +268,7 @@ export function UserProfileButton() {
         />
       )}
       {modal === "preferences" && <PreferencesModal onClose={() => setModal(null)} />}
+      {modal === "identities" && <IdentityManagerModal onClose={() => setModal(null)} />}
       {modal === "communities" && <CommunityManagerModal onClose={() => setModal(null)} />}
       {modal === "groups" && <MyGroupsModal onClose={() => setModal(null)} />}
       {modal === "admin" && <AdminPanelModal onClose={() => setModal(null)} />}
