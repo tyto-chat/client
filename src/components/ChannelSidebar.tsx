@@ -579,7 +579,10 @@ function ChannelRow({
           className: sidebarRowActive,
         }}
       >
-        <span className="min-w-0 truncate"># {channel.name}</span>
+        <span aria-hidden className="flex w-[13px] shrink-0 justify-center opacity-60">
+          #
+        </span>
+        <span className="min-w-0 truncate">{channel.name}</span>
         {hasUnreadMention && !suppressBold && (
           <span
             className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]"

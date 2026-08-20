@@ -64,18 +64,28 @@ export class AppShell {
     await this.page.getByTestId(testIds.channelHeaderMenuBtn).click();
   }
 
+  /**
+   * The header menu is a portalled popover that closes on any outside mousedown
+   * and remounts with the header, so a re-render between opening it and picking
+   * an item leaves nothing to click.  Reopen and retry until one click lands.
+   */
+  private async clickChannelHeaderMenuItem(name: string | RegExp): Promise<void> {
+    const item = this.page.getByRole("menuitem", { name });
+    await expect(async () => {
+      if (!(await item.isVisible())) await this.openChannelHeaderMenu();
+      await item.click({ timeout: T(2_000) });
+    }).toPass({ timeout: T(15_000) });
+  }
+
   async openManageChannelAccess(): Promise<void> {
-    await this.openChannelHeaderMenu();
-    await this.page.getByRole("menuitem", { name: "Manage channel access" }).click();
+    await this.clickChannelHeaderMenuItem("Manage channel access");
   }
 
   async openChannelMembers(): Promise<void> {
-    await this.openChannelHeaderMenu();
-    await this.page.getByRole("menuitem", { name: "View members" }).click();
+    await this.clickChannelHeaderMenuItem("View members");
   }
 
   async openEditChannel(): Promise<void> {
-    await this.openChannelHeaderMenu();
-    await this.page.getByRole("menuitem", { name: /edit channel/i }).click();
+    await this.clickChannelHeaderMenuItem(/edit channel/i);
   }
 }

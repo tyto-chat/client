@@ -59,7 +59,14 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 1,
   // 4 oversubscribes and is both flakier and slower: 228/289 in 20.0m vs 289/289 in 11.9m.
   workers: 2,
-  reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
+  globalSetup: "./tests/e2e/globalSetup.ts",
+  reporter: [
+    ["list"],
+    ["html", { outputFolder: "playwright-report", open: "never" }],
+    // Machine-readable run record: CI greps it for the flaky list, so a spec
+    // that only passes on retry shows up as a frequency count, not an anecdote.
+    ["json", { outputFile: "playwright-results/results.json" }],
+  ],
 
   // CI runners are ~2x slower than local ddev; scaled budgets keep transient
   // slowness from masquerading as failures.

@@ -355,7 +355,17 @@ function MessageComposer({
           }}
         />
       )}
-      <div className="flex-1 rounded-xl bg-surface ring-1 ring-inset ring-line transition focus-within:ring-line-strong">
+      <div
+        onMouseDown={(e) => {
+          const target = e.target as HTMLElement;
+          if (target.closest("button, a, input, .ProseMirror")) return;
+          e.preventDefault();
+          editor?.commands.focus("end");
+        }}
+        className={`flex-1 rounded-xl bg-surface ring-1 ring-inset ring-line transition focus-within:ring-line-strong ${
+          expanded ? "" : "cursor-text"
+        }`}
+      >
         {expanded && (
           <EditorFormatToolbar
             editor={editor}
@@ -385,7 +395,7 @@ function MessageComposer({
                 isPending ||
                 pendingAttachments.some((a) => a.uploading)
               }
-              className="mb-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-gradient text-on-accent shadow-glow transition hover:opacity-90 disabled:opacity-40 disabled:shadow-none"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-gradient text-on-accent shadow-glow transition hover:opacity-90 disabled:opacity-40 disabled:shadow-none"
             >
               <SendIcon size={16} />
             </button>
