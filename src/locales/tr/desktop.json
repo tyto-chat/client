@@ -56,5 +56,6 @@
   "identity_active": "Etkin",
   "identity_switch_to": "Şuna geç",
   "remove_identity": "Kimliği kaldır",
-  "remove_identity_confirm": "{{server}} üzerindeki kimliğin ve kayıtlı girişin bu uygulamadan kaldırılsın mı?"
+  "remove_identity_confirm": "{{server}} üzerindeki kimliğin ve kayıtlı girişin bu uygulamadan kaldırılsın mı?",
+  "identity_signed_out": "Çıkış yapıldı"
 }

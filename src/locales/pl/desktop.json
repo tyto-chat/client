@@ -56,5 +56,6 @@
   "identity_active": "Aktywna",
   "identity_switch_to": "Przełącz na",
   "remove_identity": "Usuń tożsamość",
-  "remove_identity_confirm": "Usunąć twoją tożsamość na {{server}} i zapisane dane logowania z tej aplikacji?"
+  "remove_identity_confirm": "Usunąć twoją tożsamość na {{server}} i zapisane dane logowania z tej aplikacji?",
+  "identity_signed_out": "Wylogowany"
 }

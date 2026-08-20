@@ -117,6 +117,7 @@ export function IdentityManagerModal({ onClose }: { onClose: () => void }) {
               const isActive = row.identity.id === snapshot.activeIdentityId;
               const guest = identityKind(row.identity) === "guest";
               const busy = busyId === row.identity.id;
+              const remembered = !guest || row.identity.email !== "";
               const serverName = row.connection.serverName ?? row.identity.serverUrl;
               const pinned = row.connection.communities.filter((c) => c.pinned);
               return (
@@ -129,30 +130,44 @@ export function IdentityManagerModal({ onClose }: { onClose: () => void }) {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    {guest ? (
+                    {guest && !remembered ? (
                       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-raised text-[17px] font-bold text-fg-subtle">
                         ?
                       </span>
                     ) : (
-                      <IdentityAvatar
-                        displayName={row.identity.displayName}
-                        email={row.identity.email}
-                        avatarDataUrl={row.identity.avatarDataUrl}
-                        avatarColorKey={row.identity.avatarColorKey}
-                        imageTestId="identity-card-avatar"
-                        initialTestId="identity-card-initial"
-                      />
+                      <span className={guest ? "grayscale-[0.7] opacity-60" : undefined}>
+                        <IdentityAvatar
+                          displayName={row.identity.displayName}
+                          email={row.identity.email}
+                          avatarDataUrl={row.identity.avatarDataUrl}
+                          avatarColorKey={row.identity.avatarColorKey}
+                          imageTestId="identity-card-avatar"
+                          initialTestId="identity-card-initial"
+                        />
+                      </span>
                     )}
                     <div className="min-w-0 flex-1">
-                      <b
-                        data-testid="identity-card-name"
-                        className="block truncate text-[14.5px] font-semibold text-fg"
-                      >
-                        {guest
-                          ? t("identity_not_signed_in")
-                          : row.identity.displayName?.trim() || row.identity.email}
-                      </b>
-                      {!guest && row.identity.displayName?.trim() && (
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <b
+                          data-testid="identity-card-name"
+                          className={`min-w-0 truncate text-[14.5px] font-semibold ${
+                            guest && !remembered ? "text-fg-muted" : "text-fg"
+                          }`}
+                        >
+                          {remembered
+                            ? row.identity.displayName?.trim() || row.identity.email
+                            : t("identity_not_signed_in")}
+                        </b>
+                        {guest && remembered && (
+                          <span
+                            data-testid="identity-card-signed-out"
+                            className="shrink-0 rounded-full bg-raised px-2 py-0.5 text-[11px] font-semibold text-fg-subtle"
+                          >
+                            {t("identity_signed_out")}
+                          </span>
+                        )}
+                      </div>
+                      {remembered && row.identity.displayName?.trim() && (
                         <span className="block truncate text-xs text-fg-muted">
                           {row.identity.email}
                         </span>

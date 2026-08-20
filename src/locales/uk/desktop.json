@@ -56,5 +56,6 @@
   "identity_active": "Активна",
   "identity_switch_to": "Перемкнутися на",
   "remove_identity": "Видалити особу",
-  "remove_identity_confirm": "Видалити твою особу на {{server}} і збережений вхід із цього застосунку?"
+  "remove_identity_confirm": "Видалити твою особу на {{server}} і збережений вхід із цього застосунку?",
+  "identity_signed_out": "Вихід виконано"
 }

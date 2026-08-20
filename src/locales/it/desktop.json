@@ -56,5 +56,6 @@
   "identity_active": "Attiva",
   "identity_switch_to": "Passa a",
   "remove_identity": "Rimuovi identità",
-  "remove_identity_confirm": "Rimuovere la tua identità su {{server}} e l'accesso salvato da questa app?"
+  "remove_identity_confirm": "Rimuovere la tua identità su {{server}} e l'accesso salvato da questa app?",
+  "identity_signed_out": "Disconnesso"
 }

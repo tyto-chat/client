@@ -56,5 +56,6 @@
   "identity_active": "Activa",
   "identity_switch_to": "Cambiar a",
   "remove_identity": "Quitar identidad",
-  "remove_identity_confirm": "¿Quitar tu identidad en {{server}} y su inicio de sesión guardado de esta aplicación?"
+  "remove_identity_confirm": "¿Quitar tu identidad en {{server}} y su inicio de sesión guardado de esta aplicación?",
+  "identity_signed_out": "Sesión cerrada"
 }

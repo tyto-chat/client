@@ -154,7 +154,21 @@ describe("IdentityManagerModal", () => {
     expect(within(tiles).getByTitle("Design")).toBeInTheDocument();
   });
 
-  it("labels a guest entry as not signed in and offers sign-in instead of sign-out", async () => {
+  it("keeps the cached identity visible on a signed-out entry, labelled as signed out", async () => {
+    await seed([{ ...alpha, kind: "guest" }]);
+    const registry = makeRegistry([connectionSnapshot({ kind: "guest" })], "ia");
+
+    render(<IdentityManagerModal onClose={vi.fn()} />, { wrapper: wrapper(registry) });
+
+    const card = await screen.findByTestId("identity-card");
+    expect(within(card).getByTestId("identity-card-name")).toHaveTextContent("Ada Lovelace");
+    expect(within(card).getByText("ada@example.com")).toBeInTheDocument();
+    expect(within(card).getByTestId("identity-card-signed-out")).toHaveTextContent("Signed out");
+    expect(within(card).getByTestId("identity-sign-in")).toBeInTheDocument();
+    expect(within(card).queryByText("Not signed in")).not.toBeInTheDocument();
+  });
+
+  it("labels a never-signed-in guest entry as not signed in and offers sign-in instead of sign-out", async () => {
     await seed([betaGuest]);
     const registry = makeRegistry(
       [
@@ -172,6 +186,7 @@ describe("IdentityManagerModal", () => {
 
     const card = await screen.findByTestId("identity-card");
     expect(within(card).getByTestId("identity-card-name")).toHaveTextContent("Not signed in");
+    expect(within(card).queryByTestId("identity-card-signed-out")).not.toBeInTheDocument();
     expect(within(card).getByTestId("identity-sign-in")).toBeInTheDocument();
     expect(within(card).queryByTestId("identity-sign-out")).not.toBeInTheDocument();
   });

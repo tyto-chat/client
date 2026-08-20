@@ -56,5 +56,6 @@
   "identity_active": "Actief",
   "identity_switch_to": "Wisselen naar",
   "remove_identity": "Identiteit verwijderen",
-  "remove_identity_confirm": "Je identiteit op {{server}} en de opgeslagen aanmelding uit deze app verwijderen?"
+  "remove_identity_confirm": "Je identiteit op {{server}} en de opgeslagen aanmelding uit deze app verwijderen?",
+  "identity_signed_out": "Uitgelogd"
 }
