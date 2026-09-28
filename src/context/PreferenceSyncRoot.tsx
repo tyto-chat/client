@@ -3,6 +3,8 @@ import i18n, { SUPPORTED_LANGUAGES } from "@/i18n";
 import { useUpdateUserPreference, useUserPreferences } from "@/queries/userPreferencesQueries";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { DEVICE_SCOPED_PREF_KEYS, isDeviceScopedPref } from "@/platform/deviceScopedPreferences";
+import { isDeviceSettingsSeeded, seedDeviceSettings } from "@/platform/deviceSettingsSeed";
+import { isManagedIdentityMode } from "@/platform/appMode";
 import type {
   UserLocale,
   UserPreferencesPatch,
@@ -17,6 +19,8 @@ export function PreferenceSyncRoot() {
 
   useEffect(() => {
     if (!isSuccess || !data) return;
+
+    if (isManagedIdentityMode() && !isDeviceSettingsSeeded()) seedDeviceSettings(data);
 
     if (data.sendTypingIndicator !== null) {
       localStorage.setItem(

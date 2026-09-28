@@ -1,8 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { usePreferenceSync } from "@/hooks/usePreferenceSync";
+import { DEVICE_SETTINGS_SEEDED_EVENT } from "@/platform/deviceSettingsSeed";
 
 interface TimezoneState {
   timezone: string;
@@ -21,6 +22,13 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
   );
 
   const { writeToServer } = usePreferenceSync("timezone", setTimezoneState);
+
+  useEffect(() => {
+    const reload = () =>
+      setTimezoneState(localStorage.getItem(STORAGE_KEYS.TIMEZONE) ?? getBrowserTimezone());
+    window.addEventListener(DEVICE_SETTINGS_SEEDED_EVENT, reload);
+    return () => window.removeEventListener(DEVICE_SETTINGS_SEEDED_EVENT, reload);
+  }, []);
 
   const setTimezone = useCallback(
     (tz: string) => {

@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { usePreferenceSync } from "@/hooks/usePreferenceSync";
+import { DEVICE_SETTINGS_SEEDED_EVENT } from "@/platform/deviceSettingsSeed";
 
 type Theme = "light" | "dark";
 export type ThemePreference = "system" | "light" | "dark";
@@ -44,6 +45,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.THEME, preference);
   }, [preference]);
+
+  useEffect(() => {
+    const reload = () => setPreferenceState(loadPreference());
+    window.addEventListener(DEVICE_SETTINGS_SEEDED_EVENT, reload);
+    return () => window.removeEventListener(DEVICE_SETTINGS_SEEDED_EVENT, reload);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");

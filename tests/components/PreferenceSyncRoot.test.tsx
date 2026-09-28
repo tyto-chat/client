@@ -105,7 +105,7 @@ describe("PreferenceSyncRoot in web mode", () => {
 describe("PreferenceSyncRoot in managed mode", () => {
   beforeEach(() => {
     vi.stubEnv("VITE_APP_MODE", "desktop");
-    localStorage.setItem("devicePrefsSeeded", "true");
+    localStorage.setItem(STORAGE_KEYS.DEVICE_PREFS_SEEDED, "true");
   });
 
   it("ignores server desktopNotifications and locale but mirrors account keys", async () => {
@@ -130,5 +130,112 @@ describe("PreferenceSyncRoot in managed mode", () => {
 
     await waitFor(() => expect(patchBodies).toHaveLength(1));
     expect(patchBodies[0]).toEqual({ convertEmoticons: true });
+  });
+});
+
+describe("device settings seed", () => {
+  const SERVER_DEVICE_PREFS = {
+    ...EMPTY_PREFS,
+    theme: "light",
+    submitKey: "ctrl+enter",
+    timezone: "Europe/Warsaw",
+    locale: "pl",
+    desktopNotifications: true,
+  };
+
+  function stubNavigatorLanguages(languages: string[]) {
+    vi.spyOn(window.navigator, "languages", "get").mockReturnValue(languages);
+  }
+
+  beforeEach(() => {
+    stubNavigatorLanguages(["en-US"]);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("copies the first identity's device settings once in managed mode", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    localStorage.setItem(STORAGE_KEYS.THEME, "dark");
+    localStorage.setItem("tyto_language", "en");
+    serverPrefs = { ...SERVER_DEVICE_PREFS };
+    const seeded = vi.fn();
+    window.addEventListener("tyto:device-settings-seeded", seeded);
+
+    renderRoot();
+
+    await waitFor(() =>
+      expect(localStorage.getItem(STORAGE_KEYS.DEVICE_PREFS_SEEDED)).toBe("true"),
+    );
+    expect(localStorage.getItem(STORAGE_KEYS.THEME)).toBe("light");
+    expect(localStorage.getItem(STORAGE_KEYS.SUBMIT_KEY)).toBe("ctrl+enter");
+    expect(localStorage.getItem(STORAGE_KEYS.TIMEZONE)).toBe("Europe/Warsaw");
+    expect(localStorage.getItem(STORAGE_KEYS.DESKTOP_NOTIFICATIONS)).toBe("true");
+    expect(changeLanguage).toHaveBeenCalledWith("pl");
+    expect(seeded).toHaveBeenCalledTimes(1);
+    window.removeEventListener("tyto:device-settings-seeded", seeded);
+  });
+
+  it("never overwrites a value the user already chose on this device", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    localStorage.setItem(STORAGE_KEYS.THEME, "system");
+    localStorage.setItem(STORAGE_KEYS.SUBMIT_KEY, "none");
+    localStorage.setItem(STORAGE_KEYS.TIMEZONE, "Asia/Tokyo");
+    localStorage.setItem(STORAGE_KEYS.DESKTOP_NOTIFICATIONS, "false");
+    localStorage.setItem("tyto_language", "de");
+    serverPrefs = { ...SERVER_DEVICE_PREFS };
+
+    renderRoot();
+
+    await waitFor(() =>
+      expect(localStorage.getItem(STORAGE_KEYS.DEVICE_PREFS_SEEDED)).toBe("true"),
+    );
+    expect(localStorage.getItem(STORAGE_KEYS.THEME)).toBe("system");
+    expect(localStorage.getItem(STORAGE_KEYS.SUBMIT_KEY)).toBe("none");
+    expect(localStorage.getItem(STORAGE_KEYS.TIMEZONE)).toBe("Asia/Tokyo");
+    expect(localStorage.getItem(STORAGE_KEYS.DESKTOP_NOTIFICATIONS)).toBe("false");
+    expect(changeLanguage).not.toHaveBeenCalled();
+  });
+
+  it("does not seed again once the flag is set", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    localStorage.setItem(STORAGE_KEYS.DEVICE_PREFS_SEEDED, "true");
+    localStorage.setItem(STORAGE_KEYS.SEND_TYPING_INDICATOR, "true");
+    serverPrefs = { ...SERVER_DEVICE_PREFS, sendTypingIndicator: false };
+
+    renderRoot();
+
+    await waitFor(() =>
+      expect(localStorage.getItem(STORAGE_KEYS.SEND_TYPING_INDICATOR)).toBe("false"),
+    );
+    expect(localStorage.getItem(STORAGE_KEYS.THEME)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.TIMEZONE)).toBeNull();
+  });
+
+  it("leaves the flag unset when no identity is signed in", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    setAccessToken(null);
+    serverPrefs = { ...SERVER_DEVICE_PREFS };
+
+    renderRoot();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(localStorage.getItem(STORAGE_KEYS.DEVICE_PREFS_SEEDED)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.TIMEZONE)).toBeNull();
+  });
+
+  it("never seeds in web mode", async () => {
+    vi.stubEnv("VITE_APP_MODE", "web");
+    localStorage.setItem(STORAGE_KEYS.PREFS_MIGRATED, "true");
+    serverPrefs = { ...SERVER_DEVICE_PREFS, sendTypingIndicator: false };
+
+    renderRoot();
+
+    await waitFor(() =>
+      expect(localStorage.getItem(STORAGE_KEYS.SEND_TYPING_INDICATOR)).toBe("false"),
+    );
+    expect(localStorage.getItem(STORAGE_KEYS.DEVICE_PREFS_SEEDED)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.TIMEZONE)).toBeNull();
   });
 });
