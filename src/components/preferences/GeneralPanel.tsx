@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import i18n, { SUPPORTED_LANGUAGES } from "@/i18n";
 import { useUpdateUserPreference } from "@/queries/userPreferencesQueries";
 import type { UserLocale } from "@/api/userPreferences";
+import { isDeviceScopedPref } from "@/platform/deviceScopedPreferences";
 import { SettingRow } from "@/components/preferences/SettingRow";
 import {
   segBase,
@@ -73,7 +74,9 @@ export function GeneralPanel() {
                     title={label}
                     onClick={() => {
                       void i18n.changeLanguage(code);
-                      if (user) updatePreference.mutate({ locale: code as UserLocale });
+                      if (user && !isDeviceScopedPref("locale")) {
+                        updatePreference.mutate({ locale: code as UserLocale });
+                      }
                     }}
                     className={`inline-flex items-center justify-center ${segBase} ${i18n.resolvedLanguage === code ? segActive : segInactive}`}
                   >

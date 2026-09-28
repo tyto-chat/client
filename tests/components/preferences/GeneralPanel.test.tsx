@@ -1,5 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import i18n from "@/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import type { ReactNode } from "react";
@@ -31,7 +33,22 @@ function makeWrapper() {
   };
 }
 
+let patchBodies: unknown[];
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
+});
+
 beforeEach(() => {
+  patchBodies = [];
+  server.use(
+    http.patch(`${BASE}/api/v1/me/preferences`, async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>;
+      patchBodies.push(body);
+      return HttpResponse.json({ updatedAt: "2026-07-20T00:00:00Z", ...body });
+    }),
+  );
   configureApiClient(BASE);
   setAccessToken("test-token");
   server.use(
@@ -58,5 +75,28 @@ describe("GeneralPanel", () => {
     render(<GeneralPanel />, { wrapper: makeWrapper() });
     expect(screen.getByText("Theme")).toBeInTheDocument();
     expect(screen.getByTestId("lang-pl")).toBeInTheDocument();
+  });
+
+  it("changes language and saves the locale to the server in web mode", async () => {
+    vi.stubEnv("VITE_APP_MODE", "web");
+    const changeLanguage = vi.spyOn(i18n, "changeLanguage").mockResolvedValue(i18n.t);
+    render(<GeneralPanel />, { wrapper: makeWrapper() });
+
+    await userEvent.setup().click(screen.getByTestId("lang-pl"));
+
+    expect(changeLanguage).toHaveBeenCalledWith("pl");
+    await waitFor(() => expect(patchBodies).toEqual([{ locale: "pl" }]));
+  });
+
+  it("changes language locally without a server write in managed mode", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    const changeLanguage = vi.spyOn(i18n, "changeLanguage").mockResolvedValue(i18n.t);
+    render(<GeneralPanel />, { wrapper: makeWrapper() });
+
+    await userEvent.setup().click(screen.getByTestId("lang-pl"));
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(changeLanguage).toHaveBeenCalledWith("pl");
+    expect(patchBodies).toEqual([]);
   });
 });

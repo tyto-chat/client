@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import i18n, { SUPPORTED_LANGUAGES } from "@/i18n";
 import { useUpdateUserPreference, useUserPreferences } from "@/queries/userPreferencesQueries";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
+import { DEVICE_SCOPED_PREF_KEYS, isDeviceScopedPref } from "@/platform/deviceScopedPreferences";
 import type {
   UserLocale,
   UserPreferencesPatch,
@@ -24,7 +25,7 @@ export function PreferenceSyncRoot() {
       );
     }
 
-    if (data.desktopNotifications !== null) {
+    if (data.desktopNotifications !== null && !isDeviceScopedPref("desktopNotifications")) {
       localStorage.setItem(
         STORAGE_KEYS.DESKTOP_NOTIFICATIONS,
         data.desktopNotifications ? "true" : "false",
@@ -38,7 +39,7 @@ export function PreferenceSyncRoot() {
       );
     }
 
-    if (data.locale && i18n.resolvedLanguage !== data.locale) {
+    if (data.locale && i18n.resolvedLanguage !== data.locale && !isDeviceScopedPref("locale")) {
       void i18n.changeLanguage(data.locale);
     }
 
@@ -104,6 +105,10 @@ function buildMigrationPatch(server: {
   const emoticons = localStorage.getItem(STORAGE_KEYS.CONVERT_EMOTICONS);
   if (server.convertEmoticons === null && emoticons !== null) {
     patch.convertEmoticons = emoticons === "true";
+  }
+
+  for (const key of DEVICE_SCOPED_PREF_KEYS) {
+    if (isDeviceScopedPref(key)) delete patch[key];
   }
 
   return patch;
