@@ -34,13 +34,18 @@ function makeWrapper() {
 }
 
 let patchBodies: unknown[];
+let preferenceFetches: number;
 
 beforeEach(() => {
   patchBodies = [];
+  preferenceFetches = 0;
   configureApiClient(BASE);
   setAccessToken("test-token");
   server.use(
-    http.get(`${BASE}/api/v1/me/preferences`, () => HttpResponse.json(SERVER_PREFS)),
+    http.get(`${BASE}/api/v1/me/preferences`, () => {
+      preferenceFetches += 1;
+      return HttpResponse.json(SERVER_PREFS);
+    }),
     http.patch(`${BASE}/api/v1/me/preferences`, async ({ request }) => {
       const body = (await request.json()) as Record<string, unknown>;
       patchBodies.push(body);
@@ -82,6 +87,15 @@ describe("usePreferenceSync", () => {
 
     expect(apply).not.toHaveBeenCalled();
     expect(patchBodies).toEqual([]);
+  });
+
+  it("does not fetch preferences for a device-scoped key in managed mode", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    renderHook(() => usePreferenceSync("theme", vi.fn()), { wrapper: makeWrapper() });
+
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(preferenceFetches).toBe(0);
   });
 
   it("keeps syncing account-scoped keys in managed mode", async () => {

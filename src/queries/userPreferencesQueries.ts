@@ -9,13 +9,13 @@ import {
 import { queryKeys } from "@/queries/queryKeys";
 import { useHasAccessToken } from "@/api/tokenStore";
 
-export function useUserPreferences() {
+export function useUserPreferences({ enabled = true }: { enabled?: boolean } = {}) {
   const hasToken = useHasAccessToken();
 
   return useQuery<UserPreferences>({
     queryKey: queryKeys.userPreferences(),
     queryFn: fetchUserPreferences,
-    enabled: hasToken,
+    enabled: hasToken && enabled,
     staleTime: StaleTime.medium,
   });
 }

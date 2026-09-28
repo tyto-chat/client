@@ -7,9 +7,9 @@ export function usePreferenceSync<K extends keyof Omit<UserPreferences, "updated
   key: K,
   apply: (value: NonNullable<UserPreferences[K]>) => void,
 ) {
-  const { data, isSuccess } = useUserPreferences();
-  const lastAppliedRef = useRef<UserPreferences[K] | null | undefined>(undefined);
   const detached = isDeviceScopedPref(key);
+  const { data, isSuccess } = useUserPreferences({ enabled: !detached });
+  const lastAppliedRef = useRef<UserPreferences[K] | null | undefined>(undefined);
 
   useEffect(() => {
     if (detached) return;

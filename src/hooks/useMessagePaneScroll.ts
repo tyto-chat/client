@@ -213,7 +213,6 @@ export function useMessagePaneScroll({
       }
     }, 50);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settled]);
 
   const scrollToBottom = useCallback(() => {

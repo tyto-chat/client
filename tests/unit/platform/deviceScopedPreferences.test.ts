@@ -1,7 +1,8 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
+import type { UserPreferencesPatch } from "@/api/userPreferences";
 import { DEVICE_SCOPED_PREF_KEYS, isDeviceScopedPref } from "@/platform/deviceScopedPreferences";
 
-const ACCOUNT_KEYS = [
+const ACCOUNT_KEYS: (keyof UserPreferencesPatch)[] = [
   "sendTypingIndicator",
   "convertEmoticons",
   "resumeLastLocation",
