@@ -6,6 +6,8 @@ import { getApiErrorMessage } from "@/api/client";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 export const Route = createFileRoute("/reset-password")({
+  validateSearch: (search: Record<string, unknown>): { step?: "confirm" } =>
+    search.step === "confirm" ? { step: "confirm" } : {},
   component: ResetPasswordPage,
 });
 
@@ -22,7 +24,8 @@ function ResetPasswordPage() {
   const [email, setEmail] = useState("");
   const [requesting, setRequesting] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
-  const [requested, setRequested] = useState(false);
+  const arrivedWithCode = Route.useSearch().step === "confirm";
+  const [requested, setRequested] = useState(arrivedWithCode);
 
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +36,8 @@ function ResetPasswordPage() {
 
   const tooShort = password.length > 0 && password.length < 8;
   const mismatch = confirmPassword.length > 0 && password !== confirmPassword;
-  const isValid = token.length > 0 && password.length >= 8 && password === confirmPassword;
+  const isValid =
+    email.length > 0 && token.length > 0 && password.length >= 8 && password === confirmPassword;
 
   async function handleRequestSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,9 +102,27 @@ function ResetPasswordPage() {
           </form>
         ) : (
           <form onSubmit={handleConfirmSubmit} className="space-y-4">
-            <p className="text-sm text-fg-subtle">{t("reset_code_sent", { email })}</p>
+            {!arrivedWithCode && (
+              <p className="text-sm text-fg-subtle">{t("reset_code_sent", { email })}</p>
+            )}
             {confirmError && (
               <p className="rounded bg-red-500/20 px-3 py-2 text-sm text-red-400">{confirmError}</p>
+            )}
+            {arrivedWithCode && (
+              <div className="space-y-1">
+                <label htmlFor="email" className="text-sm text-fg-subtle">
+                  {t("common:email")}
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  autoFocus
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
             )}
             <div className="space-y-1">
               <label htmlFor="token" className="text-sm text-fg-subtle">
@@ -110,7 +132,7 @@ function ResetPasswordPage() {
                 id="token"
                 type="text"
                 required
-                autoFocus
+                autoFocus={!arrivedWithCode}
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 className={inputClass}
