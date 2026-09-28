@@ -162,7 +162,7 @@ describe("AddIdentityWizard", () => {
   it("surfaces server_unreachable, not invalid_credentials, when locked resolution fails after an early credentials submit", async () => {
     server.use(
       http.get(`${ORIGIN}/api/versions`, async () => {
-        await delay(50);
+        await delay(500);
         return HttpResponse.error();
       }),
     );
