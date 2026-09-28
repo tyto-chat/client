@@ -57,5 +57,6 @@
   "appeal_upheld": "Tu apelación fue revisada y la acción se mantiene: {{reason}}",
   "appeal_overturned": "Tu apelación fue aceptada y la acción fue levantada: {{reason}}",
   "appeal_action": "Apelar",
-  "unread": "No leído"
+  "unread": "No leído",
+  "disk_pressure_purge": "Se eliminaron automáticamente adjuntos antiguos para liberar espacio en disco"
 }

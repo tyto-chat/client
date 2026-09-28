@@ -99,6 +99,8 @@
   "blur_light": "Hafif",
   "blur_strong": "Güçlü",
   "background_blur_hint": "Görüntülü aramalarda kamera arka planını bulanıklaştırır. Makul hızda bir cihaz gerektirir.",
+  "mirror_self": "Videomu aynala",
+  "mirror_self_hint": "Kendi kameranı ayna gibi ters gösterir. Diğerleri seni her zaman aynalanmamış görür.",
   "devices_heading": "Cihazlar",
   "device_microphone": "Mikrofon",
   "device_speaker": "Hoparlörler",

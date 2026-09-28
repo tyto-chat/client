@@ -58,6 +58,8 @@
   "be_first": "¡Sé el primero en decir algo!",
   "new_messages": "Mensajes nuevos",
   "message_deleted": "Este mensaje fue eliminado.",
+  "attachments_purged_one": "Adjunto eliminado",
+  "attachments_purged_other": "{{count}} adjuntos eliminados",
   "message_unavailable_title": "Mensaje no disponible",
   "message_unavailable_body": "Este mensaje no existe o no tienes acceso a él.",
   "linked_message_unavailable": "Mensaje enlazado no disponible",

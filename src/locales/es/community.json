@@ -9,6 +9,7 @@
   "tab_invites": "Invitaciones",
   "tab_groups": "Grupos",
   "tab_emojis": "Emojis",
+  "tab_activity": "Actividad",
   "tab_moderation_log": "Registro de moderación",
   "roles_admins_heading": "Administradores de la comunidad",
   "roles_moderators_heading": "Moderadores de la comunidad",
@@ -345,5 +346,8 @@
   "community_locale_fallback_hint": "Aún no hay traducciones para este idioma — los mensajes del servidor usarán el idioma predeterminado.",
   "nav_group_community": "Comunidad",
   "nav_group_moderation": "Moderación",
-  "nav_group_communities": "Comunidades"
+  "nav_group_communities": "Comunidades",
+  "presence_chart_members": "Miembros",
+  "presence_chart_guests": "Invitados",
+  "presence_chart_empty": "Aún no hay datos de actividad"
 }

@@ -99,6 +99,8 @@
   "blur_light": "Licht",
   "blur_strong": "Sterk",
   "background_blur_hint": "Vervaagt je camera-achtergrond tijdens videogesprekken. Vereist een redelijk snel apparaat.",
+  "mirror_self": "Mijn video spiegelen",
+  "mirror_self_hint": "Toont je eigen camera gespiegeld, zoals in een spiegel. Anderen zien je altijd ongespiegeld.",
   "devices_heading": "Apparaten",
   "device_microphone": "Microfoon",
   "device_speaker": "Luidsprekers",

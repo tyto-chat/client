@@ -99,6 +99,8 @@
   "blur_light": "Leicht",
   "blur_strong": "Stark",
   "background_blur_hint": "Verwischt den Kamerahintergrund in Videoanrufen. Benötigt ein einigermaßen schnelles Gerät.",
+  "mirror_self": "Mein Video spiegeln",
+  "mirror_self_hint": "Zeigt deine eigene Kamera gespiegelt, wie in einem Spiegel. Andere sehen dich immer ungespiegelt.",
   "devices_heading": "Geräte",
   "device_microphone": "Mikrofon",
   "device_speaker": "Lautsprecher",

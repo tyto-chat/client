@@ -58,6 +58,8 @@
   "be_first": "Sois le premier à dire quelque chose !",
   "new_messages": "Nouveaux messages",
   "message_deleted": "Ce message a été supprimé.",
+  "attachments_purged_one": "Pièce jointe supprimée",
+  "attachments_purged_other": "{{count}} pièces jointes supprimées",
   "message_unavailable_title": "Message indisponible",
   "message_unavailable_body": "Ce message n'existe pas ou tu n'y as pas accès.",
   "linked_message_unavailable": "Message lié indisponible",

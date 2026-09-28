@@ -57,5 +57,6 @@
   "appeal_upheld": "Dein Einspruch wurde geprüft, die Maßnahme bleibt bestehen: {{reason}}",
   "appeal_overturned": "Deinem Einspruch wurde stattgegeben, die Maßnahme wurde aufgehoben: {{reason}}",
   "appeal_action": "Einspruch",
-  "unread": "Ungelesen"
+  "unread": "Ungelesen",
+  "disk_pressure_purge": "Alte Anhänge wurden automatisch entfernt, um Speicherplatz freizugeben"
 }

@@ -58,6 +58,8 @@
   "be_first": "Sei die erste Person, die etwas schreibt!",
   "new_messages": "Neue Nachrichten",
   "message_deleted": "Diese Nachricht wurde gelöscht.",
+  "attachments_purged_one": "Anhang entfernt",
+  "attachments_purged_other": "{{count}} Anhänge entfernt",
   "message_unavailable_title": "Nachricht nicht verfügbar",
   "message_unavailable_body": "Diese Nachricht existiert nicht oder du hast keinen Zugriff darauf.",
   "linked_message_unavailable": "Verlinkte Nachricht nicht verfügbar",

@@ -68,7 +68,11 @@
     "online_count_title": "{{count}} учасник у мережі",
     "online_count_title_plural": "{{count}} учасників у мережі",
     "online_panel_title": "Зараз у мережі",
-    "online_panel_empty": "Зараз нікого немає в мережі."
+    "online_panel_empty": "Зараз нікого немає в мережі.",
+    "guest_count_one": "{{count}} гість переглядає",
+    "guest_count_few": "{{count}} гості переглядають",
+    "guest_count_many": "{{count}} гостей переглядають",
+    "guest_count_other": "{{count}} гостя переглядають"
   },
   "you": "ти",
   "message": "Повідомлення",

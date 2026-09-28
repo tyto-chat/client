@@ -99,6 +99,8 @@
   "blur_light": "Léger",
   "blur_strong": "Fort",
   "background_blur_hint": "Floute l'arrière-plan de la caméra pendant les appels vidéo. Nécessite un appareil assez rapide.",
+  "mirror_self": "Inverser ma vidéo",
+  "mirror_self_hint": "Affiche ta propre caméra inversée, comme dans un miroir. Les autres te voient toujours sans inversion.",
   "devices_heading": "Périphériques",
   "device_microphone": "Microphone",
   "device_speaker": "Haut-parleurs",
