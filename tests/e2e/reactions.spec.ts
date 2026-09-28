@@ -1,7 +1,12 @@
+import type { Locator, Page } from "@playwright/test";
 import { test, expect } from "./worldFixtures";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
 import { T } from "./fixtures";
+
+function messageRow(page: Page, text: string): Locator {
+  return page.locator("[data-message-id]").filter({ hasText: text }).last();
+}
 
 test.describe.serial("Reactions", () => {
   test("add emoji reaction → pill appears", async ({ adminPage: page, world }) => {
@@ -30,17 +35,20 @@ test.describe.serial("Reactions", () => {
     await channel.sendMessage(text);
     await channel.expectMessage(text);
 
-    // Use ❤️ (distinct from the 👍 in the previous test) so no other message
-    // on the page has this reaction — making the not.toBeVisible() check reliable.
+    const pill = messageRow(page, text).getByRole("button", { name: /❤️/ });
     await channel.addReactionToLastMessage("❤️");
-    await expect(page.getByRole("button", { name: /❤️/ }).first()).toBeVisible({
-      timeout: T(6_000),
+    await expect(pill.first()).toBeVisible({ timeout: T(6_000) });
+
+    await pill.first().click();
+
+    await expect(pill).toHaveCount(0, { timeout: T(6_000) });
+
+    await page.reload();
+    await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
+    await channel.expectMessage(text);
+    await expect(messageRow(page, text).getByRole("button", { name: /❤️/ })).toHaveCount(0, {
+      timeout: T(8_000),
     });
-
-    await page.getByRole("button", { name: /❤️/ }).first().click();
-
-    // Pill must disappear (reactions section is unmounted when no reactions remain)
-    await expect(page.getByRole("button", { name: /❤️/ })).not.toBeVisible({ timeout: T(6_000) });
   });
 
   test("toggle off before the server confirms the reaction id → pill still disappears", async ({
@@ -63,13 +71,15 @@ test.describe.serial("Reactions", () => {
 
     const addResponse = page.waitForResponse(
       (r) => r.request().method() === "POST" && /\/reactions$/.test(r.url()),
+      { timeout: T(40_000) },
     );
     const removeResponse = page.waitForResponse(
       (r) => r.request().method() === "DELETE" && /\/reactions\/\d+$/.test(r.url()),
+      { timeout: T(40_000) },
     );
     await channel.addReactionToLastMessage("🎉");
 
-    const pill = page.getByRole("button", { name: /🎉/ });
+    const pill = messageRow(page, text).getByRole("button", { name: /🎉/ });
     await expect(pill.first()).toBeVisible({ timeout: T(6_000) });
     await pill.first().click(); // clicked before the add resolves → existingId is 0
 
@@ -80,7 +90,9 @@ test.describe.serial("Reactions", () => {
     await page.reload();
     await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
     await channel.expectMessage(text);
-    await expect(page.getByRole("button", { name: /🎉/ })).toHaveCount(0, { timeout: T(8_000) });
+    await expect(messageRow(page, text).getByRole("button", { name: /🎉/ })).toHaveCount(0, {
+      timeout: T(8_000),
+    });
   });
 
   test("two users can react to the same message independently", async ({
