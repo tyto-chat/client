@@ -224,6 +224,7 @@ export function AddIdentityWizard({
         }
         throw new ServerResolutionFailedError();
       });
+    promise.catch(() => {});
     resolvingRef.current = promise;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
