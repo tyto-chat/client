@@ -3,6 +3,7 @@ import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { getFakeEventSourceInstances } from "../../mocks/EventSource";
 import { ConnectionRegistry } from "@/desktop/connections/ConnectionRegistry";
+import type { IdentityConnection } from "@/desktop/connections/IdentityConnection";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { secretKey, type DesktopIdentity } from "@/desktop/desktopConfig";
 import { _resetNegotiationForTests } from "@/api/apiVersion";
@@ -15,6 +16,16 @@ const PROFILE_ID = "p1";
 
 function makeIdentity(id: string, origin: string): DesktopIdentity {
   return { id, serverUrl: origin, email: `${id}@example.com`, userId: null, displayName: null };
+}
+
+function makeGuest(id: string, origin: string): DesktopIdentity {
+  return { ...makeIdentity(id, origin), email: "", kind: "guest" };
+}
+
+function stubPublicCommunities(origin: string) {
+  server.use(
+    http.get(`${origin}/api/v1/communities`, () => HttpResponse.json({ "hydra:member": [] })),
+  );
 }
 
 function makeToken(exp: number): string {
@@ -285,6 +296,163 @@ describe("ConnectionRegistry.addIdentity", () => {
   });
 });
 
+describe("ConnectionRegistry guest connections", () => {
+  it("spawns the right class per identity kind on boot", async () => {
+    stubServerInfo(ORIGIN_A, "Alpha");
+    stubRefresh(ORIGIN_A);
+    stubServerInfo(ORIGIN_B, "Beta");
+    stubPublicCommunities(ORIGIN_B);
+
+    const { registry } = await bootWithFakeBridge(
+      [makeIdentity("ia", ORIGIN_A), makeGuest("ig", ORIGIN_B)],
+      "ia",
+    );
+
+    await vi.waitFor(() => {
+      expect(registry.getSnapshot().connections.map((c) => c.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
+    });
+    expect(registry.getSnapshot().connections.map((c) => c.kind)).toEqual(["identity", "guest"]);
+    expect(registry.getConnection("ig")!.getAccessToken()).toBeNull();
+
+    registry.stopAll();
+  });
+
+  it("clears the refresh executor when a guest becomes the active identity", async () => {
+    stubServerInfo(ORIGIN_A, "Alpha");
+    stubRefresh(ORIGIN_A);
+    stubServerInfo(ORIGIN_B, "Beta");
+    stubPublicCommunities(ORIGIN_B);
+
+    const { registry } = await bootWithFakeBridge(
+      [makeIdentity("ia", ORIGIN_A), makeGuest("ig", ORIGIN_B)],
+      "ia",
+    );
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
+    const refreshSpy = vi.spyOn(registry.getConnection("ia")! as IdentityConnection, "refreshNow");
+
+    registry.setActiveIdentity("ig");
+    expect(registry.getSnapshot().activeIdentityId).toBe("ig");
+
+    setAccessToken("stale");
+    await refreshAccessToken().catch(() => undefined);
+    expect(refreshSpy).not.toHaveBeenCalled();
+
+    registry.stopAll();
+  });
+
+  it("downgrades a live identity to a guest session in place, keeping registry order", async () => {
+    stubServerInfo(ORIGIN_A, "Alpha");
+    stubRefresh(ORIGIN_A);
+    stubPublicCommunities(ORIGIN_A);
+    stubServerInfo(ORIGIN_B, "Beta");
+    stubRefresh(ORIGIN_B);
+
+    const identityA = makeIdentity("ia", ORIGIN_A);
+    const { registry } = await bootWithFakeBridge([identityA, makeIdentity("ib", ORIGIN_B)], "ia");
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
+    const stopped = vi.spyOn(registry.getConnection("ia")!, "stop");
+
+    registry.downgradeToGuestSession({ ...identityA, kind: "guest" });
+
+    expect(stopped).toHaveBeenCalled();
+    expect(registry.getSnapshot().connections.map((c) => c.identityId)).toEqual(["ia", "ib"]);
+    expect(registry.getSnapshot().connections.map((c) => c.kind)).toEqual(["guest", "identity"]);
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
+    expect(registry.getConnection("ia")!.getAccessToken()).toBeNull();
+
+    registry.stopAll();
+  });
+
+  it("upgrades a guest back to a started identity connection", async () => {
+    stubServerInfo(ORIGIN_A, "Alpha");
+    stubPublicCommunities(ORIGIN_A);
+    stubRefresh(ORIGIN_A);
+
+    const guest = makeGuest("ia", ORIGIN_A);
+    const { registry, bridge } = await bootWithFakeBridge([guest], "ia");
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
+    expect(registry.getSnapshot().connections[0]?.kind).toBe("guest");
+
+    await bridge.secrets.set(secretKey(PROFILE_ID, "ia", "refreshToken"), "fresh");
+    registry.upgradeToIdentity({ ...guest, kind: "identity", email: "a@example.com" });
+
+    expect(registry.getSnapshot().connections[0]?.kind).toBe("identity");
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
+    expect(registry.getConnection("ia")!.getAccessToken()).not.toBeNull();
+
+    registry.stopAll();
+  });
+});
+
+describe("ConnectionRegistry.remove", () => {
+  it("stops the connection, drops it from the snapshot, and clears the executor when it was active", async () => {
+    stubServerInfo(ORIGIN_A, "Alpha");
+    stubRefresh(ORIGIN_A);
+    stubServerInfo(ORIGIN_B, "Beta");
+    stubRefresh(ORIGIN_B);
+
+    const { registry } = await bootWithFakeBridge(
+      [makeIdentity("ia", ORIGIN_A), makeIdentity("ib", ORIGIN_B)],
+      "ia",
+    );
+    await vi.waitFor(() => {
+      expect(registry.getSnapshot().connections.map((c) => c.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
+    });
+    const connection = registry.getConnection("ia")! as IdentityConnection;
+    const stopped = vi.spyOn(connection, "stop");
+    const refreshSpy = vi.spyOn(connection, "refreshNow");
+    const listener = vi.fn();
+    registry.subscribe(listener);
+
+    registry.remove("ia");
+
+    expect(stopped).toHaveBeenCalled();
+    expect(listener).toHaveBeenCalled();
+    expect(registry.getConnection("ia")).toBeUndefined();
+    expect(registry.getSnapshot().connections.map((c) => c.identityId)).toEqual(["ib"]);
+    expect(registry.getSnapshot().activeIdentityId).toBeNull();
+
+    setAccessToken("stale");
+    await refreshAccessToken().catch(() => undefined);
+    expect(refreshSpy).not.toHaveBeenCalled();
+
+    registry.stopAll();
+  });
+
+  it("leaves the active identity alone when a different well is removed", async () => {
+    stubServerInfo(ORIGIN_A, "Alpha");
+    stubRefresh(ORIGIN_A);
+    stubServerInfo(ORIGIN_B, "Beta");
+    stubRefresh(ORIGIN_B);
+
+    const { registry } = await bootWithFakeBridge(
+      [makeIdentity("ia", ORIGIN_A), makeIdentity("ib", ORIGIN_B)],
+      "ia",
+    );
+    await vi.waitFor(() => {
+      expect(registry.getSnapshot().connections.map((c) => c.status)).toEqual([
+        "healthy",
+        "healthy",
+      ]);
+    });
+
+    registry.remove("ib");
+
+    expect(registry.getSnapshot().activeIdentityId).toBe("ia");
+    setAccessToken("stale");
+    const refreshed = await refreshAccessToken();
+    expect(refreshed).toBe(registry.getConnection("ia")!.getAccessToken());
+
+    registry.stopAll();
+  });
+});
+
 describe("ConnectionRegistry.stopAll", () => {
   it("stops every connection's timers and closes its SSE subscription", async () => {
     stubServerInfo(ORIGIN_A, "Alpha", `${ORIGIN_A}/.well-known/mercure`);
@@ -313,7 +481,7 @@ describe("ConnectionRegistry.stopAll", () => {
     const { registry } = await bootWithFakeBridge([identityA], "ia");
     await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
 
-    const connection = registry.getConnection("ia")!;
+    const connection = registry.getConnection("ia")! as IdentityConnection;
     const refreshSpy = vi.spyOn(connection, "refreshNow");
 
     registry.stopAll();

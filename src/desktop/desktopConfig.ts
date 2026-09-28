@@ -1,5 +1,7 @@
 import type { PlatformBridge } from "@/platform/PlatformBridge";
 
+export type IdentityKind = "identity" | "guest";
+
 export interface DesktopIdentity {
   id: string;
   serverUrl: string;
@@ -9,6 +11,7 @@ export interface DesktopIdentity {
   avatarDataUrl?: string | null;
   avatarSource?: string | null;
   avatarColorKey?: string | null;
+  kind?: IdentityKind;
 }
 
 export interface IdentityProfilePatch {
@@ -120,6 +123,24 @@ export function setIdentityProfile(
     ...profile,
     identities: profile.identities.map((identity) =>
       identity.id === identityId ? { ...identity, ...patch } : identity,
+    ),
+  }));
+}
+
+export function identityKind(identity: DesktopIdentity): IdentityKind {
+  return identity.kind ?? "identity";
+}
+
+export function setIdentityKind(
+  config: DesktopConfig,
+  profileId: string,
+  identityId: string,
+  kind: IdentityKind,
+): DesktopConfig {
+  return mapProfile(config, profileId, (profile) => ({
+    ...profile,
+    identities: profile.identities.map((identity) =>
+      identity.id === identityId ? { ...identity, kind } : identity,
     ),
   }));
 }

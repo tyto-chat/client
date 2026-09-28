@@ -10,6 +10,7 @@ import type { PlatformBridge } from "@/platform/PlatformBridge";
 import {
   addIdentity,
   createDefaultConfig,
+  identityKind,
   loadDesktopConfig,
   saveDesktopConfig,
   secretKey,
@@ -17,6 +18,7 @@ import {
 } from "@/desktop/desktopConfig";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { _resetNegotiationForTests } from "@/api/apiVersion";
+import { STORAGE_KEYS } from "@/utils/storageKeys";
 
 const ORIGIN = "https://srv.example";
 
@@ -186,6 +188,113 @@ describe("DesktopBootstrap", () => {
     );
     expect(await screen.findByTestId("desktop-retry")).toBeInTheDocument();
     expect(screen.getByText("This server isn't compatible")).toBeInTheDocument();
+    expect(screen.queryByTestId("app")).not.toBeInTheDocument();
+  });
+
+  it("dismisses the boot relogin prompt to a guest session without rewriting the config kind", async () => {
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+      http.get(`${ORIGIN}/api/v1/server-info`, () =>
+        HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "Srv" }),
+      ),
+      http.post(`${ORIGIN}/api/token/refresh`, () =>
+        HttpResponse.json({ error: "x" }, { status: 401 }),
+      ),
+    );
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "i1",
+      serverUrl: ORIGIN,
+      email: "a@b.c",
+      userId: null,
+      displayName: null,
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "i1");
+    await saveDesktopConfig(bridge, cfg);
+    await bridge.secrets.set(secretKey(pid, "i1", "refreshToken"), "dead");
+
+    const user = userEvent.setup();
+    render(
+      <DesktopBootstrap>
+        <div data-testid="app" />
+      </DesktopBootstrap>,
+    );
+
+    await user.click(await screen.findByTestId("desktop-continue-as-guest"));
+
+    expect(await screen.findByTestId("app")).toBeInTheDocument();
+    expect(getAccessToken()).toBeNull();
+    const saved = await loadDesktopConfig(bridge);
+    expect(identityKind(saved.profiles.find((p) => p.id === pid)!.identities[0]!)).toBe("identity");
+  });
+
+  it("boots a guest entry into the app with no token and no relogin prompt", async () => {
+    let refreshHits = 0;
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+      http.get(`${ORIGIN}/api/v1/server-info`, () =>
+        HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "Srv" }),
+      ),
+      http.post(`${ORIGIN}/api/token/refresh`, () => {
+        refreshHits += 1;
+        return HttpResponse.json({ error: "x" }, { status: 401 });
+      }),
+    );
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "g1",
+      serverUrl: ORIGIN,
+      email: "",
+      userId: null,
+      displayName: null,
+      kind: "guest",
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "g1");
+    await saveDesktopConfig(bridge, cfg);
+
+    render(
+      <DesktopBootstrap>
+        <div data-testid="app" />
+      </DesktopBootstrap>,
+    );
+
+    expect(await screen.findByTestId("app")).toBeInTheDocument();
+    expect(getAccessToken()).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.HAD_SESSION)).toBeNull();
+    expect(screen.queryByTestId("wizard-server-input")).not.toBeInTheDocument();
+    expect(refreshHits).toBe(0);
+  });
+
+  it("shows the unreachable screen when a guest server is down", async () => {
+    server.use(http.get(`${ORIGIN}/api/versions`, () => HttpResponse.error()));
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "g1",
+      serverUrl: ORIGIN,
+      email: "",
+      userId: null,
+      displayName: null,
+      kind: "guest",
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "g1");
+    await saveDesktopConfig(bridge, cfg);
+
+    render(
+      <DesktopBootstrap>
+        <div data-testid="app" />
+      </DesktopBootstrap>,
+    );
+
+    expect(await screen.findByTestId("desktop-unreachable-server")).toHaveTextContent(ORIGIN);
     expect(screen.queryByTestId("app")).not.toBeInTheDocument();
   });
 

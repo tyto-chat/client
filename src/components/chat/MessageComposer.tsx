@@ -355,7 +355,23 @@ function MessageComposer({
           }}
         />
       )}
-      <div className="flex-1 rounded-xl bg-surface ring-1 ring-inset ring-line transition focus-within:ring-line-strong">
+      <div
+        onMouseDown={(e) => {
+          const target = e.target as HTMLElement;
+          if (target.closest(".ProseMirror")) return;
+          const control = target.closest("button, a, input");
+          const inert =
+            control instanceof HTMLButtonElement || control instanceof HTMLInputElement
+              ? control.disabled
+              : false;
+          if (control && !inert) return;
+          e.preventDefault();
+          editor?.commands.focus("end");
+        }}
+        className={`flex-1 rounded-xl bg-surface ring-1 ring-inset ring-line transition focus-within:ring-line-strong ${
+          expanded ? "" : "cursor-text"
+        }`}
+      >
         {expanded && (
           <EditorFormatToolbar
             editor={editor}
@@ -365,7 +381,7 @@ function MessageComposer({
           />
         )}
 
-        <div className="flex items-center gap-2 pr-2">
+        <div className={`flex items-center gap-2 pr-2 ${expanded ? "" : "min-h-[3.5rem]"}`}>
           <div
             className={`min-w-0 flex-1 cap-trim overflow-y-auto px-3.5 text-sm text-fg ${
               expanded ? "py-2.5" : "py-3.5"
@@ -385,7 +401,7 @@ function MessageComposer({
                 isPending ||
                 pendingAttachments.some((a) => a.uploading)
               }
-              className="mb-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-gradient text-on-accent shadow-glow transition hover:opacity-90 disabled:opacity-40 disabled:shadow-none"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-gradient text-on-accent shadow-glow transition hover:opacity-90 disabled:opacity-40 disabled:shadow-none"
             >
               <SendIcon size={16} />
             </button>
@@ -393,7 +409,7 @@ function MessageComposer({
         </div>
         <AttachmentPreviewStrip attachments={pendingAttachments} onRemove={removeAttachment} />
         {expanded && (
-          <div className="flex items-center gap-0.5 px-2 pb-2 pt-1">
+          <div className="flex items-center gap-0.5 px-2 pb-2.5 pt-1">
             {allowAttachments && !isEditMode && (
               <ToolbarButton
                 onClick={() => fileInputRef.current?.click()}

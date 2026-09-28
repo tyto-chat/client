@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useNavigate } from "@tanstack/react-router";
@@ -26,10 +26,17 @@ import { useAuthModal } from "@/context/AuthModalContext";
 import { useMarkEverythingRead } from "@/queries/readStateQueries";
 import { useSetupStatus } from "@/queries/adminSetupQueries";
 import { MenuItem } from "@/components/MenuItem";
+import { isManagedIdentityMode } from "@/platform/appMode";
+import { IdentityManagerModal } from "@/desktop/IdentityManagerModal";
+import { ReloginModal } from "@/desktop/ReloginModal";
+import { ConnectionsContext } from "@/desktop/connections/ConnectionsContext";
 
 export function UserProfileButton() {
   const { t } = useTranslation(["settings", "auth", "common"]);
   const { t: tCommon } = useTranslation(["common", "auth"]);
+  const { t: tDesktop } = useTranslation("desktop");
+  const connections = useContext(ConnectionsContext);
+  const activeIdentityId = connections?.registry.getSnapshot().activeIdentityId ?? null;
   const { user, token, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const { notify } = useNotification();
@@ -41,7 +48,14 @@ export function UserProfileButton() {
   const { data: setup } = useSetupStatus(isAdmin);
   const needsAttention = setup?.needsAttention ?? false;
   const [modal, setModal] = useState<
-    "profile" | "preferences" | "admin" | "communities" | "groups" | null
+    | "profile"
+    | "preferences"
+    | "admin"
+    | "communities"
+    | "groups"
+    | "identities"
+    | "guest-sign-in"
+    | null
   >(null);
   const ref = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -79,13 +93,65 @@ export function UserProfileButton() {
         >
           {theme === "dark" ? <SunIcon size={15} /> : <MoonIcon size={15} />}
         </button>
-        <button
-          onClick={openLogin}
-          title={t("auth:sign_in")}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-strong)] text-[var(--accent-on)] shadow-md transition hover:opacity-90"
-        >
-          <LogInIcon size={18} />
-        </button>
+        {isManagedIdentityMode() ? (
+          <div ref={ref} className="relative">
+            <button
+              ref={triggerRef}
+              onClick={() => setMenuOpen((v) => !v)}
+              title={tDesktop("identity_manager_menu")}
+              data-testid="guest-menu-button"
+              aria-haspopup="true"
+              aria-expanded={menuOpen}
+              className="grid h-10 w-10 place-items-center rounded-full bg-raised text-lg font-bold text-fg-subtle ring-1 ring-line transition hover:text-fg hover:ring-[var(--accent)]"
+            >
+              ?
+            </button>
+            {menuOpen && (
+              <div
+                data-testid="guest-menu"
+                className="animate-menu-in absolute bottom-0 left-full z-50 ml-2 w-52 rounded-lg border border-line bg-overlay py-1 shadow-soft-lg"
+              >
+                {activeIdentityId && (
+                  <MenuItem
+                    data-testid="guest-menu-sign-in"
+                    onClick={() => {
+                      setModal("guest-sign-in");
+                      closeMenu();
+                    }}
+                  >
+                    {tDesktop("sign_in_to_server")}
+                  </MenuItem>
+                )}
+                <MenuItem
+                  data-testid="manage-identities-menu-entry"
+                  onClick={() => {
+                    setModal("identities");
+                    closeMenu();
+                  }}
+                >
+                  {tDesktop("identity_manager_menu")}
+                </MenuItem>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={openLogin}
+            title={t("auth:sign_in")}
+            data-testid="guest-sign-in"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-strong)] text-[var(--accent-on)] shadow-md transition hover:opacity-90"
+          >
+            <LogInIcon size={18} />
+          </button>
+        )}
+        {modal === "identities" && <IdentityManagerModal onClose={() => setModal(null)} />}
+        {modal === "guest-sign-in" && activeIdentityId && connections && (
+          <ReloginModal
+            registry={connections.registry}
+            identityId={activeIdentityId}
+            onClose={() => setModal(null)}
+          />
+        )}
       </div>
     );
   }
@@ -185,6 +251,17 @@ export function UserProfileButton() {
           >
             {t("preferences_menu")}
           </MenuItem>
+          {isManagedIdentityMode() && (
+            <MenuItem
+              data-testid="manage-identities-menu-entry"
+              onClick={() => {
+                setModal("identities");
+                closeMenu();
+              }}
+            >
+              {tDesktop("identity_manager_menu")}
+            </MenuItem>
+          )}
           {isAdmin && (
             <button
               onClick={() => {
@@ -252,6 +329,7 @@ export function UserProfileButton() {
         />
       )}
       {modal === "preferences" && <PreferencesModal onClose={() => setModal(null)} />}
+      {modal === "identities" && <IdentityManagerModal onClose={() => setModal(null)} />}
       {modal === "communities" && <CommunityManagerModal onClose={() => setModal(null)} />}
       {modal === "groups" && <MyGroupsModal onClose={() => setModal(null)} />}
       {modal === "admin" && <AdminPanelModal onClose={() => setModal(null)} />}

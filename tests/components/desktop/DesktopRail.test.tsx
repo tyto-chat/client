@@ -94,6 +94,7 @@ function stubOriginFull(
 function makeConnection(overrides: Partial<ConnectionSnapshot>): ConnectionSnapshot {
   return {
     identityId: "ia",
+    kind: "identity" as const,
     status: "healthy",
     serverName: "Alpha",
     origin: "https://a.example",
@@ -108,7 +109,12 @@ function makeConnection(overrides: Partial<ConnectionSnapshot>): ConnectionSnaps
 
 function makeRegistryStub(
   snapshot: RegistrySnapshot,
-  overrides?: Partial<Pick<ConnectionRegistry, "getConnection" | "addIdentity">>,
+  overrides?: Partial<
+    Pick<
+      ConnectionRegistry,
+      "getConnection" | "addIdentity" | "downgradeToGuestSession" | "upgradeToIdentity" | "remove"
+    >
+  >,
 ): ConnectionRegistry {
   const listeners = new Set<() => void>();
   return {
@@ -119,11 +125,17 @@ function makeRegistryStub(
     },
     getConnection: overrides?.getConnection ?? vi.fn(() => undefined),
     addIdentity: overrides?.addIdentity ?? vi.fn(),
+    downgradeToGuestSession: overrides?.downgradeToGuestSession ?? vi.fn(),
+    upgradeToIdentity: overrides?.upgradeToIdentity ?? vi.fn(),
+    remove: overrides?.remove ?? vi.fn(),
   } as unknown as ConnectionRegistry;
 }
 
 function makeConnectionHandle(retry: () => void): IdentityConnection {
-  return { retry } as unknown as IdentityConnection;
+  return {
+    retry,
+    getSnapshot: () => makeConnection({}),
+  } as unknown as IdentityConnection;
 }
 
 function makeLiveRegistryStub(options?: { neverHealthy?: boolean }): ConnectionRegistry {
@@ -694,7 +706,11 @@ describe("DesktopRail", () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
 
-    render(<AddServerModal registry={registry} switchTo={switchTo} onClose={onClose} />);
+    render(
+      <NotificationProvider>
+        <AddServerModal registry={registry} switchTo={switchTo} onClose={onClose} />
+      </NotificationProvider>,
+    );
 
     await user.type(screen.getByTestId("wizard-server-input"), "new.example");
     await user.click(screen.getByTestId("wizard-server-submit"));
@@ -709,6 +725,42 @@ describe("DesktopRail", () => {
 
     await waitFor(() => expect(switchTo).toHaveBeenCalledWith(addedIdentity.id));
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+
+    setPlatformBridgeForTests(null);
+  });
+
+  it("AddServerModal toasts when the switch to the newly added server fails", async () => {
+    const ORIGIN = "https://toast.example";
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+      http.get(`${ORIGIN}/api/v1/server-info`, () =>
+        HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "ToastServer" }),
+      ),
+      http.post(`${ORIGIN}/api/auth`, () =>
+        HttpResponse.json({ token: "jwt-toast", refresh_token: "refresh-toast" }),
+      ),
+    );
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    await saveDesktopConfig(bridge, createDefaultConfig());
+
+    const registry = makeLiveRegistryStub();
+    const switchTo = vi.fn().mockRejectedValue(new Error("nope"));
+    const user = userEvent.setup();
+
+    render(
+      <NotificationProvider>
+        <AddServerModal registry={registry} switchTo={switchTo} onClose={vi.fn()} />
+      </NotificationProvider>,
+    );
+
+    await user.type(screen.getByTestId("wizard-server-input"), "toast.example");
+    await user.click(screen.getByTestId("wizard-server-submit"));
+    await user.type(await screen.findByTestId("wizard-email-input"), "a@b.c");
+    await user.type(screen.getByTestId("wizard-password-input"), "pw");
+    await user.click(screen.getByTestId("wizard-credentials-submit"));
+
+    expect(await screen.findByText(/couldn't switch to/i)).toBeInTheDocument();
 
     setPlatformBridgeForTests(null);
   });
@@ -744,12 +796,14 @@ describe("DesktopRail", () => {
     const user = userEvent.setup();
 
     render(
-      <AddServerModal
-        registry={registry}
-        switchTo={switchTo}
-        onClose={onClose}
-        healthyTimeoutMs={30}
-      />,
+      <NotificationProvider>
+        <AddServerModal
+          registry={registry}
+          switchTo={switchTo}
+          onClose={onClose}
+          healthyTimeoutMs={30}
+        />
+      </NotificationProvider>,
     );
 
     await user.type(screen.getByTestId("wizard-server-input"), "stuck.example");
@@ -813,7 +867,11 @@ describe("DesktopRail", () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
 
-    render(<AddServerModal registry={registry} switchTo={switchTo} onClose={onClose} />);
+    render(
+      <NotificationProvider>
+        <AddServerModal registry={registry} switchTo={switchTo} onClose={onClose} />
+      </NotificationProvider>,
+    );
 
     await user.type(screen.getByTestId("wizard-server-input"), "addserver-exec-new.example");
     await user.click(screen.getByTestId("wizard-server-submit"));
@@ -1102,6 +1160,251 @@ describe("DesktopRail", () => {
     const persisted = await loadDesktopConfig(bridge);
     const persistedProfile = persisted.profiles.find((p) => p.id === pid);
     expect(persistedProfile?.lastActiveIdentityId).toBe("ia");
+
+    setPlatformBridgeForTests(null);
+  });
+
+  it("marks a guest well with a badge and never locks it", () => {
+    const guest = makeConnection({
+      identityId: "ig",
+      kind: "guest",
+      serverName: "Guest Srv",
+      status: "auth-failed",
+      error: new Error("stale"),
+      communities: [
+        {
+          id: 1,
+          identifier: "pub",
+          name: "Pub",
+          logoUrl: null,
+          accentColor: null,
+          iri: null,
+          member: false,
+          pinned: true,
+          isPrivate: false,
+        },
+      ],
+    });
+    const active = makeConnection({ identityId: "ia" });
+    const snapshot: RegistrySnapshot = {
+      connections: [active, guest],
+      activeIdentityId: "ia",
+    };
+
+    renderWithContext(<DesktopRailGroups />, { registry: makeRegistryStub(snapshot) });
+
+    expect(screen.getByTestId("desktop-guest-badge")).toHaveTextContent("Guest");
+    expect(screen.queryByTestId("desktop-server-lock")).not.toBeInTheDocument();
+    expect(screen.getByTestId("desktop-rail-community")).not.toHaveClass("opacity-50");
+  });
+
+  it("keeps the caption free of action chrome — lifecycle lives in the identity manager", () => {
+    const snapshot: RegistrySnapshot = {
+      connections: [makeConnection({ identityId: "ia" })],
+      activeIdentityId: "ia",
+    };
+
+    renderWithContext(<DesktopRailGroups />, { registry: makeRegistryStub(snapshot) });
+
+    expect(screen.queryByTestId("desktop-guest-badge")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("desktop-guest-sign-in")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("desktop-well-menu")).not.toBeInTheDocument();
+  });
+
+  it("upgrades a background guest well in place when its sign-in completes", async () => {
+    const ORIGIN = "https://guest-upgrade.example";
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+      http.get(`${ORIGIN}/api/v1/server-info`, () =>
+        HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "GuestSrv" }),
+      ),
+      http.post(`${ORIGIN}/api/auth`, () =>
+        HttpResponse.json({ token: "jwt-upgraded", refresh_token: "refresh-upgraded" }),
+      ),
+    );
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ia",
+      serverUrl: "https://active.example",
+      email: "active@b.c",
+      userId: null,
+      displayName: null,
+    });
+    cfg = addIdentity(cfg, pid, {
+      id: "ig",
+      serverUrl: ORIGIN,
+      email: "",
+      userId: null,
+      displayName: null,
+      kind: "guest",
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ia");
+    await saveDesktopConfig(bridge, cfg);
+
+    const upgrade = vi.fn();
+    const switchTo = vi.fn().mockResolvedValue(undefined);
+    const snapshot: RegistrySnapshot = {
+      connections: [
+        makeConnection({ identityId: "ia" }),
+        makeConnection({ identityId: "ig", kind: "guest", origin: ORIGIN }),
+      ],
+      activeIdentityId: "ia",
+    };
+    const registry = makeRegistryStub(snapshot, {
+      upgradeToIdentity: upgrade,
+      getConnection: vi.fn((id: string) =>
+        id === "ig"
+          ? ({ getSnapshot: () => snapshot.connections[1] } as unknown as IdentityConnection)
+          : undefined,
+      ),
+    });
+    const user = userEvent.setup();
+
+    render(
+      <ConnectionsContext.Provider value={{ registry, switchTo }}>
+        <ReloginModal registry={registry} identityId="ig" onClose={() => {}} />
+      </ConnectionsContext.Provider>,
+    );
+
+    await user.type(await screen.findByTestId("wizard-email-input"), "new@b.c");
+    await user.type(screen.getByTestId("wizard-password-input"), "pw");
+    await user.click(screen.getByTestId("wizard-credentials-submit"));
+
+    await waitFor(() =>
+      expect(upgrade).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "ig", email: "new@b.c", kind: "identity" }),
+      ),
+    );
+    expect(switchTo).not.toHaveBeenCalled();
+    expect(await bridge.secrets.get(secretKey(pid, "ig", "refreshToken"))).toBe("refresh-upgraded");
+
+    setPlatformBridgeForTests(null);
+  });
+
+  it("switches back into authed semantics when the upgraded guest well is the active one", async () => {
+    const ORIGIN = "https://guest-active-upgrade.example";
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+      http.get(`${ORIGIN}/api/v1/server-info`, () =>
+        HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "GuestSrv" }),
+      ),
+      http.post(`${ORIGIN}/api/auth`, () =>
+        HttpResponse.json({ token: "jwt-upgraded", refresh_token: "refresh-upgraded" }),
+      ),
+    );
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ig",
+      serverUrl: ORIGIN,
+      email: "",
+      userId: null,
+      displayName: null,
+      kind: "guest",
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ig");
+    await saveDesktopConfig(bridge, cfg);
+
+    const switchTo = vi.fn().mockResolvedValue(undefined);
+    const snapshot: RegistrySnapshot = {
+      connections: [makeConnection({ identityId: "ig", kind: "guest", origin: ORIGIN })],
+      activeIdentityId: "ig",
+    };
+    const registry = makeRegistryStub(snapshot, {
+      getConnection: vi.fn(
+        () => ({ getSnapshot: () => snapshot.connections[0] }) as unknown as IdentityConnection,
+      ),
+    });
+    const user = userEvent.setup();
+
+    render(
+      <ConnectionsContext.Provider value={{ registry, switchTo }}>
+        <ReloginModal registry={registry} identityId="ig" onClose={() => {}} />
+      </ConnectionsContext.Provider>,
+    );
+
+    await user.type(await screen.findByTestId("wizard-email-input"), "new@b.c");
+    await user.type(screen.getByTestId("wizard-password-input"), "pw");
+    await user.click(screen.getByTestId("wizard-credentials-submit"));
+
+    await waitFor(() => expect(switchTo).toHaveBeenCalledWith("ig"));
+
+    setPlatformBridgeForTests(null);
+  });
+
+  it("offers no continue-as-guest escape inside a guest well's sign-in modal", async () => {
+    const ORIGIN = "https://guest-no-escape.example";
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ig",
+      serverUrl: ORIGIN,
+      email: "",
+      userId: null,
+      displayName: null,
+      kind: "guest",
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ig");
+    await saveDesktopConfig(bridge, cfg);
+
+    const snapshot: RegistrySnapshot = {
+      connections: [makeConnection({ identityId: "ig", kind: "guest", origin: ORIGIN })],
+      activeIdentityId: "ig",
+    };
+
+    render(
+      <ReloginModal registry={makeRegistryStub(snapshot)} identityId="ig" onClose={() => {}} />,
+    );
+
+    await screen.findByTestId("wizard-email-input");
+    expect(screen.queryByTestId("desktop-continue-as-guest")).not.toBeInTheDocument();
+
+    setPlatformBridgeForTests(null);
+  });
+
+  it("dismisses the relogin modal to a guest session via continue-as-guest", async () => {
+    const ORIGIN = "https://relogin-guest.example";
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let cfg = createDefaultConfig();
+    const pid = cfg.profiles[0]!.id;
+    cfg = addIdentity(cfg, pid, {
+      id: "ia",
+      serverUrl: ORIGIN,
+      email: "active@b.c",
+      userId: null,
+      displayName: null,
+    });
+    cfg = setLastActiveIdentity(cfg, pid, "ia");
+    await saveDesktopConfig(bridge, cfg);
+
+    const downgrade = vi.fn();
+    const onClose = vi.fn();
+    const snapshot: RegistrySnapshot = {
+      connections: [makeConnection({ identityId: "ia", origin: ORIGIN, status: "auth-failed" })],
+      activeIdentityId: "ia",
+    };
+    const registry = makeRegistryStub(snapshot, { downgradeToGuestSession: downgrade });
+    const user = userEvent.setup();
+
+    render(<ReloginModal registry={registry} identityId="ia" onClose={onClose} />);
+
+    await user.click(await screen.findByTestId("desktop-continue-as-guest"));
+
+    expect(downgrade).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "ia", serverUrl: ORIGIN }),
+    );
 
     setPlatformBridgeForTests(null);
   });

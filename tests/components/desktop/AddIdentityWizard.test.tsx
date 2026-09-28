@@ -460,4 +460,93 @@ describe("AddIdentityWizard", () => {
     expect(placeholder).toHaveTextContent("A");
     expect(placeholder).toHaveStyle({ backgroundColor: getUserColor("/api/profiles/7") });
   });
+  it("emits a guest result after resolving the server, without credentials", async () => {
+    stubServerResolution();
+    const onComplete = vi.fn();
+    const user = userEvent.setup();
+    render(<AddIdentityWizard onComplete={onComplete} />);
+
+    await user.type(screen.getByTestId("wizard-server-input"), "srv.example");
+    await user.click(screen.getByTestId("wizard-browse-guest"));
+
+    await waitFor(() =>
+      expect(onComplete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          serverUrl: ORIGIN,
+          email: "",
+          password: "",
+          token: "",
+          refreshToken: null,
+          guest: true,
+        }),
+      ),
+    );
+  });
+
+  it("keeps the guest button on the server step and reports an unreachable server", async () => {
+    server.use(http.get(`${ORIGIN}/api/versions`, () => HttpResponse.error()));
+    const onComplete = vi.fn();
+    const user = userEvent.setup();
+    render(<AddIdentityWizard onComplete={onComplete} />);
+
+    await user.type(screen.getByTestId("wizard-server-input"), "srv.example");
+    await user.click(screen.getByTestId("wizard-browse-guest"));
+
+    expect(await screen.findByText(/could not reach|unreachable/i)).toBeInTheDocument();
+    expect(screen.getByTestId("wizard-browse-guest")).toBeInTheDocument();
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it("offers no guest button on the locked welcome-back step", async () => {
+    stubServerResolution();
+    render(
+      <AddIdentityWizard
+        onComplete={vi.fn()}
+        initialServerUrl={ORIGIN}
+        initialEmail="a@b.c"
+        lockServer
+      />,
+    );
+
+    await screen.findByTestId("wizard-password-input");
+    expect(screen.queryByTestId("wizard-browse-guest")).not.toBeInTheDocument();
+  });
+
+  it("swaps the welcome-back block for an editable email while the server stays locked", async () => {
+    stubServerResolution();
+    const user = userEvent.setup();
+    render(
+      <AddIdentityWizard
+        onComplete={vi.fn()}
+        initialServerUrl={ORIGIN}
+        initialEmail="a@b.c"
+        initialDisplayName="Ada Lovelace"
+        lockServer
+      />,
+    );
+
+    await screen.findByTestId("wizard-identity-name");
+    await user.click(screen.getByTestId("wizard-different-user"));
+
+    expect(screen.queryByTestId("wizard-identity-name")).not.toBeInTheDocument();
+    expect(screen.getByTestId("wizard-email-input")).toHaveValue("");
+    expect(screen.getByTestId("wizard-server-origin")).toHaveTextContent(ORIGIN);
+    expect(screen.queryByTestId("wizard-server-input")).not.toBeInTheDocument();
+  });
+
+  it("renders the editable email layout for a guest entry with no stored email", async () => {
+    stubServerResolution();
+    render(
+      <AddIdentityWizard
+        onComplete={vi.fn()}
+        initialServerUrl={ORIGIN}
+        initialEmail=""
+        lockServer
+      />,
+    );
+
+    expect(await screen.findByTestId("wizard-email-input")).toHaveValue("");
+    expect(screen.queryByTestId("wizard-identity-initial")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("wizard-different-user")).not.toBeInTheDocument();
+  });
 });

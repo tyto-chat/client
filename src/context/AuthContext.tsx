@@ -319,7 +319,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isManagedIdentityMode()) {
       try {
         const { getPlatformBridge } = await import("@/platform/bridge");
-        const { loadDesktopConfig, secretKey } = await import("@/desktop/desktopConfig");
+        const { loadDesktopConfig, saveDesktopConfig, setIdentityKind } =
+          await import("@/desktop/desktopConfig");
+        const { revokeAndWipeSecrets } = await import("@/desktop/identityLifecycle");
         const bridge = getPlatformBridge();
         const config = await loadDesktopConfig(bridge);
         const profileId = config.lastActiveProfileId ?? config.profiles[0]?.id ?? null;
@@ -328,21 +330,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ? (profile.lastActiveIdentityId ?? profile.identities[0]?.id ?? null)
           : null;
         if (profileId && identityId) {
-          const refreshTokenKey = secretKey(profileId, identityId, "refreshToken");
-          const refreshToken = await bridge.secrets.get(refreshTokenKey);
-          if (refreshToken) {
-            try {
-              await fetch(getBaseUrl() + "/logout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "omit",
-                body: JSON.stringify({ refresh_token: refreshToken }),
-              });
-            } catch {
-              /* best-effort */
-            }
-          }
-          await bridge.secrets.delete(refreshTokenKey);
+          await revokeAndWipeSecrets(bridge, getBaseUrl(), profileId, identityId);
+          await saveDesktopConfig(bridge, setIdentityKind(config, profileId, identityId, "guest"));
         }
       } catch {
         /* best-effort: local session teardown below still proceeds */
@@ -443,4 +432,8 @@ export function useAuthContext(): AuthState {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuthContext must be used within AuthProvider");
   return ctx;
+}
+
+export function useOptionalAuthContext(): AuthState | null {
+  return useContext(AuthContext);
 }

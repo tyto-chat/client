@@ -41,6 +41,7 @@ function unified(overrides: Partial<UnifiedConversation>): UnifiedConversation {
 function connectionSnapshot(overrides: Partial<ConnectionSnapshot>): ConnectionSnapshot {
   return {
     identityId: "ia",
+    kind: "identity" as const,
     status: "healthy",
     serverName: "Alpha",
     origin: ORIGIN_A,

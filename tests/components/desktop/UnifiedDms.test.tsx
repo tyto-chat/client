@@ -72,6 +72,7 @@ vi.mock("@/hooks/useAuth", () => ({
 function connectionSnapshot(overrides: Partial<ConnectionSnapshot>): ConnectionSnapshot {
   return {
     identityId: "ia",
+    kind: "identity" as const,
     status: "healthy",
     serverName: "Alpha",
     origin: BASE,
@@ -254,6 +255,45 @@ describe("ConversationsSidebar desktop variant", () => {
     const chips = screen.getAllByTestId("dm-server-chip");
     expect(chips.map((c) => c.getAttribute("title")).sort()).toEqual(["Alpha", "Beta"]);
     expect(chips.map((c) => c.textContent).sort()).toEqual(["A", "B"]);
+  });
+
+  it("names the active server in the mark-all-read label once more than one server is connected", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    server.use(
+      http.get(`${BASE}/api/v1/conversations`, () => HttpResponse.json([])),
+      http.get(`${ORIGIN_B}/api/v1/conversations`, () => HttpResponse.json([])),
+    );
+
+    const registry = makeRegistry(
+      [
+        connectionSnapshot({ identityId: "ia", serverName: "Alpha", origin: BASE }),
+        connectionSnapshot({ identityId: "ib", serverName: "Beta", origin: ORIGIN_B, userId: 2 }),
+      ],
+      "ia",
+      {
+        ia: { ctx: { origin: BASE, apiVersion: "v1", getToken: () => "jwt" } },
+        ib: { ctx: { origin: ORIGIN_B, apiVersion: "v1", getToken: () => "jwt-b" } },
+      },
+    );
+
+    render(<ConversationsSidebar />, { wrapper: makeWrapper(registry) });
+
+    expect(await screen.findByTitle("Mark all DMs on Alpha as read")).toBeInTheDocument();
+  });
+
+  it("keeps the plain mark-all-read label when only one server is connected", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    server.use(http.get(`${BASE}/api/v1/conversations`, () => HttpResponse.json([])));
+
+    const registry = makeRegistry(
+      [connectionSnapshot({ identityId: "ia", serverName: "Alpha", origin: BASE })],
+      "ia",
+      { ia: { ctx: { origin: BASE, apiVersion: "v1", getToken: () => "jwt" } } },
+    );
+
+    render(<ConversationsSidebar />, { wrapper: makeWrapper(registry) });
+
+    expect(await screen.findByTitle("Mark all DMs as read")).toBeInTheDocument();
   });
 
   it("routes a click on a non-active identity's row through requestIdentitySwitch", async () => {

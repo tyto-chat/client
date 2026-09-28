@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { createEvent, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { configureApiClient } from "@/api/client";
@@ -61,5 +61,47 @@ describe("MessageComposer edit mode", () => {
     });
     expect(screen.getByTitle("Emoji")).toBeInTheDocument();
     expect(screen.getByTitle("Attach file")).toBeInTheDocument();
+  });
+});
+
+describe("MessageComposer collapsed mode", () => {
+  it("expands when the padding around the collapsed input is clicked, not just the text line", async () => {
+    const { container } = render(<MessageComposer onSend={vi.fn()} />, { wrapper: makeWrapper() });
+
+    expect(screen.queryByTitle("Bold")).not.toBeInTheDocument();
+
+    const shell = container.querySelector(".rounded-xl");
+    expect(shell).not.toBeNull();
+    fireEvent.mouseDown(shell!);
+
+    expect(await screen.findByTitle("Bold")).toBeInTheDocument();
+  });
+
+  it("leaves the send button click alone while collapsed", () => {
+    const onSend = vi.fn();
+    render(<MessageComposer onSend={onSend} />, { wrapper: makeWrapper() });
+
+    const send = screen.getByLabelText("Send");
+    fireEvent.mouseDown(send);
+
+    expect(screen.queryByTitle("Bold")).not.toBeInTheDocument();
+  });
+});
+
+describe("MessageComposer disabled send button", () => {
+  it("keeps focus on the editor when the disabled send button is pressed", async () => {
+    const { container } = render(<MessageComposer onSend={vi.fn()} />, { wrapper: makeWrapper() });
+
+    const shell = container.querySelector(".rounded-xl")!;
+    fireEvent.mouseDown(shell);
+    expect(await screen.findByTitle("Bold")).toBeInTheDocument();
+
+    const send = screen.getByLabelText("Send") as HTMLButtonElement;
+    expect(send.disabled).toBe(true);
+    const event = createEvent.mouseDown(send, { bubbles: true });
+    fireEvent(send, event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(screen.getByTitle("Bold")).toBeInTheDocument();
   });
 });

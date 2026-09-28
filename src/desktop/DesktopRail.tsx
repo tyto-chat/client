@@ -86,7 +86,7 @@ function ServerStatusOverlay({
 }) {
   const { t } = useTranslation("desktop");
 
-  if (connection.status === "auth-failed") {
+  if (connection.status === "auth-failed" && connection.kind !== "guest") {
     return (
       <button
         type="button"
@@ -147,6 +147,7 @@ function ServerCaption({
   connection: ConnectionSnapshot;
   showDmDot?: boolean;
 }) {
+  const { t } = useTranslation("desktop");
   const name = connection.serverName ?? formatHost(connection.origin);
   const dmUnread = connection.unreadCounts["dm"] ?? 0;
   return (
@@ -164,6 +165,14 @@ function ServerCaption({
       }`}
     >
       <span className="truncate text-[9px] font-semibold text-fg-subtle">{name}</span>
+      {connection.kind === "guest" && (
+        <span
+          data-testid="desktop-guest-badge"
+          className="shrink-0 rounded-full bg-raised px-1 text-[8px] font-semibold text-fg-subtle uppercase"
+        >
+          {t("guest_badge")}
+        </span>
+      )}
       {showDmDot && dmUnread > 0 && (
         <span
           data-testid="desktop-server-header-dm"
@@ -212,7 +221,11 @@ function ConnectionCommunityTile({
         }}
         style={connectionCommunityTileStyle(community)}
         className={`flex h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-[13px] font-bold transition-opacity hover:opacity-80 ${
-          disabled ? "pointer-events-none opacity-40" : !community.member ? "opacity-50" : ""
+          disabled
+            ? "pointer-events-none opacity-40"
+            : !community.member && connection.kind !== "guest"
+              ? "opacity-50"
+              : ""
         }`}
       >
         {community.logoUrl ? (
@@ -408,7 +421,7 @@ export function DesktopRailGroups({ children }: { children?: React.ReactNode }) 
   const serverOrder = useSyncExternalStore(subscribeServerOrder, getServerOrderSnapshot);
   const { activeCall } = useAudioCall();
   const [modalOpen, setModalOpen] = useState(false);
-  const [reloginIdentityId, setReloginIdentityId] = useState<string | null>(null);
+  const [signInIdentityId, setSignInIdentityId] = useState<string | null>(null);
   if (!isManagedIdentityMode() || !contextValue || !snapshot) return <>{children}</>;
 
   const hasActive = snapshot.connections.some((a) => a.identityId === snapshot.activeIdentityId);
@@ -435,7 +448,7 @@ export function DesktopRailGroups({ children }: { children?: React.ReactNode }) 
               <ServerStatusOverlay
                 connection={connection}
                 registry={contextValue.registry}
-                onLockClick={() => setReloginIdentityId(connection.identityId)}
+                onLockClick={() => setSignInIdentityId(connection.identityId)}
               />
               {isActive ? (
                 children
@@ -474,11 +487,11 @@ export function DesktopRailGroups({ children }: { children?: React.ReactNode }) 
           onClose={() => setModalOpen(false)}
         />
       )}
-      {reloginIdentityId && (
+      {signInIdentityId && (
         <ReloginModal
           registry={contextValue.registry}
-          identityId={reloginIdentityId}
-          onClose={() => setReloginIdentityId(null)}
+          identityId={signInIdentityId}
+          onClose={() => setSignInIdentityId(null)}
         />
       )}
     </>
@@ -499,6 +512,7 @@ export function AddServerModal({
   healthyTimeoutMs = DEFAULT_HEALTHY_TIMEOUT_MS,
 }: AddServerModalProps) {
   const { t } = useTranslation("desktop");
+  const { notify } = useNotification();
 
   async function handleComplete(result: AddIdentityResult, close: () => void) {
     const bridge = getPlatformBridge();
@@ -522,7 +536,15 @@ export function AddServerModal({
 
     if (identityId && (await waitForHealthy(registry, identityId, healthyTimeoutMs))) {
       close();
-      switchTo(identityId).catch(() => undefined);
+      switchTo(identityId).catch(() => {
+        const connection = registry
+          .getSnapshot()
+          .connections.find((c) => c.identityId === identityId);
+        const server =
+          connection?.serverName ??
+          (connection ? formatHost(connection.origin) : result.serverInfo.name);
+        notify(t("switch_failed", { server }), "error");
+      });
       return;
     }
 

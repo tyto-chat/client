@@ -240,7 +240,7 @@ function unifiedRefetchTrigger(snapshot: {
 }
 
 function UnifiedConversationsSidebar({ registry }: { registry: ConnectionRegistry }) {
-  const { t } = useTranslation("conversation");
+  const { t } = useTranslation(["conversation", "desktop"]);
   const { notify } = useNotification();
   const markAllDmsRead = useMarkAllDmsRead();
   const { navOpen, closeNav } = useMobileNav();
@@ -279,6 +279,16 @@ function UnifiedConversationsSidebar({ registry }: { registry: ConnectionRegistr
       map.set(c.identityId, { userId: c.userId, origin: c.origin });
     return map;
   }, [snapshot]);
+
+  const activeConnection = snapshot.connections.find(
+    (c) => c.identityId === snapshot.activeIdentityId,
+  );
+  const markAllScopeLabel =
+    snapshot.connections.length > 1 && activeConnection
+      ? t("desktop:mark_all_dms_read_server", {
+          server: activeConnection.serverName ?? hostFromOrigin(activeConnection.origin),
+        })
+      : t("mark_all_dms_read");
 
   function handleComposeClick() {
     closeNav();
@@ -439,7 +449,7 @@ function UnifiedConversationsSidebar({ registry }: { registry: ConnectionRegistr
               })
             }
             disabled={markAllDmsRead.isPending}
-            title={t("mark_all_dms_read")}
+            title={markAllScopeLabel}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-fg-subtle transition-colors hover:bg-raised hover:text-fg disabled:opacity-30"
           >
             <CheckDoubleIcon size={14} />

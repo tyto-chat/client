@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/utils/cn";
@@ -94,7 +94,8 @@ export function Modal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dismissable]);
 
-  const titleId = title ? "modal-title" : undefined;
+  const generatedTitleId = useId();
+  const titleId = title ? generatedTitleId : undefined;
 
   // Portalled: a transformed ancestor would become the containing block for `fixed`.
   return createPortal(

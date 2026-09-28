@@ -11,6 +11,7 @@ import {
   useSwitchIdentity,
 } from "@/desktop/connections/ConnectionsContext";
 import type { ConnectionRegistry } from "@/desktop/connections/ConnectionRegistry";
+import type { IdentityConnection } from "@/desktop/connections/IdentityConnection";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { setPlatformBridgeForTests } from "@/platform/bridge";
 import {
@@ -236,7 +237,7 @@ describe("DesktopApp", () => {
       expect(capturedRegistry?.getSnapshot().connections[0]?.status).toBe("healthy"),
     );
 
-    const connection = capturedRegistry!.getConnection("ia")!;
+    const connection = capturedRegistry!.getConnection("ia")! as IdentityConnection;
     const refreshSpy = vi.spyOn(connection, "refreshNow");
 
     setAccessToken("stale");

@@ -170,6 +170,30 @@ jobs:
           CI: "true"
         run: npm run test:e2e
 
+      - name: Report flaky specs
+        if: always()
+        run: |
+          results=playwright-results/results.json
+          if [ ! -f "$results" ]; then
+            echo "no results.json — Playwright did not finish"
+            exit 0
+          fi
+          flaky=$(jq -r '[.. | objects | select(has("tests")) | . as $spec
+            | .tests[] | select(.status == "flaky")
+            | "\($spec.file // "?") › \($spec.title)"] | .[]' "$results")
+          if [ -z "$flaky" ]; then
+            echo "No flaky specs."
+            exit 0
+          fi
+          echo "$flaky"
+          {
+            echo "### Flaky specs (passed only on retry)"
+            echo ""
+            echo '```'
+            echo "$flaky" | sort | uniq -c | sort -rn
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4

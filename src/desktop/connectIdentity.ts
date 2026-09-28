@@ -58,6 +58,26 @@ export async function connectIdentity(
   }
 }
 
+export type GuestConnectOutcome =
+  | { status: "connected"; serverInfo: ServerInfo; token: null }
+  | { status: "unreachable"; error: unknown }
+  | { status: "version-mismatch"; direction: string };
+
+export async function connectGuest(identity: DesktopIdentity): Promise<GuestConnectOutcome> {
+  let serverInfo: ServerInfo;
+  try {
+    serverInfo = await resolveServer(identity.serverUrl);
+  } catch (error) {
+    if (error instanceof VersionMismatchError) {
+      return { status: "version-mismatch", direction: error.direction };
+    }
+    return { status: "unreachable", error };
+  }
+  configureApiClient(serverInfo.apiUrl);
+  setRefreshExecutor(null);
+  return { status: "connected", serverInfo, token: null };
+}
+
 export async function resolveServer(origin: string): Promise<ServerInfo> {
   const negotiation = await negotiateApiVersion(origin);
   if (!negotiation.ok) throw new VersionMismatchError(negotiation.direction);

@@ -46,17 +46,26 @@ export class ChannelPage {
    * The MessageGroup component shows/hides actions via React state (onMouseEnter/Leave),
    * not Tailwind CSS group classes, so we hover the `.message-content` div.
    */
-  private async hoverLastMessageAndClick(actionTestId: string): Promise<void> {
+  /**
+   * Re-hover until the action bar is genuinely under the cursor.  The bar is
+   * conditionally rendered on hover, and anything that shifts layout (a new
+   * reaction pill, a Mercure arrival) can slide it out from under a cursor
+   * parked on the message body, so one-shot hover-then-assert is racy.
+   */
+  private async revealMessageAction(actionTestId: string): Promise<Locator> {
     const lastContent = this.page.locator("main .message-content").last();
     const button = this.page.getByTestId(actionTestId).last();
-    await lastContent.hover();
-    // Wait for React to re-render and reveal the action toolbar, then move the
-    // cursor directly onto the button before clicking.  Moving the cursor from
-    // the message content to the button travels through DOM descendants of the
-    // message group, so the hover state (isGroupHovered) is never lost.
-    await expect(button).toBeAttached({ timeout: T(8_000) });
-    await expect(button).toBeVisible({ timeout: T(5_000) });
-    await button.hover();
+    await expect(async () => {
+      await lastContent.hover();
+      await expect(button).toBeAttached({ timeout: T(2_000) });
+      await button.hover();
+      await expect(button).toBeVisible({ timeout: T(1_000) });
+    }).toPass({ timeout: T(15_000) });
+    return button;
+  }
+
+  private async hoverLastMessageAndClick(actionTestId: string): Promise<void> {
+    const button = await this.revealMessageAction(actionTestId);
     await button.click();
   }
 
@@ -88,9 +97,7 @@ export class ChannelPage {
    * the given emoji.  After this the reaction pill for that emoji will appear.
    */
   async addReactionToLastMessage(emoji: string): Promise<void> {
-    const lastContent = this.page.locator("main .message-content").last();
-    await lastContent.hover();
-    await this.page.getByTestId(testIds.msgActionReact).last().click();
+    await this.hoverLastMessageAndClick(testIds.msgActionReact);
     // The picker renders the emoji as a button; pick the last match to avoid
     // conflicts with any existing reaction pill that may already be visible.
     await this.page.getByRole("button", { name: emoji }).last().click();

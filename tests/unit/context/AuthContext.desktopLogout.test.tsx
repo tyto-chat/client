@@ -13,6 +13,8 @@ import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import {
   addIdentity,
   createDefaultConfig,
+  identityKind,
+  loadDesktopConfig,
   saveDesktopConfig,
   secretKey,
   setLastActiveIdentity,
@@ -50,7 +52,7 @@ describe("AuthContext logout in desktop mode", () => {
     setPlatformBridgeForTests(null);
   });
 
-  it("deletes the active identity's refreshToken secret, keeps the password secret, clears the executor, and hard-navigates home", async () => {
+  it("wipes both secrets, downgrades the identity to a guest entry, clears the executor, and hard-navigates home", async () => {
     const bridge = createFakePlatformBridge();
     setPlatformBridgeForTests(bridge);
 
@@ -94,10 +96,15 @@ describe("AuthContext logout in desktop mode", () => {
     });
 
     expect(await bridge.secrets.get(refreshKey)).toBeNull();
-    expect(await bridge.secrets.get(passwordKey)).toBe("password-secret");
+    expect(await bridge.secrets.get(passwordKey)).toBeNull();
     expect(executorSpy).toHaveBeenCalledWith(null);
     expect(window.location.replace).toHaveBeenCalledWith("/");
     expect(capturedLogoutBody).toEqual({ refresh_token: "refresh-secret" });
+
+    const saved = await loadDesktopConfig(bridge);
+    const identity = saved.profiles.find((p) => p.id === pid)!.identities[0]!;
+    expect(identityKind(identity)).toBe("guest");
+    expect(identity.email).toBe("a@b.c");
   });
 
   it("does not call /logout when no refreshToken secret is stored", async () => {
@@ -137,5 +144,56 @@ describe("AuthContext logout in desktop mode", () => {
     });
 
     expect(logoutCalled).toBe(false);
+  });
+});
+
+describe("AuthContext logout in web mode", () => {
+  beforeEach(() => {
+    configureApiClient(BASE);
+    setAccessToken("test-token");
+    vi.stubEnv("VITE_APP_MODE", "");
+    vi.spyOn(window.location, "replace").mockImplementation(() => {});
+    server.use(
+      http.get(`${BASE}/api/v1/realtime/public-token`, () =>
+        HttpResponse.json({ token: null, expiresAt: null }),
+      ),
+      http.get(`${BASE}/api/v1/me`, () => HttpResponse.json(mockUser)),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+    setPlatformBridgeForTests(null);
+  });
+
+  it("revokes via the cookie endpoint, touches no desktop config, and never hard-navigates", async () => {
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+
+    let bodylessRevokes = 0;
+    server.use(
+      http.post(`${BASE}/logout`, async ({ request }) => {
+        const raw = await request.text();
+        if (!raw) bodylessRevokes += 1;
+
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useAuthContext(), { wrapper: makeWrapper(queryClient) });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(bodylessRevokes).toBe(1);
+    expect(window.location.replace).not.toHaveBeenCalled();
+    expect(await bridge.config.get()).toBeNull();
   });
 });
