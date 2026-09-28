@@ -414,7 +414,13 @@ function InactiveServerCommunities({
   );
 }
 
-export function DesktopRailGroups({ children }: { children?: React.ReactNode }) {
+export function DesktopRailGroups({
+  children,
+  hasLeadingItem = true,
+}: {
+  children?: React.ReactNode;
+  hasLeadingItem?: boolean;
+}) {
   const { t } = useTranslation("desktop");
   const contextValue = useOptionalConnectionsContext();
   const snapshot = useOptionalRegistrySnapshot(contextValue);
@@ -430,11 +436,13 @@ export function DesktopRailGroups({ children }: { children?: React.ReactNode }) 
   return (
     <>
       {!hasActive && children}
-      <div
-        data-testid="desktop-rail-divider"
-        aria-hidden
-        className="my-1.5 h-px w-8 shrink-0 rounded-full bg-line-strong"
-      />
+      {(hasLeadingItem || !hasActive) && (
+        <div
+          data-testid="desktop-rail-divider"
+          aria-hidden
+          className="my-1.5 h-px w-8 shrink-0 rounded-full bg-line-strong"
+        />
+      )}
       {orderedConnections.map((connection) => {
         const isActive = connection.identityId === snapshot.activeIdentityId;
         const wellCall =

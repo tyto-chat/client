@@ -1198,6 +1198,49 @@ describe("DesktopRail", () => {
     expect(screen.getByTestId("desktop-rail-community")).not.toHaveClass("opacity-50");
   });
 
+  it("drops the divider when nothing sits above the wells", () => {
+    const snapshot: RegistrySnapshot = {
+      connections: [makeConnection({ identityId: "ig", kind: "guest" })],
+      activeIdentityId: "ig",
+    };
+
+    renderWithContext(<DesktopRailGroups hasLeadingItem={false} />, {
+      registry: makeRegistryStub(snapshot),
+    });
+
+    expect(screen.queryByTestId("desktop-rail-divider")).not.toBeInTheDocument();
+  });
+
+  it("keeps the divider under a leading rail item", () => {
+    const snapshot: RegistrySnapshot = {
+      connections: [makeConnection({ identityId: "ia" })],
+      activeIdentityId: "ia",
+    };
+
+    renderWithContext(<DesktopRailGroups hasLeadingItem />, {
+      registry: makeRegistryStub(snapshot),
+    });
+
+    expect(screen.getByTestId("desktop-rail-divider")).toBeInTheDocument();
+  });
+
+  it("keeps the divider under the fallback community rail when no well is active", () => {
+    const snapshot: RegistrySnapshot = {
+      connections: [makeConnection({ identityId: "ig", kind: "guest" })],
+      activeIdentityId: null,
+    };
+
+    renderWithContext(
+      <DesktopRailGroups hasLeadingItem={false}>
+        <div data-testid="fallback-rail" />
+      </DesktopRailGroups>,
+      { registry: makeRegistryStub(snapshot) },
+    );
+
+    expect(screen.getByTestId("fallback-rail")).toBeInTheDocument();
+    expect(screen.getByTestId("desktop-rail-divider")).toBeInTheDocument();
+  });
+
   it("keeps the caption free of action chrome — lifecycle lives in the identity manager", () => {
     const snapshot: RegistrySnapshot = {
       connections: [makeConnection({ identityId: "ia" })],

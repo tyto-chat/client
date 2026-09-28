@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse, delay } from "msw";
@@ -12,6 +12,7 @@ const ORIGIN = "https://srv.example";
 const ORIGIN_2 = "https://srv2.example";
 
 beforeEach(() => _resetNegotiationForTests());
+afterEach(() => vi.unstubAllEnvs());
 
 function stubServerResolution(serverInfo: Record<string, unknown> = {}) {
   server.use(
@@ -376,6 +377,7 @@ describe("AddIdentityWizard", () => {
   });
 
   it("opens the forgot-password modal and requests a reset against the resolved server", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
     stubServerResolution();
     const resetRequests: unknown[] = [];
     server.use(
@@ -400,7 +402,7 @@ describe("AddIdentityWizard", () => {
     expect(within(dialog).getByLabelText(/email/i)).toHaveValue("a@b.c");
     await user.click(within(dialog).getByRole("button", { name: /send/i }));
 
-    await waitFor(() => expect(resetRequests).toEqual([{ email: "a@b.c" }]));
+    await waitFor(() => expect(resetRequests).toEqual([{ email: "a@b.c", client: "desktop" }]));
   });
 
   it("shows the welcome-back identity block with the signed-in email on a locked wizard", async () => {

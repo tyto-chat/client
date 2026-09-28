@@ -1,5 +1,6 @@
 import { apiClient, uploadFile } from "@/api/client";
 import type { User, UserProfile } from "@/types/api";
+import { getAppMode } from "@/platform/appMode";
 
 export function fetchMe(): Promise<User> {
   return apiClient.get<User>("/api/me");
@@ -57,7 +58,7 @@ export function changePassword(data: {
 }
 
 export function requestPasswordReset(email: string): Promise<void> {
-  return apiClient.post("/api/reset_password", { email });
+  return apiClient.post("/api/reset_password", { email, client: getAppMode() });
 }
 
 export function confirmPasswordReset(

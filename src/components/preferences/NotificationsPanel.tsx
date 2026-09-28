@@ -11,6 +11,7 @@ import {
 } from "@/utils/desktopNotifications";
 import { subscribeToPush, unsubscribeFromPush } from "@/utils/webPush";
 import { setEmailNotifications } from "@/api/users";
+import { isDeviceScopedPref } from "@/platform/deviceScopedPreferences";
 import { Switch } from "@/components/ui/Switch";
 import { SettingRow } from "@/components/preferences/SettingRow";
 import { sectionHeading } from "@/components/preferences/panelStyles";
@@ -44,11 +45,16 @@ export function NotificationsPanel() {
     }
   };
 
+  const saveDesktopPreference = (enabled: boolean) => {
+    if (!user || isDeviceScopedPref("desktopNotifications")) return;
+    updatePreference.mutate({ desktopNotifications: enabled });
+  };
+
   const toggleDesktop = async () => {
     if (desktopEnabled) {
       setDesktopEnabled(false);
       setDesktopNotificationsEnabled(false);
-      if (user) updatePreference.mutate({ desktopNotifications: false });
+      saveDesktopPreference(false);
       void unsubscribeFromPush();
       return;
     }
@@ -57,7 +63,7 @@ export function NotificationsPanel() {
     const granted = result === "granted";
     setDesktopEnabled(granted);
     setDesktopNotificationsEnabled(granted);
-    if (user) updatePreference.mutate({ desktopNotifications: granted });
+    saveDesktopPreference(granted);
     if (granted) void subscribeToPush();
   };
 

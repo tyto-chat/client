@@ -10,4 +10,5 @@ export const STORAGE_KEYS = {
   CONVERT_EMOTICONS: "convertEmoticons",
   PREFS_MIGRATED: "prefsMigrated",
   HAD_SESSION: "hadSession",
+  DEVICE_PREFS_SEEDED: "devicePrefsSeeded",
 } as const;

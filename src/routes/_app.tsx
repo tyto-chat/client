@@ -341,7 +341,7 @@ function AppShell() {
                         className="my-1.5 h-px w-8 shrink-0 rounded-full bg-line-strong"
                       />
                     )}
-                    <DesktopRailGroups>
+                    <DesktopRailGroups hasLeadingItem={Boolean(token)}>
                       <CommunityRail
                         unreadCounts={unreadCounts}
                         renderTileExtra={(c) => (
