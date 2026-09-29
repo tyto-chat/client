@@ -511,6 +511,7 @@ export interface AddServerModalProps {
   switchTo: ConnectionsContextValue["switchTo"];
   onClose: () => void;
   healthyTimeoutMs?: number;
+  initialServerUrl?: string;
 }
 
 export function AddServerModal({
@@ -518,6 +519,7 @@ export function AddServerModal({
   switchTo,
   onClose,
   healthyTimeoutMs = DEFAULT_HEALTHY_TIMEOUT_MS,
+  initialServerUrl,
 }: AddServerModalProps) {
   const { t } = useTranslation("desktop");
   const { notify } = useNotification();
@@ -566,7 +568,12 @@ export function AddServerModal({
 
   return (
     <Modal ariaLabel={t("add_identity_title")} onClose={onClose} size="sm">
-      {(close) => <AddIdentityWizard onComplete={(result) => void handleComplete(result, close)} />}
+      {(close) => (
+        <AddIdentityWizard
+          onComplete={(result) => void handleComplete(result, close)}
+          initialServerUrl={initialServerUrl}
+        />
+      )}
     </Modal>
   );
 }

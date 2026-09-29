@@ -1,4 +1,8 @@
 import { STORAGE_KEYS } from "@/utils/storageKeys";
+import { isManagedIdentityMode } from "@/platform/appMode";
+import { getPlatformBridge } from "@/platform/bridge";
+import type { PlatformBridge } from "@/platform/PlatformBridge";
+import { showNativeNotification } from "@/desktop/nativeShell";
 
 export function isDesktopNotificationsSupported(): boolean {
   return typeof window !== "undefined" && "Notification" in window;
@@ -35,7 +39,24 @@ interface DesktopNotificationOptions {
   onClick?: () => void;
 }
 
+function showThroughShell(title: string, opts: DesktopNotificationOptions): boolean {
+  if (!isManagedIdentityMode()) return false;
+  let bridge: PlatformBridge;
+  try {
+    bridge = getPlatformBridge();
+  } catch {
+    return false;
+  }
+  if (!bridge.notifications) return false;
+  if (!getDesktopNotificationsEnabled()) return true;
+  return showNativeNotification(bridge, title, opts, {
+    focused: typeof document !== "undefined" && document.hasFocus(),
+    now: Date.now(),
+  });
+}
+
 export function showDesktopNotification(title: string, opts: DesktopNotificationOptions): void {
+  if (showThroughShell(title, opts)) return;
   if (!isDesktopNotificationsSupported()) return;
   if (!getDesktopNotificationsEnabled()) return;
   if (Notification.permission !== "granted") return;
