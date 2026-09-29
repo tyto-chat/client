@@ -46,7 +46,7 @@ export function NotificationPopover({ anchorRef, communityIdentifier, onClose }:
   }, [anchorRef, onClose]);
 
   return (
-    <div ref={panelRef} style={style} className="z-50">
+    <div ref={panelRef} style={style} className="z-50" data-testid="notification-popover">
       <NotificationPanel communityIdentifier={communityIdentifier} />
     </div>
   );

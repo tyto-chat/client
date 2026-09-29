@@ -1,5 +1,8 @@
 {
   "add_identity_title": "Connettiti a un server",
+  "link_add_server_title": "Aggiungere questo server?",
+  "link_add_server_body": "Un link vuole aggiungere il server {{host}} a tyto. Continua solo se ti fidi della provenienza del link.",
+  "link_add_server_confirm": "Continua",
   "server_url_label": "Indirizzo del server",
   "server_url_placeholder": "chat.example.org",
   "server_url_invalid": "Non sembra un indirizzo server valido.",
@@ -34,6 +37,8 @@
   "server_status_unreachable": "riconnessione…",
   "relogin_title": "Accedi di nuovo",
   "boot_error_title": "Impossibile avviare tyto desktop",
+  "bridge_outdated_title": "Aggiorna tyto desktop",
+  "bridge_outdated_body": "Questa versione dell'app è troppo vecchia per il client di chat che contiene. Installa l'ultima versione di tyto desktop per continuare.",
   "switch_failed": "Impossibile passare a {{server}}. Riprova.",
   "call_on_server": "In chiamata: #{{channel}}",
   "browse_on_server": "Esplora su",

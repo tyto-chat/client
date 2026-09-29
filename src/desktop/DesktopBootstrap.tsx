@@ -23,6 +23,7 @@ import {
 } from "./desktopConfig";
 import { persistWizardResult } from "./identitySetup";
 import { setServerOrderSnapshot } from "./serverOrderStore";
+import { BridgeVersionError } from "@/platform/PlatformBridge";
 
 type BootState =
   | { kind: "loading" }
@@ -182,6 +183,19 @@ export function DesktopBootstrap({
 
   if (state.kind === "loading") {
     return <AppSkeleton />;
+  }
+
+  if (state.kind === "boot-error" && state.error instanceof BridgeVersionError) {
+    return (
+      <FullScreenWizard>
+        <div className="space-y-4" data-testid="desktop-bridge-outdated">
+          <h3 className="text-center text-[19px] font-semibold tracking-tight text-fg">
+            {t("bridge_outdated_title")}
+          </h3>
+          <ErrorBanner message={t("bridge_outdated_body")} />
+        </div>
+      </FullScreenWizard>
+    );
   }
 
   if (state.kind === "boot-error") {

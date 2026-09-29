@@ -18,6 +18,7 @@ import {
   subscribeActiveIdentity,
 } from "@/platform/activeIdentity";
 import { ConnectionNotificationBridge } from "@/desktop/ConnectionNotificationBridge";
+import { NativeShellRelay } from "@/desktop/NativeShellRelay";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerInfo } from "@/hooks/useServerInfo";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
@@ -350,6 +351,7 @@ function AppShell() {
                       />
                     </DesktopRailGroups>
                     <ConnectionNotificationBridge />
+                    <NativeShellRelay />
                     <div className="mt-auto" />
                     <ActiveVoiceButton />
                     <UserProfileButton />

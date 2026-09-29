@@ -1,5 +1,8 @@
 {
   "add_identity_title": "Підключення до сервера",
+  "link_add_server_title": "Додати цей сервер?",
+  "link_add_server_body": "Посилання хоче додати сервер {{host}} до tyto. Продовжуй, лише якщо довіряєш джерелу посилання.",
+  "link_add_server_confirm": "Продовжити",
   "server_url_label": "Адреса сервера",
   "server_url_placeholder": "chat.example.org",
   "server_url_invalid": "Це не схоже на дійсну адресу сервера.",
@@ -34,6 +37,8 @@
   "server_status_unreachable": "повторне підключення…",
   "relogin_title": "Увійти знову",
   "boot_error_title": "Не вдалося запустити tyto desktop",
+  "bridge_outdated_title": "Онови tyto desktop",
+  "bridge_outdated_body": "Ця версія застосунку застаріла для чат-клієнта, який вона містить. Встанови найновішу версію tyto desktop, щоб продовжити.",
   "switch_failed": "Не вдалося перемкнутися на {{server}}. Спробуй ще раз.",
   "call_on_server": "У дзвінку: #{{channel}}",
   "browse_on_server": "Переглянути на",

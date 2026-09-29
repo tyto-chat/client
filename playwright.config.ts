@@ -58,7 +58,7 @@ export default defineConfig({
   // failures by raising this; root-cause them.)
   retries: process.env.CI ? 2 : 1,
   // 4 oversubscribes and is both flakier and slower: 228/289 in 20.0m vs 289/289 in 11.9m.
-  workers: 2,
+  workers: process.env.CI ? 1 : 2,
   globalSetup: "./tests/e2e/globalSetup.ts",
   reporter: [
     ["list"],

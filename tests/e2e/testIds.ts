@@ -15,6 +15,7 @@ export const testIds = {
   profileMenu: "profile-menu",
   profileMenuButton: "profile-menu-button",
   notificationBell: "notification-bell",
+  notificationPopover: "notification-popover",
   notificationUnreadBadge: "notification-unread-badge",
 
   communityActionsBtn: "community-actions-btn",
