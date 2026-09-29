@@ -235,6 +235,24 @@ describe("ConnectionNotificationBridge", () => {
     expect(played).toEqual(["notification"]);
   });
 
+  it("is silent for a notification from another server that is not about a message", () => {
+    const switchTo = vi.fn().mockResolvedValue(undefined);
+    const { registry, emit } = makeRegistryStub("active-id");
+    vi.spyOn(desktopNotifications, "showDesktopNotification").mockImplementation(() => undefined);
+
+    renderWithContext(registry, switchTo);
+
+    emit({
+      identityId: "bg-id",
+      origin: "https://bg.example",
+      serverName: "Beta",
+      raw: makeRaw({ notificationType: "group_added", channelIdentifier: "", groupName: "Owls" }),
+    });
+
+    expect(notifyMock).toHaveBeenCalled();
+    expect(played).toEqual([]);
+  });
+
   it("plays for another server even when the same path is on screen", () => {
     window.history.pushState({}, "", "/dm/abc");
     const switchTo = vi.fn().mockResolvedValue(undefined);

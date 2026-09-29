@@ -65,6 +65,7 @@ export function ConnectionNotificationBridge() {
       notify(isDm ? text : t("from_server", { server: serverName, text }), "info");
 
       playNotificationSound({
+        notificationType: data.notificationType,
         sameServer: false,
         conversationIdentifier: data.conversationIdentifier,
         communityIdentifier: data.communityIdentifier,

@@ -102,6 +102,21 @@ describe("useUserNotificationsMercure sounds", () => {
     expect(played).toEqual(["notification"]);
   });
 
+  it("is silent for a notification that is not about a message", () => {
+    fire(
+      makeRaw({
+        notificationType: "group_added",
+        communityIdentifier: "owls",
+        channelIdentifier: "",
+        groupName: "Owls",
+        groupIdentifier: "owls-group",
+      }),
+    );
+
+    expect(notify).toHaveBeenCalled();
+    expect(played).toEqual([]);
+  });
+
   it("is silent for a coalesced update", () => {
     fire(makeRaw({ type: "notification.update", notificationType: "channel_activity" }));
 

@@ -3,6 +3,8 @@ import {
   NOTIFICATION_MIN_GAP_MS,
   decideCallSound,
   decideNotificationSound,
+  MESSAGE_NOTIFICATION_TYPES,
+  isMessageNotification,
   isNotificationOnScreen,
   soundForCallEvent,
   type NotificationSituation,
@@ -90,31 +92,109 @@ describe("decideNotificationSound", () => {
   });
 });
 
+describe("isMessageNotification", () => {
+  it("lists the message notification types", () => {
+    expect(MESSAGE_NOTIFICATION_TYPES).toEqual([
+      "dm_message",
+      "mention",
+      "broadcast_mention",
+      "channel_activity",
+    ]);
+  });
+
+  it.each(["dm_message", "mention", "broadcast_mention", "channel_activity"])(
+    "treats %s as a message",
+    (type) => {
+      expect(isMessageNotification(type)).toBe(true);
+    },
+  );
+
+  it.each(["report_filed", "group_added", "channel_access", "warn", "server_ban", "", "unknown"])(
+    "does not treat %j as a message",
+    (type) => {
+      expect(isMessageNotification(type)).toBe(false);
+    },
+  );
+});
+
 describe("isNotificationOnScreen", () => {
   it.each([
-    [{ sameServer: true, conversationIdentifier: "abc" }, "/dm/abc", true],
-    [{ sameServer: true, conversationIdentifier: "abc" }, "/dm/abc/", true],
-    [{ sameServer: true, conversationIdentifier: "abc" }, "/dm/abcd", false],
-    [{ sameServer: true, conversationIdentifier: "abc" }, "/dm", false],
-    [{ sameServer: false, conversationIdentifier: "abc" }, "/dm/abc", false],
     [
-      { sameServer: true, communityIdentifier: "owls", channelIdentifier: "general" },
+      { notificationType: "mention", sameServer: true, conversationIdentifier: "abc" },
+      "/dm/abc",
+      true,
+    ],
+    [
+      { notificationType: "mention", sameServer: true, conversationIdentifier: "abc" },
+      "/dm/abc/",
+      true,
+    ],
+    [
+      { notificationType: "mention", sameServer: true, conversationIdentifier: "abc" },
+      "/dm/abcd",
+      false,
+    ],
+    [
+      { notificationType: "mention", sameServer: true, conversationIdentifier: "abc" },
+      "/dm",
+      false,
+    ],
+    [
+      { notificationType: "mention", sameServer: false, conversationIdentifier: "abc" },
+      "/dm/abc",
+      false,
+    ],
+    [
+      {
+        notificationType: "mention",
+        sameServer: true,
+        communityIdentifier: "owls",
+        channelIdentifier: "general",
+      },
       "/owls/general",
       true,
     ],
     [
-      { sameServer: true, communityIdentifier: "owls", channelIdentifier: "general" },
+      {
+        notificationType: "mention",
+        sameServer: true,
+        communityIdentifier: "owls",
+        channelIdentifier: "general",
+      },
       "/owls/random",
       false,
     ],
     [
-      { sameServer: true, communityIdentifier: "owls", channelIdentifier: "general" },
+      {
+        notificationType: "mention",
+        sameServer: true,
+        communityIdentifier: "owls",
+        channelIdentifier: "general",
+      },
       "/other/general",
       false,
     ],
-    [{ sameServer: true, communityIdentifier: "owls", channelIdentifier: "" }, "/owls", false],
-    [{ sameServer: true }, "/owls/general", false],
-    [{ sameServer: true, communityIdentifier: "dm", channelIdentifier: "abc" }, "/dm/abc", false],
+    [
+      {
+        notificationType: "mention",
+        sameServer: true,
+        communityIdentifier: "owls",
+        channelIdentifier: "",
+      },
+      "/owls",
+      false,
+    ],
+    [{ notificationType: "mention", sameServer: true }, "/owls/general", false],
+    [
+      {
+        notificationType: "mention",
+        sameServer: true,
+        communityIdentifier: "dm",
+        channelIdentifier: "abc",
+      },
+      "/dm/abc",
+      false,
+    ],
   ] as const)("matches %j against %s as %s", (target, pathname, expected) => {
     expect(isNotificationOnScreen(target, pathname)).toBe(expected);
   });

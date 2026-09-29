@@ -67,12 +67,32 @@ describe("sounds", () => {
   });
 
   it("plays the notification sound", () => {
-    playNotificationSound({ sameServer: true, conversationIdentifier: "abc" });
+    playNotificationSound({
+      notificationType: "dm_message",
+      sameServer: true,
+      conversationIdentifier: "abc",
+    });
+    expect(played).toEqual([["notification", { volume: 0.6, scale: 1 }]]);
+  });
+
+  it("stays silent for a notification that is not about a message", () => {
+    playNotificationSound({ notificationType: "report_filed", sameServer: true });
+    expect(played).toEqual([]);
+  });
+
+  it("does not start the two seconds for a notification that is not about a message", () => {
+    playNotificationSound({ notificationType: "report_filed", sameServer: true });
+    expect(localStorage.getItem(LAST_NOTIFICATION_KEY)).toBeNull();
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     expect(played).toEqual([["notification", { volume: 0.6, scale: 1 }]]);
   });
 
   it("plays it once for a burst, and again after two seconds", () => {
-    const target = { sameServer: true, conversationIdentifier: "abc" };
+    const target = {
+      notificationType: "dm_message",
+      sameServer: true,
+      conversationIdentifier: "abc",
+    };
     playNotificationSound(target);
     vi.advanceTimersByTime(1999);
     playNotificationSound(target);
@@ -84,13 +104,13 @@ describe("sounds", () => {
 
   it("stays silent when another tab chimed half a second ago", () => {
     localStorage.setItem(LAST_NOTIFICATION_KEY, String(Date.now() - 500));
-    playNotificationSound({ sameServer: true });
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     expect(played).toEqual([]);
   });
 
   it("plays when another tab chimed two seconds ago", () => {
     localStorage.setItem(LAST_NOTIFICATION_KEY, String(Date.now() - 2000));
-    playNotificationSound({ sameServer: true });
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     expect(played).toHaveLength(1);
   });
 
@@ -99,12 +119,12 @@ describe("sounds", () => {
     ["a time far in the future", () => String(Date.now() + 2001)],
   ])("ignores %s left by another tab", (_label, stored) => {
     localStorage.setItem(LAST_NOTIFICATION_KEY, stored());
-    playNotificationSound({ sameServer: true });
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     expect(played).toHaveLength(1);
   });
 
   it("tells other tabs when it chimed", () => {
-    playNotificationSound({ sameServer: true });
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     expect(localStorage.getItem(LAST_NOTIFICATION_KEY)).toBe(String(Date.now()));
   });
 
@@ -112,9 +132,9 @@ describe("sounds", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("full");
     });
-    playNotificationSound({ sameServer: true });
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     vi.advanceTimersByTime(500);
-    playNotificationSound({ sameServer: true });
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     expect(played).toHaveLength(1);
   });
 
@@ -126,41 +146,49 @@ describe("sounds", () => {
 
   it("does not let a silenced notification reset the two seconds", () => {
     setSoundAmbient({ presence: "dnd" });
-    playNotificationSound({ sameServer: true });
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     setSoundAmbient({ presence: "online" });
-    playNotificationSound({ sameServer: true });
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     expect(played).toHaveLength(1);
   });
 
   it("stays silent for the conversation on screen while the window is focused", () => {
     window.history.pushState({}, "", "/dm/abc");
     hasFocus.mockReturnValue(true);
-    playNotificationSound({ sameServer: true, conversationIdentifier: "abc" });
+    playNotificationSound({
+      notificationType: "dm_message",
+      sameServer: true,
+      conversationIdentifier: "abc",
+    });
     expect(played).toEqual([]);
   });
 
   it("plays for the conversation on screen when the window is in the background", () => {
     window.history.pushState({}, "", "/dm/abc");
     hasFocus.mockReturnValue(false);
-    playNotificationSound({ sameServer: true, conversationIdentifier: "abc" });
+    playNotificationSound({
+      notificationType: "dm_message",
+      sameServer: true,
+      conversationIdentifier: "abc",
+    });
     expect(played).toHaveLength(1);
   });
 
   it("plays quieter during a call", () => {
     setSoundAmbient({ inCall: true });
-    playNotificationSound({ sameServer: true });
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     expect(played).toEqual([["notification", { volume: 0.6, scale: 0.45 }]]);
   });
 
   it("stays silent while the tray snooze is on", () => {
     setNotificationSnooze(30, Date.now());
-    playNotificationSound({ sameServer: true });
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     expect(played).toEqual([]);
   });
 
   it("stays silent when notification sounds are off, and call sounds still play", () => {
     updateSoundSettings({ notificationSounds: false });
-    playNotificationSound({ sameServer: true });
+    playNotificationSound({ notificationType: "dm_message", sameServer: true });
     playCallSound("self-leave");
     expect(played).toEqual([["leave", { volume: 0.6, scale: 1 }]]);
   });

@@ -164,6 +164,7 @@ export function useUserNotificationsMercure() {
       notify(text, variant);
 
       playNotificationSound({
+        notificationType: data.notificationType,
         sameServer: true,
         conversationIdentifier: data.conversationIdentifier,
         communityIdentifier: data.communityIdentifier,

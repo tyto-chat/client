@@ -4,6 +4,7 @@ import { getSoundPlayer } from "@/sounds/soundPlayer";
 import {
   decideCallSound,
   decideNotificationSound,
+  isMessageNotification,
   isNotificationOnScreen,
   NOTIFICATION_MIN_GAP_MS,
   soundForCallEvent,
@@ -78,6 +79,9 @@ export function playCallSound(event: CallSoundEvent): void {
 }
 
 export function playNotificationSound(target: NotificationTarget): void {
+  if (!isMessageNotification(target.notificationType)) {
+    return;
+  }
   const settings = getSoundSettings();
   const ambient = getSoundAmbient();
   const now = Date.now();

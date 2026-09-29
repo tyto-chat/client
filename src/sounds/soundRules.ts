@@ -70,7 +70,19 @@ export function decideNotificationSound(situation: NotificationSituation): Sound
   return "play";
 }
 
+export const MESSAGE_NOTIFICATION_TYPES: readonly string[] = [
+  "dm_message",
+  "mention",
+  "broadcast_mention",
+  "channel_activity",
+];
+
+export function isMessageNotification(type: string): boolean {
+  return MESSAGE_NOTIFICATION_TYPES.includes(type);
+}
+
 export interface NotificationTarget {
+  notificationType: string;
   sameServer: boolean;
   conversationIdentifier?: string | null;
   communityIdentifier?: string | null;
