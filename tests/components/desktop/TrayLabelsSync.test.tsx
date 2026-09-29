@@ -36,7 +36,7 @@ describe("TrayLabelsSync", () => {
 
     await waitFor(() => expect(sent).toHaveLength(1));
     expect(sent[0]).toMatchObject({
-      open: "Open tyto",
+      open: "Open Tyto",
       snooze30: "For 30 minutes",
       presenceDnd: "Do not disturb",
       quit: "Quit",
@@ -54,7 +54,7 @@ describe("TrayLabelsSync", () => {
     });
 
     await waitFor(() => expect(sent.at(-1)?.quit).toBe("Zakończ"));
-    expect(sent.at(-1)?.open).toBe("Otwórz tyto");
+    expect(sent.at(-1)?.open).toBe("Otwórz Tyto");
   });
 
   it.each(["de", "fr", "es", "it", "nl", "pt", "tr", "uk"])(

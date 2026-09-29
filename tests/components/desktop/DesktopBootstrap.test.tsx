@@ -318,7 +318,7 @@ describe("DesktopBootstrap", () => {
     );
 
     expect(await screen.findByTestId("desktop-boot-retry")).toBeInTheDocument();
-    expect(screen.getByText("Couldn't start tyto desktop")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't start Tyto desktop")).toBeInTheDocument();
     expect(screen.queryByTestId("app")).not.toBeInTheDocument();
 
     setPlatformBridgeForTests(workingBridge);
