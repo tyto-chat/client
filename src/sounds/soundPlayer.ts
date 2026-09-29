@@ -64,7 +64,7 @@ export function createSoundPlayer(createContext: () => AudioContext | null): Sou
   }
 
   function applyOutputDevice(target: AudioContext): void {
-    if (desiredDeviceId === "" || desiredDeviceId === appliedDeviceId) {
+    if (desiredDeviceId === appliedDeviceId) {
       return;
     }
     if (!hasSinkId(target)) {

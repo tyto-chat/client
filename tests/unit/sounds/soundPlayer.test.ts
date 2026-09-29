@@ -176,4 +176,20 @@ describe("soundPlayer", () => {
     player.setOutputDevice("headset");
     expect(() => player.play("mute", { volume: 1, scale: 1 })).not.toThrow();
   });
+
+  it("returns to the default output when the device is cleared", () => {
+    context.setSinkId = vi.fn().mockResolvedValue(undefined);
+    player.setOutputDevice("headset");
+    player.play("mute", { volume: 1, scale: 1 });
+    player.setOutputDevice("");
+    player.play("mute", { volume: 1, scale: 1 });
+    expect(context.setSinkId).toHaveBeenCalledWith("");
+  });
+
+  it("makes no output-device call when none was ever chosen and it is cleared", () => {
+    context.setSinkId = vi.fn().mockResolvedValue(undefined);
+    player.setOutputDevice("");
+    player.play("mute", { volume: 1, scale: 1 });
+    expect(context.setSinkId).not.toHaveBeenCalled();
+  });
 });
