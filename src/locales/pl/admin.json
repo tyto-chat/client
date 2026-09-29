@@ -466,7 +466,7 @@
   "legal_doc_default_in_use": "Puste — użytkownikom pokazywany jest domyślny dokument.",
   "legal_doc_placeholder": "Markdown. Pozostaw puste, aby użyć domyślnego dokumentu.",
   "legal_doc_reset": "Przywróć domyślny",
-  "catalogue_listing": "Umieść w katalogu serwerów tyto",
+  "catalogue_listing": "Umieść w katalogu serwerów Tyto",
   "catalogue_listing_hint": "Gdy włączone, ten serwer może zostać umieszczony w publicznym katalogu serwerów tyto. Udostępniana jest tylko flaga prawda/fałsz.",
   "setup_rail_note": "Wszystko można później zmienić w Admin → Ustawienia.",
   "setup_community_title": "Twoja pierwsza społeczność",

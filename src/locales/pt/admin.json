@@ -466,7 +466,7 @@
   "legal_doc_default_in_use": "Vazio — o documento padrão incluso é exibido aos usuários.",
   "legal_doc_placeholder": "Markdown. Deixe vazio para usar o padrão incluso.",
   "legal_doc_reset": "Redefinir para o padrão",
-  "catalogue_listing": "Listar no catálogo de servidores tyto",
+  "catalogue_listing": "Listar no catálogo de servidores Tyto",
   "catalogue_listing_hint": "Quando ativado, este servidor pode aparecer no diretório público de servidores tyto. Apenas um sinalizador verdadeiro/falso é exposto.",
   "setup_rail_note": "Tudo pode ser alterado depois em Admin → Configurações.",
   "setup_community_title": "Sua primeira comunidade",

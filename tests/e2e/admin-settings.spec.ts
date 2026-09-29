@@ -47,7 +47,7 @@ test.describe.serial("Admin settings", () => {
   test("a toggle survives save and reload", async ({ adminPage: page }) => {
     await gotoSettingsTab(page, "general");
 
-    const toggle = page.getByRole("switch", { name: "List in tyto server catalogue" });
+    const toggle = page.getByRole("switch", { name: "List in Tyto server catalogue" });
     await expect(toggle).toBeVisible({ timeout: T(8_000) });
     const wasOn = (await toggle.getAttribute("aria-checked")) === "true";
 
@@ -56,7 +56,7 @@ test.describe.serial("Admin settings", () => {
     await expect(page.getByText(SAVED_TOAST)).toBeVisible({ timeout: T(8_000) });
 
     await gotoSettingsTab(page, "general");
-    const reloaded = page.getByRole("switch", { name: "List in tyto server catalogue" });
+    const reloaded = page.getByRole("switch", { name: "List in Tyto server catalogue" });
     await expect(reloaded).toHaveAttribute("aria-checked", String(!wasOn));
 
     await reloaded.click();

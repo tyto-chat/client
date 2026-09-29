@@ -466,7 +466,7 @@
   "legal_doc_default_in_use": "Vide — le document par défaut fourni est affiché.",
   "legal_doc_placeholder": "Markdown. Laisser vide pour utiliser le document par défaut.",
   "legal_doc_reset": "Réinitialiser",
-  "catalogue_listing": "Lister dans le catalogue de serveurs tyto",
+  "catalogue_listing": "Lister dans le catalogue de serveurs Tyto",
   "catalogue_listing_hint": "Lorsque activé, ce serveur peut figurer dans l'annuaire public des serveurs tyto. Seul un indicateur vrai/faux est exposé.",
   "setup_rail_note": "Tout peut être modifié plus tard dans Admin → Paramètres.",
   "setup_community_title": "Votre première communauté",
