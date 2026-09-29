@@ -43,6 +43,7 @@ import { shouldDeferCameraForBlur } from "@/utils/cameraJoin";
 import { VideoTileGrid } from "@/components/VideoTileGrid";
 import { useMemberAudioStore } from "@/utils/memberAudio";
 import { setSpeakingUsers } from "@/utils/speakingUsers";
+import { PeerCallSounds } from "@/sounds/PeerCallSounds";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useAudioCall } from "@/context/AudioCallContext";
@@ -417,6 +418,7 @@ export function LiveKitRoomContent() {
     >
       {!isDeafened && <CallAudioRenderer />}
       <SpeakingStateSync />
+      <PeerCallSounds />
       <MicHandler />
       {deferCameraForBlur && <BlurredCameraJoin processorRef={blurProcessorRef} />}
       <MediaControlSync processorRef={blurProcessorRef} />
