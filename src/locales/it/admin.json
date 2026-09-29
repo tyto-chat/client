@@ -466,7 +466,7 @@
   "legal_doc_default_in_use": "Vuoto — viene mostrato il documento predefinito incluso.",
   "legal_doc_placeholder": "Markdown. Lascia vuoto per usare il documento predefinito.",
   "legal_doc_reset": "Ripristina predefinito",
-  "catalogue_listing": "Elenca nel catalogo server tyto",
+  "catalogue_listing": "Elenca nel catalogo server Tyto",
   "catalogue_listing_hint": "Se attivo, questo server può comparire nella directory pubblica dei server tyto. Viene esposto solo un flag vero/falso.",
   "setup_rail_note": "Tutto può essere modificato in seguito in Admin → Impostazioni.",
   "setup_community_title": "La tua prima community",
