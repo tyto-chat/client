@@ -55,8 +55,7 @@ describe("NotificationsPanel", () => {
   it("toggles the email switch on click", async () => {
     const { default: userEvent } = await import("@testing-library/user-event");
     render(<NotificationsPanel />, { wrapper: makeWrapper() });
-    const toggles = screen.getAllByRole("switch");
-    const emailToggle = toggles[toggles.length - 1]!;
+    const emailToggle = screen.getByLabelText("Daily email summary");
     expect(emailToggle).toHaveAttribute("aria-checked", "false");
     await userEvent.setup().click(emailToggle);
     expect(emailToggle).toHaveAttribute("aria-checked", "true");
