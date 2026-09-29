@@ -160,3 +160,17 @@ describe("ChannelSidebar community menu — desktop server origin", () => {
     expect(screen.queryByRole("separator")).toBeNull();
   });
 });
+
+describe("ChannelSidebar layout", () => {
+  it("keeps the community header outside the part that scrolls", () => {
+    render(<ChannelSidebar communityId={COMMUNITY_ID} />);
+
+    const scroller = screen.getByTestId("channel-list-scroll");
+    const heading = screen.getByRole("heading", { level: 2 });
+
+    expect(scroller.className).toContain("overflow-y-auto");
+    expect(scroller.contains(screen.getByRole("navigation"))).toBe(true);
+    expect(scroller.contains(heading)).toBe(false);
+    expect(heading.closest("aside")?.className).not.toContain("overflow-y-auto");
+  });
+});
