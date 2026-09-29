@@ -6,6 +6,7 @@ import { avatarUrl } from "@/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotification } from "@/context/NotificationContext";
 import { useConversations } from "@/queries/conversationQueries";
+import { useAutoHideScrollbar } from "@/hooks/useAutoHideScrollbar";
 import { useMarkAllDmsRead } from "@/queries/readStateQueries";
 import { conversationDisplayName } from "@/utils/conversationDisplayName";
 import { BellOffIcon, CheckDoubleIcon, PlusIcon } from "@/components/icons";
@@ -49,6 +50,7 @@ function LegacyConversationsSidebar() {
   const markAllDmsRead = useMarkAllDmsRead();
 
   const { navOpen, closeNav } = useMobileNav();
+  const scrollRef = useAutoHideScrollbar<HTMLUListElement>();
 
   const params = useParams({ strict: false });
   const activeId = (params as { conversationId?: string }).conversationId;
@@ -168,7 +170,7 @@ function LegacyConversationsSidebar() {
         </div>
       </div>
 
-      <ul className="flex-1 overflow-y-auto">
+      <ul ref={scrollRef} className="scrollbar-autohide flex-1 overflow-y-auto">
         {isLoading ? (
           <li>
             <ConversationRowsSkeleton />
@@ -244,6 +246,7 @@ function UnifiedConversationsSidebar({ registry }: { registry: ConnectionRegistr
   const { notify } = useNotification();
   const markAllDmsRead = useMarkAllDmsRead();
   const { navOpen, closeNav } = useMobileNav();
+  const scrollRef = useAutoHideScrollbar<HTMLUListElement>();
   const navigate = useNavigate();
 
   const params = useParams({ strict: false });
@@ -458,7 +461,7 @@ function UnifiedConversationsSidebar({ registry }: { registry: ConnectionRegistr
         </div>
       </div>
 
-      <ul className="flex-1 overflow-y-auto">
+      <ul ref={scrollRef} className="scrollbar-autohide flex-1 overflow-y-auto">
         {!loaded ? (
           <li>
             <ConversationRowsSkeleton />

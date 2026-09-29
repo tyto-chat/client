@@ -42,6 +42,7 @@ import { ReorderChannelsModal } from "@/components/ReorderChannelsModal";
 import { SectionModal } from "@/components/SectionModal";
 import { ChannelModal } from "@/components/ChannelModal";
 import { NotificationPopover } from "@/components/NotificationPopover";
+import { useAutoHideScrollbar } from "@/hooks/useAutoHideScrollbar";
 import { ChannelParticipantsList } from "@/components/ChannelParticipantsList";
 import { ChannelNotificationMenu } from "@/components/ChannelNotificationMenu";
 import { Menu, MenuItem, MenuDivider, MenuStaticItem } from "@/components/ui";
@@ -151,12 +152,14 @@ export function ChannelSidebar({ communityId }: Props) {
   }
 
   const { navOpen } = useMobileNav();
+  const scrollRef = useAutoHideScrollbar<HTMLElement>();
 
   return (
     <>
       <aside
+        ref={scrollRef}
         className={cn(
-          "group/sidebar w-60 overflow-y-auto bg-surface px-2 pb-4",
+          "group/sidebar scrollbar-autohide w-60 overflow-y-auto bg-surface px-2 pb-4",
           "max-md:fixed max-md:inset-y-0 max-md:left-16 max-md:z-40 max-md:w-[calc(100vw-4rem)] max-md:max-w-72 max-md:transition-transform",
           navOpen ? "max-md:translate-x-0" : "max-md:-translate-x-[calc(4rem+100%)]",
           "md:static md:w-60",
