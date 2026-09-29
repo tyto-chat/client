@@ -46,13 +46,21 @@ export class ChannelSidebar {
 
   private async openSectionMenu(sectionName: string): Promise<void> {
     const header = this.sectionHeader(sectionName);
-    // Retry the whole hover+click: under CI load the force-click can land
-    // before the menu's handlers are attached and the menu never opens.
+    const actions = header.getByTestId(testIds.sectionActionsBtn);
+    // Never force-click here: it skips the hit-target check, so a layout shift lands it on the bell.
     await expect(async () => {
-      await header.hover();
-      await header.getByTestId(testIds.sectionActionsBtn).click({ force: true });
+      await this.closeNotificationPopover();
+      await header.hover({ timeout: T(2_000) });
+      await actions.click({ timeout: T(2_000) });
       await expect(this.page.getByRole("menu")).toBeVisible({ timeout: 2_000 });
     }).toPass({ timeout: T(15_000) });
+  }
+
+  private async closeNotificationPopover(): Promise<void> {
+    const popover = this.page.getByTestId(testIds.notificationPopover);
+    if (!(await popover.isVisible())) return;
+    await this.page.getByTestId(testIds.notificationBell).click();
+    await expect(popover).toBeHidden({ timeout: T(2_000) });
   }
 
   async expectSectionVisible(name: string): Promise<void> {
