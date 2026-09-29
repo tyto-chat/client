@@ -467,7 +467,7 @@
   "legal_doc_placeholder": "Markdown. Déjalo vacío para usar el documento predeterminado.",
   "legal_doc_reset": "Restablecer al predeterminado",
   "catalogue_listing": "Listar en el catálogo de servidores Tyto",
-  "catalogue_listing_hint": "Cuando está activado, este servidor puede aparecer en el directorio público de servidores tyto. Solo se expone un indicador verdadero/falso.",
+  "catalogue_listing_hint": "Cuando está activado, este servidor puede aparecer en el directorio público de servidores Tyto. Solo se expone un indicador verdadero/falso.",
   "setup_rail_note": "Todo se puede cambiar después en Admin → Ajustes.",
   "setup_community_title": "Tu primera comunidad",
   "setup_registration_title": "¿Quién puede registrarse?",

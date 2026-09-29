@@ -16,7 +16,7 @@ function values(node: Record<string, unknown>, prefix: string): [string, string]
   });
 }
 
-const LOWERCASE_STANDALONE = /(?<![\w./:-])tyto(?![\w.:_/-])/;
+const LOWERCASE_STANDALONE = /(?<![\w./:-])tyto(?![\w:_/-]|\.\w)/;
 
 describe("product naming in translations", () => {
   it("writes the short name as Tyto and the full name as tyto.chat", () => {
@@ -36,6 +36,8 @@ describe("product naming in translations", () => {
     expect(LOWERCASE_STANDALONE.test("github.com/tyto-chat/client")).toBe(false);
     expect(LOWERCASE_STANDALONE.test("Open tyto")).toBe(true);
     expect(LOWERCASE_STANDALONE.test("tyto desktop")).toBe(true);
+    expect(LOWERCASE_STANDALONE.test("Add this server to tyto.")).toBe(true);
+    expect(LOWERCASE_STANDALONE.test("Welcome to tyto. Enjoy")).toBe(true);
   });
 
   it("never capitalises the full name", () => {
