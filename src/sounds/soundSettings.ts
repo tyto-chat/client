@@ -16,6 +16,7 @@ export const DEFAULT_SOUND_SETTINGS: SoundSettings = {
 
 const listeners = new Set<() => void>();
 let cached: SoundSettings | null = null;
+let storageWritable = true;
 
 function clampVolume(value: unknown): number {
   const num = typeof value === "number" ? value : Number.NaN;
@@ -41,35 +42,56 @@ function normalize(raw: unknown): SoundSettings {
   };
 }
 
-function load(): SoundSettings {
+function readStored(): SoundSettings | null {
+  let raw: string | null;
   try {
-    const raw = localStorage.getItem(SOUND_SETTINGS_KEY);
-    if (raw === null) {
-      return { ...DEFAULT_SOUND_SETTINGS };
-    }
+    raw = localStorage.getItem(SOUND_SETTINGS_KEY);
+  } catch {
+    return null;
+  }
+  if (raw === null) {
+    return { ...DEFAULT_SOUND_SETTINGS };
+  }
+  try {
     return normalize(JSON.parse(raw));
   } catch {
     return { ...DEFAULT_SOUND_SETTINGS };
   }
 }
 
+function notifyListeners(): void {
+  listeners.forEach((listener) => listener());
+}
+
 export function getSoundSettings(): SoundSettings {
   if (cached === null) {
-    cached = load();
+    cached = readStored() ?? { ...DEFAULT_SOUND_SETTINGS };
   }
   return cached;
 }
 
 export function updateSoundSettings(change: Partial<SoundSettings>): void {
-  const next = normalize({ ...getSoundSettings(), ...change });
+  const base = storageWritable ? (readStored() ?? getSoundSettings()) : getSoundSettings();
+  const next = normalize({ ...base, ...change });
   cached = next;
   try {
     localStorage.setItem(SOUND_SETTINGS_KEY, JSON.stringify(next));
+    storageWritable = true;
   } catch {
-    /* ignore */
+    storageWritable = false;
   }
-  listeners.forEach((listener) => listener());
+  notifyListeners();
 }
+
+function handleStorageChange(event: StorageEvent): void {
+  if (event.key !== null && event.key !== SOUND_SETTINGS_KEY) {
+    return;
+  }
+  cached = null;
+  notifyListeners();
+}
+
+window.addEventListener("storage", handleStorageChange);
 
 function subscribe(callback: () => void): () => void {
   listeners.add(callback);
@@ -82,4 +104,5 @@ export function useSoundSettings(): SoundSettings {
 
 export function resetSoundSettingsForTests(): void {
   cached = null;
+  storageWritable = true;
 }

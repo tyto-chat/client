@@ -59,6 +59,58 @@ describe("soundSettings", () => {
     expect(getSoundSettings().callSounds).toBe(false);
   });
 
+  it("sees a change made in another tab", () => {
+    const { result } = renderHook(() => useSoundSettings());
+    expect(getSoundSettings().volume).toBe(60);
+    localStorage.setItem(SOUND_SETTINGS_KEY, '{"volume":25,"callSounds":false}');
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: SOUND_SETTINGS_KEY }));
+    });
+    expect(getSoundSettings()).toEqual({ callSounds: false, notificationSounds: true, volume: 25 });
+    expect(result.current).toEqual({ callSounds: false, notificationSounds: true, volume: 25 });
+  });
+
+  it("returns to defaults when another tab clears storage", () => {
+    updateSoundSettings({ volume: 30 });
+    localStorage.clear();
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: null }));
+    });
+    expect(getSoundSettings().volume).toBe(60);
+  });
+
+  it("ignores a change to other stored values", () => {
+    let renders = 0;
+    renderHook(() => {
+      renders += 1;
+      return useSoundSettings();
+    });
+    const before = getSoundSettings();
+    const rendersBefore = renders;
+    localStorage.setItem(SOUND_SETTINGS_KEY, '{"volume":25}');
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: "tyto.other" }));
+    });
+    expect(getSoundSettings()).toBe(before);
+    expect(renders).toBe(rendersBefore);
+  });
+
+  it("keeps a setting another tab changed when this tab changes a different one", () => {
+    expect(getSoundSettings().notificationSounds).toBe(true);
+    localStorage.setItem(SOUND_SETTINGS_KEY, '{"notificationSounds":false}');
+    updateSoundSettings({ volume: 20 });
+    expect(getSoundSettings()).toEqual({ callSounds: true, notificationSounds: false, volume: 20 });
+  });
+
+  it("keeps every change until reload when storage cannot be written", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("full");
+    });
+    updateSoundSettings({ volume: 20 });
+    updateSoundSettings({ callSounds: false });
+    expect(getSoundSettings()).toEqual({ callSounds: false, notificationSounds: true, volume: 20 });
+  });
+
   it("tells subscribers", () => {
     const { result } = renderHook(() => useSoundSettings());
     act(() => updateSoundSettings({ volume: 10 }));
