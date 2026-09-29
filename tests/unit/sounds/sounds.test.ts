@@ -12,6 +12,8 @@ import {
 } from "@/sounds/sounds";
 import { setPreferredDevice } from "@/utils/deviceSettings";
 
+const LAST_NOTIFICATION_KEY = "tyto.sounds.lastNotificationAt";
+
 let played: Array<[SoundName, PlayOptions]>;
 let outputDevices: string[];
 let hasFocus: ReturnType<typeof vi.spyOn>;
@@ -78,6 +80,48 @@ describe("sounds", () => {
     vi.advanceTimersByTime(1);
     playNotificationSound(target);
     expect(played).toHaveLength(2);
+  });
+
+  it("stays silent when another tab chimed half a second ago", () => {
+    localStorage.setItem(LAST_NOTIFICATION_KEY, String(Date.now() - 500));
+    playNotificationSound({ sameServer: true });
+    expect(played).toEqual([]);
+  });
+
+  it("plays when another tab chimed two seconds ago", () => {
+    localStorage.setItem(LAST_NOTIFICATION_KEY, String(Date.now() - 2000));
+    playNotificationSound({ sameServer: true });
+    expect(played).toHaveLength(1);
+  });
+
+  it.each([
+    ["an unreadable value", () => "soon"],
+    ["a time far in the future", () => String(Date.now() + 2001)],
+  ])("ignores %s left by another tab", (_label, stored) => {
+    localStorage.setItem(LAST_NOTIFICATION_KEY, stored());
+    playNotificationSound({ sameServer: true });
+    expect(played).toHaveLength(1);
+  });
+
+  it("tells other tabs when it chimed", () => {
+    playNotificationSound({ sameServer: true });
+    expect(localStorage.getItem(LAST_NOTIFICATION_KEY)).toBe(String(Date.now()));
+  });
+
+  it("keeps the two seconds when storage cannot be written", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("full");
+    });
+    playNotificationSound({ sameServer: true });
+    vi.advanceTimersByTime(500);
+    playNotificationSound({ sameServer: true });
+    expect(played).toHaveLength(1);
+  });
+
+  it("forgets the other tabs' chime when reset", () => {
+    localStorage.setItem(LAST_NOTIFICATION_KEY, String(Date.now()));
+    resetSoundsForTests();
+    expect(localStorage.getItem(LAST_NOTIFICATION_KEY)).toBeNull();
   });
 
   it("does not let a silenced notification reset the two seconds", () => {

@@ -5,6 +5,7 @@ import {
   decideCallSound,
   decideNotificationSound,
   isNotificationOnScreen,
+  NOTIFICATION_MIN_GAP_MS,
   soundForCallEvent,
   type CallSoundEvent,
   type NotificationTarget,
@@ -13,7 +14,45 @@ import { QUIET_SCALE, type SoundName } from "@/sounds/soundSet";
 import { getSoundSettings } from "@/sounds/soundSettings";
 import { getPreferredDevice } from "@/utils/deviceSettings";
 
+const LAST_NOTIFICATION_KEY = "tyto.sounds.lastNotificationAt";
+
 let lastNotificationSoundAt: number | null = null;
+
+function readSharedNotificationSoundAt(now: number): number | null {
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(LAST_NOTIFICATION_KEY);
+  } catch {
+    return null;
+  }
+  if (raw === null) {
+    return null;
+  }
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value - now > NOTIFICATION_MIN_GAP_MS) {
+    return null;
+  }
+  return value;
+}
+
+function writeSharedNotificationSoundAt(time: number): void {
+  try {
+    localStorage.setItem(LAST_NOTIFICATION_KEY, String(time));
+  } catch {
+    return;
+  }
+}
+
+function latestNotificationSoundAt(now: number): number | null {
+  const shared = readSharedNotificationSoundAt(now);
+  if (shared === null) {
+    return lastNotificationSoundAt;
+  }
+  if (lastNotificationSoundAt === null) {
+    return shared;
+  }
+  return Math.max(shared, lastNotificationSoundAt);
+}
 
 function scaleFor(decision: "play" | "quiet"): number {
   return decision === "quiet" ? QUIET_SCALE : 1;
@@ -42,11 +81,12 @@ export function playNotificationSound(target: NotificationTarget): void {
   const settings = getSoundSettings();
   const ambient = getSoundAmbient();
   const now = Date.now();
+  const lastSoundAt = latestNotificationSoundAt(now);
   const decision = decideNotificationSound({
     enabled: settings.notificationSounds,
     presence: ambient.presence,
     snoozed: isNotificationSnoozed(now),
-    msSinceLastSound: lastNotificationSoundAt === null ? null : now - lastNotificationSoundAt,
+    msSinceLastSound: lastSoundAt === null ? null : now - lastSoundAt,
     onScreen: isNotificationOnScreen(target, window.location.pathname),
     windowFocused: document.hasFocus(),
     inCall: ambient.inCall,
@@ -55,6 +95,7 @@ export function playNotificationSound(target: NotificationTarget): void {
     return;
   }
   lastNotificationSoundAt = now;
+  writeSharedNotificationSoundAt(now);
   playSound("notification", settings.volume / 100, scaleFor(decision));
 }
 
@@ -64,4 +105,9 @@ export function playTestSound(name: SoundName): void {
 
 export function resetSoundsForTests(): void {
   lastNotificationSoundAt = null;
+  try {
+    localStorage.removeItem(LAST_NOTIFICATION_KEY);
+  } catch {
+    return;
+  }
 }
