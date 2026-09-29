@@ -19,6 +19,7 @@ import {
 } from "@/platform/activeIdentity";
 import { ConnectionNotificationBridge } from "@/desktop/ConnectionNotificationBridge";
 import { NativeShellRelay } from "@/desktop/NativeShellRelay";
+import { ActiveUnreadSync } from "@/desktop/ActiveUnreadSync";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerInfo } from "@/hooks/useServerInfo";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
@@ -352,6 +353,7 @@ function AppShell() {
                     </DesktopRailGroups>
                     <ConnectionNotificationBridge />
                     <NativeShellRelay />
+                    <ActiveUnreadSync />
                     <div className="mt-auto" />
                     <ActiveVoiceButton />
                     <UserProfileButton />

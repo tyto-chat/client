@@ -265,6 +265,17 @@ export class IdentityConnection {
     return this.refetchUnreadCounts(this.connectionId);
   }
 
+  applyUnreadCounts(counts: Record<string, number>): void {
+    const current = this.unreadCountsValue;
+    const keys = Object.keys(counts);
+    const unchanged =
+      keys.length === Object.keys(current).length &&
+      keys.every((key) => current[key] === counts[key]);
+    if (unchanged) return;
+    this.unreadCountsValue = { ...counts };
+    this.rebuildSnapshot();
+  }
+
   refreshData(): Promise<void> {
     return this.loadData(this.connectionId);
   }
