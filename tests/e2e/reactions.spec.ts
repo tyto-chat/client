@@ -36,6 +36,10 @@ test.describe.serial("Reactions", () => {
     await channel.expectMessage(text);
 
     const pill = messageRow(page, text).getByRole("button", { name: /❤️/ });
+    const removed = page.waitForResponse(
+      (r) => r.request().method() === "DELETE" && /\/reactions\/\d+$/.test(r.url()),
+      { timeout: T(40_000) },
+    );
     await channel.addReactionToLastMessage("❤️");
     await expect(pill.first()).toBeVisible({ timeout: T(6_000) });
 
@@ -43,6 +47,8 @@ test.describe.serial("Reactions", () => {
 
     await expect(pill).toHaveCount(0, { timeout: T(6_000) });
 
+    // The removal is sent only after the add confirms; reloading earlier cancels it.
+    await removed;
     await page.reload();
     await expect(page.locator("main h1:visible").first()).toBeVisible({ timeout: T(10_000) });
     await channel.expectMessage(text);
