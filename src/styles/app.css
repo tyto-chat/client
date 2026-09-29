@@ -176,6 +176,7 @@ button {
 @layer base {
   body {
     background: var(--color-canvas);
+    color: var(--color-fg);
   }
 
   :focus-visible {

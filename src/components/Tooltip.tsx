@@ -55,7 +55,7 @@ export function Tooltip({ content, children, className }: Props) {
       {visible &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[9999] max-w-xs break-all rounded-md bg-canvas px-2.5 py-1.5 text-xs text-white shadow-soft-md"
+            className="pointer-events-none fixed z-[9999] max-w-xs break-all rounded-md border border-line bg-canvas px-2.5 py-1.5 text-xs text-fg shadow-soft-md"
             style={{
               top: coords.below ? coords.top : undefined,
               bottom: coords.below ? undefined : `calc(100vh - ${coords.top}px)`,
