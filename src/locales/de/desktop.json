@@ -34,6 +34,8 @@
   "server_status_unreachable": "Verbindung wird wiederhergestellt…",
   "relogin_title": "Erneut anmelden",
   "boot_error_title": "tyto desktop konnte nicht gestartet werden",
+  "bridge_outdated_title": "tyto desktop aktualisieren",
+  "bridge_outdated_body": "Diese Version der App ist zu alt für den enthaltenen Chat-Client. Installiere die neueste Version von tyto desktop, um fortzufahren.",
   "switch_failed": "Wechsel zu {{server}} nicht möglich. Versuche es erneut.",
   "call_on_server": "Im Anruf: #{{channel}}",
   "browse_on_server": "Durchsuchen auf",

@@ -1,4 +1,30 @@
+export const REQUIRED_BRIDGE_VERSION = 2;
+
+export type BridgeCallState = "none" | "in-call" | "in-call-muted";
+
+export interface BridgeNotification {
+  title: string;
+  body: string;
+  tag: string;
+  payload: string;
+}
+
+export interface BridgeBadgeState {
+  unreadCount: number;
+  callState: BridgeCallState;
+  callLabel?: string;
+}
+
+export type BridgePresence = "online" | "away" | "dnd" | "invisible";
+
+export type TrayCommand =
+  | { type: "snooze"; minutes: number | null }
+  | { type: "presence"; value: BridgePresence }
+  | { type: "toggle-mute" }
+  | { type: "leave-call" };
+
 export interface PlatformBridge {
+  bridgeVersion?: number;
   secrets: {
     get(key: string): Promise<string | null>;
     set(key: string, value: string): Promise<void>;
@@ -8,4 +34,29 @@ export interface PlatformBridge {
     get(): Promise<string | null>;
     set(json: string): Promise<void>;
   };
+  notifications?: {
+    show(notification: BridgeNotification): void;
+  };
+  appState?: {
+    setBadge(state: BridgeBadgeState): void;
+  };
+  app?: {
+    getVersion(): Promise<string>;
+    setAutoLaunch(enabled: boolean): Promise<void>;
+    quit(): void;
+    onDeepLink(handler: (payload: string) => void): () => void;
+    onTrayCommand(handler: (command: TrayCommand) => void): () => void;
+  };
+}
+
+export class BridgeVersionError extends Error {
+  readonly found: number;
+  readonly required: number;
+
+  constructor(found: number, required: number) {
+    super("bridge_version_mismatch");
+    this.name = "BridgeVersionError";
+    this.found = found;
+    this.required = required;
+  }
 }

@@ -34,6 +34,8 @@
   "server_status_unreachable": "riconnessione…",
   "relogin_title": "Accedi di nuovo",
   "boot_error_title": "Impossibile avviare tyto desktop",
+  "bridge_outdated_title": "Aggiorna tyto desktop",
+  "bridge_outdated_body": "Questa versione dell'app è troppo vecchia per il client di chat che contiene. Installa l'ultima versione di tyto desktop per continuare.",
   "switch_failed": "Impossibile passare a {{server}}. Riprova.",
   "call_on_server": "In chiamata: #{{channel}}",
   "browse_on_server": "Esplora su",

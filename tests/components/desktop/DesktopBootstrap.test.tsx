@@ -327,4 +327,23 @@ describe("DesktopBootstrap", () => {
 
     expect(await screen.findByTestId("wizard-server-input")).toBeInTheDocument();
   });
+
+  it("tells the user to update the app when the shell's bridge is outdated", async () => {
+    setPlatformBridgeForTests(null);
+    window.__TYTO_PLATFORM__ = { ...createFakePlatformBridge(), bridgeVersion: 1 };
+
+    render(
+      <DesktopBootstrap>
+        <div data-testid="app" />
+      </DesktopBootstrap>,
+    );
+
+    expect(await screen.findByTestId("desktop-bridge-outdated")).toHaveTextContent(
+      /update tyto desktop/i,
+    );
+    expect(screen.queryByTestId("desktop-boot-retry")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("app")).not.toBeInTheDocument();
+
+    delete window.__TYTO_PLATFORM__;
+  });
 });

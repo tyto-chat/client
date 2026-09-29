@@ -34,6 +34,8 @@
   "server_status_unreachable": "повторне підключення…",
   "relogin_title": "Увійти знову",
   "boot_error_title": "Не вдалося запустити tyto desktop",
+  "bridge_outdated_title": "Онови tyto desktop",
+  "bridge_outdated_body": "Ця версія застосунку застаріла для чат-клієнта, який вона містить. Встанови найновішу версію tyto desktop, щоб продовжити.",
   "switch_failed": "Не вдалося перемкнутися на {{server}}. Спробуй ще раз.",
   "call_on_server": "У дзвінку: #{{channel}}",
   "browse_on_server": "Переглянути на",
