@@ -72,7 +72,7 @@ function NoCommunitiesPage() {
   return (
     <AuthModalProvider>
       {({ modal, close, switchToRegister, switchToLogin }) => (
-        <div className="flex h-dvh items-center justify-center bg-surface text-fg-muted">
+        <div className="flex h-app items-center justify-center bg-surface text-fg-muted">
           <button
             onClick={toggle}
             title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}

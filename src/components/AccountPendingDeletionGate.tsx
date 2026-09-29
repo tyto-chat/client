@@ -29,7 +29,7 @@ export function AccountPendingDeletionGate({ purgeAt }: Props) {
   }
 
   return (
-    <div className="flex h-dvh items-center justify-center bg-surface px-6">
+    <div className="flex h-app items-center justify-center bg-surface px-6">
       <div className="max-w-md rounded-2xl border border-red-300 bg-canvas p-8 text-center shadow-soft-md dark:border-red-700">
         <h1 className="mb-3 text-xl font-bold text-red-600 dark:text-red-400">
           {t("delete_account_full_lockout_title")}

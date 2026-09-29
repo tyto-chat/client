@@ -80,7 +80,7 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
 
   if (!config) {
     return (
-      <div className="flex h-dvh items-center justify-center">
+      <div className="flex h-app items-center justify-center">
         <Spinner size={24} />
       </div>
     );

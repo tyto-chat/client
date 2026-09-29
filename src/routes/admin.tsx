@@ -32,7 +32,7 @@ function AdminShell() {
   return (
     <div
       data-testid="admin-shell"
-      className="flex h-dvh bg-surface text-fg max-md:flex-col dark:text-white"
+      className="flex h-app bg-surface text-fg max-md:flex-col dark:text-white"
     >
       <aside className="flex w-60 flex-col border-r border-line bg-canvas px-3 py-4 max-md:w-full max-md:border-b max-md:border-r-0 max-md:py-2">
         <Link

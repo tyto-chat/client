@@ -147,7 +147,7 @@ export function ThreadRepliesSkeleton() {
 
 export function AppSkeleton() {
   return (
-    <div data-testid="app-skeleton" aria-hidden="true" className="flex h-screen w-screen bg-canvas">
+    <div data-testid="app-skeleton" aria-hidden="true" className="flex h-app w-screen bg-canvas">
       <div
         className={`flex ${railWidthClass()} shrink-0 flex-col items-center gap-2.5 bg-rail py-3`}
       >
