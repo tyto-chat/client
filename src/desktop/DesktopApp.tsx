@@ -17,6 +17,7 @@ import { ConnectionRegistry } from "./connections/ConnectionRegistry";
 import { ConnectionsContext, type ConnectionsContextValue } from "./connections/ConnectionsContext";
 import { DesktopBootstrap, type DesktopSession } from "./DesktopBootstrap";
 import { performIdentitySwitch, type SwitchTarget } from "./switchIdentity";
+import { TrayLabelsSync } from "./TrayLabelsSync";
 
 export interface DesktopAppProps {
   renderApp?: (activeIdentityId: string) => ReactNode;
@@ -182,14 +183,17 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
   }, [activeIdentityId]);
 
   return (
-    <DesktopBootstrap onSession={handleSession}>
-      {activeIdentityId && (
-        <ConnectionsContext.Provider value={contextValue}>
-          <QueryClientProvider client={activeClient}>
-            {renderApp ? renderApp(activeIdentityId) : <AppShell />}
-          </QueryClientProvider>
-        </ConnectionsContext.Provider>
-      )}
-    </DesktopBootstrap>
+    <>
+      <TrayLabelsSync />
+      <DesktopBootstrap onSession={handleSession}>
+        {activeIdentityId && (
+          <ConnectionsContext.Provider value={contextValue}>
+            <QueryClientProvider client={activeClient}>
+              {renderApp ? renderApp(activeIdentityId) : <AppShell />}
+            </QueryClientProvider>
+          </ConnectionsContext.Provider>
+        )}
+      </DesktopBootstrap>
+    </>
   );
 }

@@ -604,3 +604,25 @@ describe("DesktopApp", () => {
     });
   });
 });
+
+describe("DesktopApp tray labels", () => {
+  it("translates the tray on the first-run screen, before any server is added", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    localStorage.clear();
+    const sent: unknown[] = [];
+    setPlatformBridgeForTests({
+      ...createFakePlatformBridge(),
+      bridgeVersion: 2,
+      appState: { setBadge: () => undefined, setTrayLabels: (labels) => void sent.push(labels) },
+    });
+
+    render(<DesktopApp renderApp={() => <div data-testid="app" />} />);
+
+    expect(await screen.findByTestId("wizard-server-input")).toBeInTheDocument();
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0]).toMatchObject({ quit: "Quit" });
+
+    vi.unstubAllEnvs();
+    setPlatformBridgeForTests(null);
+  });
+});
