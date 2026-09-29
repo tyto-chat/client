@@ -9,11 +9,18 @@ import type { ConnectionRegistry } from "@/desktop/connections/ConnectionRegistr
 import type { ConnectionNotificationEvent } from "@/desktop/connections/IdentityConnection";
 import type { NotificationMercureEvent } from "@/types/api";
 import * as desktopNotifications from "@/utils/desktopNotifications";
+import { resetSoundAmbientForTests } from "@/sounds/soundAmbient";
+import { setSoundPlayerForTests } from "@/sounds/soundPlayer";
+import type { SoundName } from "@/sounds/soundSet";
+import { resetSoundSettingsForTests } from "@/sounds/soundSettings";
+import { resetSoundsForTests } from "@/sounds/sounds";
 
 const notifyMock = vi.fn();
 vi.mock("@/context/NotificationContext", () => ({
   useNotification: () => ({ notify: notifyMock }),
 }));
+
+let played: SoundName[];
 
 function makeRaw(overrides: Partial<NotificationMercureEvent> = {}): NotificationMercureEvent {
   return {
@@ -72,11 +79,23 @@ describe("ConnectionNotificationBridge", () => {
   beforeEach(() => {
     vi.stubEnv("VITE_APP_MODE", "desktop");
     notifyMock.mockReset();
+    played = [];
+    setSoundPlayerForTests({
+      play: (name) => played.push(name),
+      setOutputDevice: () => undefined,
+    });
+    resetSoundsForTests();
+    resetSoundSettingsForTests();
+    resetSoundAmbientForTests();
+    localStorage.clear();
+    window.history.pushState({}, "", "/");
+    vi.spyOn(document, "hasFocus").mockReturnValue(true);
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
+    setSoundPlayerForTests(null);
   });
 
   it("toasts + native-notifies for a background identity's event, and wires the click to switchTo with a deep link", () => {
@@ -197,5 +216,46 @@ describe("ConnectionNotificationBridge", () => {
 
     expect(notifyMock).not.toHaveBeenCalled();
     expect(showSpy).not.toHaveBeenCalled();
+  });
+
+  it("plays for a notification from another server", () => {
+    const switchTo = vi.fn().mockResolvedValue(undefined);
+    const { registry, emit } = makeRegistryStub("active-id");
+    vi.spyOn(desktopNotifications, "showDesktopNotification").mockImplementation(() => undefined);
+
+    renderWithContext(registry, switchTo);
+
+    emit({
+      identityId: "bg-id",
+      origin: "https://bg.example",
+      serverName: "Beta",
+      raw: makeRaw(),
+    });
+
+    expect(played).toEqual(["notification"]);
+  });
+
+  it("plays for another server even when the same path is on screen", () => {
+    window.history.pushState({}, "", "/dm/abc");
+    const switchTo = vi.fn().mockResolvedValue(undefined);
+    const { registry, emit } = makeRegistryStub("active-id");
+    vi.spyOn(desktopNotifications, "showDesktopNotification").mockImplementation(() => undefined);
+
+    renderWithContext(registry, switchTo);
+
+    emit({
+      identityId: "bg-id",
+      origin: "https://bg.example",
+      serverName: "Beta",
+      raw: makeRaw({
+        notificationType: "dm_message",
+        communityId: null,
+        communityIdentifier: "",
+        channelIdentifier: "",
+        conversationIdentifier: "abc",
+      }),
+    });
+
+    expect(played).toEqual(["notification"]);
   });
 });

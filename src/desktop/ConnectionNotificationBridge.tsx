@@ -4,6 +4,7 @@ import { useNotification } from "@/context/NotificationContext";
 import { navigationFromNotification } from "@/utils/notificationLink";
 import { notificationText } from "@/utils/notificationText";
 import { showDesktopNotification } from "@/utils/desktopNotifications";
+import { playNotificationSound } from "@/sounds/sounds";
 import { isManagedIdentityMode } from "@/platform/appMode";
 import { ConnectionsContext, type ConnectionsContextValue } from "./connections/ConnectionsContext";
 import type { ConnectionNotificationEvent } from "./connections/IdentityConnection";
@@ -62,6 +63,13 @@ export function ConnectionNotificationBridge() {
 
       const serverName = event.serverName ?? event.origin;
       notify(isDm ? text : t("from_server", { server: serverName, text }), "info");
+
+      playNotificationSound({
+        sameServer: false,
+        conversationIdentifier: data.conversationIdentifier,
+        communityIdentifier: data.communityIdentifier,
+        channelIdentifier: data.channelIdentifier,
+      });
 
       showDesktopNotification(t("desktop_title"), {
         body: text,
