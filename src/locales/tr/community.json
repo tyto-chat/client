@@ -9,6 +9,7 @@
   "tab_invites": "Davetler",
   "tab_groups": "Gruplar",
   "tab_emojis": "Emojiler",
+  "tab_activity": "Etkinlik",
   "tab_moderation_log": "Moderasyon kaydı",
   "roles_admins_heading": "Topluluk yöneticileri",
   "roles_moderators_heading": "Topluluk moderatörleri",
@@ -42,6 +43,7 @@
   "delete_section": "Bölümü sil",
   "add_channel": "Kanal ekle",
   "section_deleted": "Bölüm silindi.",
+  "section_delete_error": "Bölüm silinemedi. Yalnızca boş bölümler silinebilir.",
   "section_updated": "Bölüm güncellendi.",
   "section_create_error": "Bölüm oluşturulamadı. Lütfen tekrar dene.",
   "section_update_error": "Bölüm güncellenemedi. Lütfen tekrar dene.",
@@ -344,5 +346,8 @@
   "community_locale_fallback_hint": "Bu dil için henüz çeviri yok — sunucu mesajları sunucunun varsayılan diline dönecek.",
   "nav_group_community": "Topluluk",
   "nav_group_moderation": "Moderasyon",
-  "nav_group_communities": "Topluluklar"
+  "nav_group_communities": "Topluluklar",
+  "presence_chart_members": "Üyeler",
+  "presence_chart_guests": "Misafirler",
+  "presence_chart_empty": "Henüz etkinlik verisi yok"
 }

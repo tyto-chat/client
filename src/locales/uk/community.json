@@ -9,6 +9,7 @@
   "tab_invites": "Запрошення",
   "tab_groups": "Групи",
   "tab_emojis": "Емодзі",
+  "tab_activity": "Активність",
   "tab_moderation_log": "Журнал модерації",
   "roles_admins_heading": "Адміністратори спільноти",
   "roles_moderators_heading": "Модератори спільноти",
@@ -42,6 +43,7 @@
   "delete_section": "Видалити розділ",
   "add_channel": "Додати канал",
   "section_deleted": "Розділ видалено.",
+  "section_delete_error": "Не вдалося видалити розділ. Видаляти можна лише порожні розділи.",
   "section_updated": "Розділ оновлено.",
   "section_create_error": "Не вдалося створити розділ. Спробуй ще раз.",
   "section_update_error": "Не вдалося оновити розділ. Спробуй ще раз.",
@@ -344,5 +346,8 @@
   "community_locale_fallback_hint": "Для цієї мови ще немає перекладів — повідомлення сервера будуть типовою мовою сервера.",
   "nav_group_community": "Спільнота",
   "nav_group_moderation": "Модерація",
-  "nav_group_communities": "Спільноти"
+  "nav_group_communities": "Спільноти",
+  "presence_chart_members": "Учасники",
+  "presence_chart_guests": "Гості",
+  "presence_chart_empty": "Даних про активність ще немає"
 }

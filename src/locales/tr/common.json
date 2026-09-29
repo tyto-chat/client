@@ -68,7 +68,9 @@
     "online_count_title": "{{count}} üye çevrimiçi",
     "online_count_title_plural": "{{count}} üye çevrimiçi",
     "online_panel_title": "Şu anda çevrimiçi",
-    "online_panel_empty": "Şu anda kimse çevrimiçi değil."
+    "online_panel_empty": "Şu anda kimse çevrimiçi değil.",
+    "guest_count_one": "{{count}} misafir göz atıyor",
+    "guest_count_other": "{{count}} misafir göz atıyor"
   },
   "you": "sen",
   "message": "Mesaj",

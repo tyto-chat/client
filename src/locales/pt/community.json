@@ -9,6 +9,7 @@
   "tab_invites": "Convites",
   "tab_groups": "Grupos",
   "tab_emojis": "Emojis",
+  "tab_activity": "Atividade",
   "tab_moderation_log": "Registro de moderação",
   "roles_admins_heading": "Administradores da comunidade",
   "roles_moderators_heading": "Moderadores da comunidade",
@@ -42,6 +43,7 @@
   "delete_section": "Excluir seção",
   "add_channel": "Adicionar canal",
   "section_deleted": "Seção excluída.",
+  "section_delete_error": "Falha ao excluir a seção. Apenas seções vazias podem ser excluídas.",
   "section_updated": "Seção atualizada.",
   "section_create_error": "Falha ao criar a seção. Tente novamente.",
   "section_update_error": "Falha ao atualizar a seção. Tente novamente.",
@@ -344,5 +346,8 @@
   "community_locale_fallback_hint": "Ainda não há traduções para este idioma — as mensagens do servidor usarão o idioma padrão do servidor.",
   "nav_group_community": "Comunidade",
   "nav_group_moderation": "Moderação",
-  "nav_group_communities": "Comunidades"
+  "nav_group_communities": "Comunidades",
+  "presence_chart_members": "Membros",
+  "presence_chart_guests": "Convidados",
+  "presence_chart_empty": "Ainda não há dados de atividade"
 }

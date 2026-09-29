@@ -99,6 +99,8 @@
   "blur_light": "Leggera",
   "blur_strong": "Forte",
   "background_blur_hint": "Sfoca lo sfondo della fotocamera nelle videochiamate. Richiede un dispositivo abbastanza veloce.",
+  "mirror_self": "Specchia il mio video",
+  "mirror_self_hint": "Mostra la tua videocamera specchiata, come in uno specchio. Gli altri ti vedono sempre non specchiato.",
   "devices_heading": "Dispositivi",
   "device_microphone": "Microfono",
   "device_speaker": "Altoparlanti",

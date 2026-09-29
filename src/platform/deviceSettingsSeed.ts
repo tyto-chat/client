@@ -1,4 +1,4 @@
-import i18n, { SUPPORTED_LANGUAGES } from "@/i18n";
+import i18n from "@/i18n";
 import type { UserPreferences } from "@/api/userPreferences";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 
@@ -8,13 +8,10 @@ const LANGUAGE_STORAGE_KEY = "tyto_language";
 const AUTO_POPULATED_THEME = "dark";
 
 function detectedLanguage(): string {
-  const supported: readonly string[] = SUPPORTED_LANGUAGES.map((l) => l.code);
-  for (const tag of navigator.languages ?? []) {
-    if (supported.includes(tag)) return tag;
-    const base = tag.split("-")[0];
-    if (base && supported.includes(base)) return base;
-  }
-  return "en";
+  const match: unknown = i18n.services.languageUtils.getBestMatchFromCodes([
+    ...(navigator.languages ?? []),
+  ]);
+  return typeof match === "string" ? match : "en";
 }
 
 function seedIfUnset(storageKey: string, value: string | null): void {

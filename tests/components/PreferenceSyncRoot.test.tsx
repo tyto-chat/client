@@ -177,6 +177,19 @@ describe("device settings seed", () => {
     window.removeEventListener("tyto:device-settings-seeded", seeded);
   });
 
+  it("treats the language i18next auto-detected as unset for mixed browser language lists", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    vi.restoreAllMocks();
+    changeLanguage = vi.spyOn(i18n, "changeLanguage").mockResolvedValue(i18n.t);
+    stubNavigatorLanguages(["pl-PL", "en"]);
+    localStorage.setItem("tyto_language", "en");
+    serverPrefs = { ...EMPTY_PREFS, locale: "de" };
+
+    renderRoot();
+
+    await waitFor(() => expect(changeLanguage).toHaveBeenCalledWith("de"));
+  });
+
   it("never overwrites a value the user already chose on this device", async () => {
     vi.stubEnv("VITE_APP_MODE", "desktop");
     localStorage.setItem(STORAGE_KEYS.THEME, "system");

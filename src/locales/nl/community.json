@@ -9,6 +9,7 @@
   "tab_invites": "Uitnodigingen",
   "tab_groups": "Groepen",
   "tab_emojis": "Emoji",
+  "tab_activity": "Activiteit",
   "tab_moderation_log": "Moderatielogboek",
   "roles_admins_heading": "Communitybeheerders",
   "roles_moderators_heading": "Communitymoderators",
@@ -42,6 +43,7 @@
   "delete_section": "Sectie verwijderen",
   "add_channel": "Kanaal toevoegen",
   "section_deleted": "Sectie verwijderd.",
+  "section_delete_error": "De sectie kon niet worden verwijderd. Alleen lege secties kunnen worden verwijderd.",
   "section_updated": "Sectie bijgewerkt.",
   "section_create_error": "Sectie aanmaken mislukt. Probeer het opnieuw.",
   "section_update_error": "Sectie bijwerken mislukt. Probeer het opnieuw.",
@@ -344,5 +346,8 @@
   "community_locale_fallback_hint": "Nog geen vertalingen voor deze taal — serverberichten vallen terug op de standaardtaal van de server.",
   "nav_group_community": "Community",
   "nav_group_moderation": "Moderatie",
-  "nav_group_communities": "Community's"
+  "nav_group_communities": "Community's",
+  "presence_chart_members": "Leden",
+  "presence_chart_guests": "Gasten",
+  "presence_chart_empty": "Nog geen activiteitsgegevens"
 }

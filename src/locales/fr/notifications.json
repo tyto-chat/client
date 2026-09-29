@@ -57,5 +57,6 @@
   "appeal_upheld": "Ton recours a été examiné et l'action est maintenue : {{reason}}",
   "appeal_overturned": "Ton recours a été accepté et l'action a été levée : {{reason}}",
   "appeal_action": "Contester",
-  "unread": "Non lu"
+  "unread": "Non lu",
+  "disk_pressure_purge": "D'anciennes pièces jointes ont été supprimées automatiquement pour libérer de l'espace disque"
 }

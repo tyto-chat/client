@@ -99,6 +99,8 @@
   "blur_light": "Suave",
   "blur_strong": "Fuerte",
   "background_blur_hint": "Desenfoca el fondo de la cámara en videollamadas. Requiere un dispositivo razonablemente rápido.",
+  "mirror_self": "Reflejar mi vídeo",
+  "mirror_self_hint": "Muestra tu propia cámara reflejada, como en un espejo. Los demás siempre te ven sin reflejar.",
   "devices_heading": "Dispositivos",
   "device_microphone": "Micrófono",
   "device_speaker": "Altavoces",

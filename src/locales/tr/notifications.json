@@ -57,5 +57,6 @@
   "appeal_upheld": "İtirazın incelendi ve eylem geçerli kaldı: {{reason}}",
   "appeal_overturned": "İtirazın kabul edildi ve eylem kaldırıldı: {{reason}}",
   "appeal_action": "İtiraz",
-  "unread": "Okunmamış"
+  "unread": "Okunmamış",
+  "disk_pressure_purge": "Disk alanı açmak için eski ekler otomatik olarak kaldırıldı"
 }

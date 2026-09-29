@@ -15,6 +15,40 @@ const pendingReactionRemovals = new Set<string>();
 const removalKey = (messageIri: string, emoji: string, userId: number) =>
   `${messageIri}|${emoji}|${userId}`;
 
+const reactionAdds = new Map<string, Promise<{ id: number }>>();
+
+function requestReactionToggle(
+  { messageIri, emoji, existingId }: ToggleReactionVars,
+  currentUserId: number,
+): Promise<void | { id: number }> {
+  const key = removalKey(messageIri, emoji, currentUserId);
+
+  if (existingId === undefined) {
+    const add = addReaction(messageIri, emoji);
+    reactionAdds.set(key, add);
+    add.catch(() => {
+      if (reactionAdds.get(key) === add) reactionAdds.delete(key);
+    });
+    return add;
+  }
+
+  if (existingId !== 0) {
+    reactionAdds.delete(key);
+    return removeReaction(existingId);
+  }
+
+  const add = reactionAdds.get(key);
+  if (!add) return Promise.resolve();
+  reactionAdds.delete(key);
+  pendingReactionRemovals.add(key);
+  return add
+    .then(
+      ({ id }) => removeReaction(id),
+      () => undefined,
+    )
+    .finally(() => pendingReactionRemovals.delete(key));
+}
+
 export function stripPendingReactionRemovals(
   messageIri: string,
   reactions: Record<string, ReactionEntry[]> | null | undefined,
@@ -74,13 +108,7 @@ function useToggleReactionForKey(cacheKey: readonly unknown[], currentUserId: nu
     ToggleReactionVars,
     { previous: InfiniteData<ChannelPage> | undefined }
   >({
-    mutationFn: ({ messageIri, emoji, existingId }: ToggleReactionVars) => {
-      if (existingId === 0) {
-        pendingReactionRemovals.add(removalKey(messageIri, emoji, currentUserId));
-        return Promise.resolve();
-      }
-      return existingId !== undefined ? removeReaction(existingId) : addReaction(messageIri, emoji);
-    },
+    mutationFn: (vars: ToggleReactionVars) => requestReactionToggle(vars, currentUserId),
 
     onMutate: async ({ messageIri, emoji, existingId }) => {
       await queryClient.cancelQueries({ queryKey: cacheKey });
@@ -104,11 +132,8 @@ function useToggleReactionForKey(cacheKey: readonly unknown[], currentUserId: nu
       return { previous };
     },
 
-    onError: (_err, vars, context) => {
+    onError: (_err, _vars, context) => {
       if (context?.previous) queryClient.setQueryData(cacheKey, context.previous);
-      if (vars.existingId === undefined) {
-        pendingReactionRemovals.delete(removalKey(vars.messageIri, vars.emoji, currentUserId));
-      }
     },
 
     onSuccess: (data: void | { id: number }, { messageIri, emoji, existingId }) => {
@@ -128,13 +153,6 @@ function useToggleReactionForKey(cacheKey: readonly unknown[], currentUserId: nu
           })),
         };
       });
-
-      const key = removalKey(messageIri, emoji, currentUserId);
-      if (pendingReactionRemovals.has(key)) {
-        void removeReaction(created.id)
-          .catch(() => {})
-          .finally(() => pendingReactionRemovals.delete(key));
-      }
     },
   });
 }
@@ -164,13 +182,7 @@ export function useToggleThreadReaction(rootIri: string, currentUserId: number) 
     ToggleReactionVars,
     { previous: Message[] | undefined }
   >({
-    mutationFn: ({ messageIri, emoji, existingId }: ToggleReactionVars) => {
-      if (existingId === 0) {
-        pendingReactionRemovals.add(removalKey(messageIri, emoji, currentUserId));
-        return Promise.resolve();
-      }
-      return existingId !== undefined ? removeReaction(existingId) : addReaction(messageIri, emoji);
-    },
+    mutationFn: (vars: ToggleReactionVars) => requestReactionToggle(vars, currentUserId),
 
     onMutate: async ({ messageIri, emoji, existingId }) => {
       await queryClient.cancelQueries({ queryKey: cacheKey });
@@ -187,11 +199,8 @@ export function useToggleThreadReaction(rootIri: string, currentUserId: number) 
       return { previous };
     },
 
-    onError: (_err, vars, context) => {
+    onError: (_err, _vars, context) => {
       if (context?.previous) queryClient.setQueryData(cacheKey, context.previous);
-      if (vars.existingId === undefined) {
-        pendingReactionRemovals.delete(removalKey(vars.messageIri, vars.emoji, currentUserId));
-      }
     },
 
     onSuccess: (data: void | { id: number }, { messageIri, emoji, existingId }) => {
@@ -204,13 +213,6 @@ export function useToggleThreadReaction(rootIri: string, currentUserId: number) 
             : applyConfirmedReactionId(m, emoji, currentUserId, created.id!),
         ),
       );
-
-      const key = removalKey(messageIri, emoji, currentUserId);
-      if (pendingReactionRemovals.has(key)) {
-        void removeReaction(created.id)
-          .catch(() => {})
-          .finally(() => pendingReactionRemovals.delete(key));
-      }
     },
   });
 }

@@ -16,7 +16,6 @@
   "days_ago_few": "{{count}} dni temu",
   "days_ago_many": "{{count}} dni temu",
   "days_ago_other": "{{count}} dni temu",
-  "new_message": "Nowa wiadomość w #{{channel}}",
   "mention": "{{author}} wspomniał(a) Cię w #{{channel}}",
   "broadcast_mention": "@{{author}} powiadomił(a) #{{channel}}",
   "channel_activity_single": "@{{author}} napisał(a) w #{{channel}}",

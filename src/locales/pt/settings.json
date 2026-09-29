@@ -99,6 +99,8 @@
   "blur_light": "Leve",
   "blur_strong": "Forte",
   "background_blur_hint": "Desfoca o fundo da sua câmera em chamadas de vídeo. Requer um dispositivo razoavelmente rápido.",
+  "mirror_self": "Espelhar meu vídeo",
+  "mirror_self_hint": "Mostra sua própria câmera espelhada, como em um espelho. Os outros sempre veem você sem espelhamento.",
   "devices_heading": "Dispositivos",
   "device_microphone": "Microfone",
   "device_speaker": "Alto-falantes",

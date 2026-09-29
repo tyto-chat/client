@@ -68,7 +68,9 @@
     "online_count_title": "{{count}} membro online",
     "online_count_title_plural": "{{count}} membros online",
     "online_panel_title": "Online agora",
-    "online_panel_empty": "Ninguém está online no momento."
+    "online_panel_empty": "Ninguém está online no momento.",
+    "guest_count_one": "{{count}} convidado navegando",
+    "guest_count_other": "{{count}} convidados navegando"
   },
   "you": "você",
   "message": "Mensagem",

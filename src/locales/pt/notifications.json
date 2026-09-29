@@ -57,5 +57,6 @@
   "appeal_upheld": "Seu recurso foi analisado e a ação foi mantida: {{reason}}",
   "appeal_overturned": "Seu recurso foi aceito e a ação foi suspensa: {{reason}}",
   "appeal_action": "Recurso",
-  "unread": "Não lidas"
+  "unread": "Não lidas",
+  "disk_pressure_purge": "Anexos antigos foram removidos automaticamente para liberar espaço em disco"
 }

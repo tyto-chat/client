@@ -68,7 +68,9 @@
     "online_count_title": "{{count}} lid online",
     "online_count_title_plural": "{{count}} leden online",
     "online_panel_title": "Nu online",
-    "online_panel_empty": "Er is nu niemand online."
+    "online_panel_empty": "Er is nu niemand online.",
+    "guest_count_one": "{{count}} gast kijkt rond",
+    "guest_count_other": "{{count}} gasten kijken rond"
   },
   "you": "jij",
   "message": "Bericht",

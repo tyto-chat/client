@@ -68,7 +68,9 @@
     "online_count_title": "{{count}} Mitglied online",
     "online_count_title_plural": "{{count}} Mitglieder online",
     "online_panel_title": "Gerade online",
-    "online_panel_empty": "Gerade ist niemand online."
+    "online_panel_empty": "Gerade ist niemand online.",
+    "guest_count_one": "{{count}} Gast schaut sich um",
+    "guest_count_other": "{{count}} Gäste schauen sich um"
   },
   "you": "du",
   "message": "Nachricht",

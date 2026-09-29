@@ -57,5 +57,6 @@
   "appeal_upheld": "Je bezwaar is beoordeeld en de actie blijft staan: {{reason}}",
   "appeal_overturned": "Je bezwaar is toegewezen en de actie is opgeheven: {{reason}}",
   "appeal_action": "Bezwaar",
-  "unread": "Ongelezen"
+  "unread": "Ongelezen",
+  "disk_pressure_purge": "Oude bijlagen zijn automatisch verwijderd om schijfruimte vrij te maken"
 }
