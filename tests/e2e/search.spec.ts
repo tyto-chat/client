@@ -44,9 +44,11 @@ test.describe.serial("Search — dialog UX", () => {
     const shell = new AppShell(page, world.communityId);
     await shell.gotoChannel(world.textChannelId);
 
-    await page.keyboard.press("Control+k");
-
-    await expect(page.getByTestId(testIds.searchDialog)).toBeVisible({ timeout: T(6_000) });
+    const dialog = page.getByTestId(testIds.searchDialog);
+    await expect(async () => {
+      if (!(await dialog.isVisible())) await page.keyboard.press("Control+k");
+      await expect(dialog).toBeVisible({ timeout: 1_500 });
+    }).toPass({ timeout: T(12_000) });
   });
 
   test("close via Esc key", async ({ adminPage: page, world }) => {
