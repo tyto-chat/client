@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { TFunction } from "i18next";
 import {
+  badgeTooltip,
+  buildTrayLabels,
   computeBadgeState,
   isNotificationSnoozed,
   resetNativeShellForTests,
@@ -200,6 +203,54 @@ describe("computeBadgeState", () => {
       computeBadgeState(snapshot, { channelName: "voice", identityKey: "gone", muted: false })
         .callLabel,
     ).toBe("#voice");
+  });
+});
+
+describe("buildTrayLabels", () => {
+  const t = ((key: string) => `<${key}>`) as unknown as TFunction<"desktop">;
+
+  it("translates every label the shell shows", () => {
+    expect(buildTrayLabels(t)).toEqual({
+      open: "<tray_open>",
+      mute: "<tray_mute>",
+      unmute: "<tray_unmute>",
+      leaveCall: "<tray_leave_call>",
+      snooze: "<tray_snooze>",
+      snooze30: "<tray_snooze_30>",
+      snooze60: "<tray_snooze_60>",
+      snoozeIndefinitely: "<tray_snooze_indefinitely>",
+      snoozeOff: "<tray_snooze_off>",
+      presence: "<tray_presence>",
+      presenceOnline: "<tray_presence_online>",
+      presenceAway: "<tray_presence_away>",
+      presenceDnd: "<tray_presence_dnd>",
+      presenceInvisible: "<tray_presence_invisible>",
+      startOnBoot: "<tray_start_on_boot>",
+      startMinimized: "<tray_start_minimized>",
+      quit: "<tray_quit>",
+    });
+  });
+});
+
+describe("badgeTooltip", () => {
+  const t = ((key: string, options?: Record<string, unknown>) =>
+    `${key}${options ? JSON.stringify(options) : ""}`) as unknown as TFunction<"desktop">;
+
+  it("has nothing to say when idle", () => {
+    expect(badgeTooltip({ unreadCount: 0, callState: "none" }, t)).toBeUndefined();
+  });
+
+  it("counts unread through the translation so plurals are right", () => {
+    expect(badgeTooltip({ unreadCount: 3, callState: "none" }, t)).toBe('tray_unread{"count":3}');
+  });
+
+  it("describes the call, and the call wins over unread", () => {
+    expect(
+      badgeTooltip({ unreadCount: 3, callState: "in-call", callLabel: "#voice @ Srv" }, t),
+    ).toBe('tray_in_call{"place":"#voice @ Srv"}');
+    expect(
+      badgeTooltip({ unreadCount: 0, callState: "in-call-muted", callLabel: "#voice" }, t),
+    ).toBe('tray_in_call_muted{"place":"#voice"}');
   });
 });
 

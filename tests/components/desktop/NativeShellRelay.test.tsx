@@ -25,6 +25,7 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import { setPlatformBridgeForTests } from "@/platform/bridge";
 import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import type { BridgeBadgeState, PlatformBridge, TrayCommand } from "@/platform/PlatformBridge";
+import i18n from "@/i18n";
 
 const call = {
   activeCall: null as null | { channel: { name: string }; identityKey: string },
@@ -141,21 +142,26 @@ beforeEach(() => {
   );
 });
 
-afterEach(() => {
+afterEach(async () => {
   vi.unstubAllEnvs();
   setPlatformBridgeForTests(null);
+  await i18n.changeLanguage("en");
 });
 
 describe("NativeShellRelay", () => {
   it("reports unread and call state to the shell and follows changes", async () => {
     renderRelay();
-    await waitFor(() => expect(badges.at(-1)).toEqual({ unreadCount: 2, callState: "none" }));
+    await waitFor(() =>
+      expect(badges.at(-1)).toEqual({ unreadCount: 2, callState: "none", tooltip: "2 unread" }),
+    );
 
     updateSnapshot({
       activeIdentityId: "ia",
       connections: [connection({ unreadCounts: { dm: 5 } })],
     });
-    await waitFor(() => expect(badges.at(-1)).toEqual({ unreadCount: 5, callState: "none" }));
+    await waitFor(() =>
+      expect(badges.at(-1)).toEqual({ unreadCount: 5, callState: "none", tooltip: "5 unread" }),
+    );
   });
 
   it("does not repeat an unchanged badge state", async () => {
@@ -178,8 +184,30 @@ describe("NativeShellRelay", () => {
         unreadCount: 2,
         callState: "in-call-muted",
         callLabel: "#voice @ Srv",
+        tooltip: "In call (muted): #voice @ Srv",
       }),
     );
+  });
+
+  it("sends the tooltip again when the language changes", async () => {
+    renderRelay();
+    await waitFor(() => expect(badges.at(-1)?.tooltip).toBe("2 unread"));
+
+    await act(async () => {
+      await i18n.changeLanguage("pl");
+    });
+
+    await waitFor(() => expect(badges.at(-1)?.tooltip).toBe("2 nieprzeczytane"));
+  });
+
+  it("uses the right plural form for the language", async () => {
+    await act(async () => {
+      await i18n.changeLanguage("pl");
+    });
+    snapshot = { activeIdentityId: "ia", connections: [connection({ unreadCounts: { dm: 5 } })] };
+    renderRelay();
+
+    await waitFor(() => expect(badges.at(-1)?.tooltip).toBe("5 nieprzeczytanych"));
   });
 
   it("applies tray commands", async () => {

@@ -1,4 +1,5 @@
-import type { BridgeBadgeState, PlatformBridge } from "@/platform/PlatformBridge";
+import type { BridgeBadgeState, BridgeTrayLabels, PlatformBridge } from "@/platform/PlatformBridge";
+import type { TFunction } from "i18next";
 import { hostFromOrigin } from "@/utils/serverDisplay";
 import type { RegistrySnapshot } from "./connections/ConnectionRegistry";
 import type { SwitchTarget } from "./switchIdentity";
@@ -97,6 +98,37 @@ export function computeBadgeState(
     callState: call.muted ? "in-call-muted" : "in-call",
     callLabel: place ? `#${call.channelName} @ ${place}` : `#${call.channelName}`,
   };
+}
+
+type Translate = TFunction<"desktop">;
+
+export function buildTrayLabels(t: Translate): BridgeTrayLabels {
+  return {
+    open: t("tray_open"),
+    mute: t("tray_mute"),
+    unmute: t("tray_unmute"),
+    leaveCall: t("tray_leave_call"),
+    snooze: t("tray_snooze"),
+    snooze30: t("tray_snooze_30"),
+    snooze60: t("tray_snooze_60"),
+    snoozeIndefinitely: t("tray_snooze_indefinitely"),
+    snoozeOff: t("tray_snooze_off"),
+    presence: t("tray_presence"),
+    presenceOnline: t("tray_presence_online"),
+    presenceAway: t("tray_presence_away"),
+    presenceDnd: t("tray_presence_dnd"),
+    presenceInvisible: t("tray_presence_invisible"),
+    startOnBoot: t("tray_start_on_boot"),
+    startMinimized: t("tray_start_minimized"),
+    quit: t("tray_quit"),
+  };
+}
+
+export function badgeTooltip(state: BridgeBadgeState, t: Translate): string | undefined {
+  if (state.callState === "in-call-muted")
+    return t("tray_in_call_muted", { place: state.callLabel });
+  if (state.callState === "in-call") return t("tray_in_call", { place: state.callLabel });
+  return state.unreadCount > 0 ? t("tray_unread", { count: state.unreadCount }) : undefined;
 }
 
 export type DeepLinkResolution =

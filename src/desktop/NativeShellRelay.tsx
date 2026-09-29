@@ -11,6 +11,7 @@ import { ConnectionsContext } from "./connections/ConnectionsContext";
 import type { RegistrySnapshot } from "./connections/ConnectionRegistry";
 import { AddServerModal } from "./DesktopRail";
 import {
+  badgeTooltip,
   computeBadgeState,
   resolveDeepLink,
   setNotificationSnooze,
@@ -34,7 +35,8 @@ function sameBadge(a: BridgeBadgeState | null, b: BridgeBadgeState): boolean {
     a !== null &&
     a.unreadCount === b.unreadCount &&
     a.callState === b.callState &&
-    a.callLabel === b.callLabel
+    a.callLabel === b.callLabel &&
+    a.tooltip === b.tooltip
   );
 }
 
@@ -90,14 +92,14 @@ function ActiveRelay({ bridge }: { bridge: PlatformBridge }) {
 
   const channelName = activeCall?.channel.name ?? null;
   const identityKey = activeCall?.identityKey ?? null;
-  const badge = useMemo(
-    () =>
-      computeBadgeState(
-        snapshot,
-        channelName === null ? null : { channelName, identityKey, muted: isMuted },
-      ),
-    [snapshot, channelName, identityKey, isMuted],
-  );
+  const badge = useMemo(() => {
+    const state = computeBadgeState(
+      snapshot,
+      channelName === null ? null : { channelName, identityKey, muted: isMuted },
+    );
+    const tooltip = badgeTooltip(state, t);
+    return tooltip === undefined ? state : { ...state, tooltip };
+  }, [snapshot, channelName, identityKey, isMuted, t]);
 
   const lastBadgeRef = useRef<BridgeBadgeState | null>(null);
   useEffect(() => {
