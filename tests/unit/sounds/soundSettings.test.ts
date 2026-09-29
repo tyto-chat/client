@@ -55,8 +55,10 @@ describe("soundSettings", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("full");
     });
-    updateSoundSettings({ callSounds: false });
+    const { result } = renderHook(() => useSoundSettings());
+    act(() => updateSoundSettings({ callSounds: false }));
     expect(getSoundSettings().callSounds).toBe(false);
+    expect(result.current.callSounds).toBe(false);
   });
 
   it("sees a change made in another tab", () => {

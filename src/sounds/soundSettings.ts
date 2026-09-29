@@ -59,6 +59,15 @@ function readStored(): SoundSettings | null {
   }
 }
 
+function writeStored(settings: SoundSettings): boolean {
+  try {
+    localStorage.setItem(SOUND_SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    return false;
+  }
+  return true;
+}
+
 function notifyListeners(): void {
   listeners.forEach((listener) => listener());
 }
@@ -74,12 +83,7 @@ export function updateSoundSettings(change: Partial<SoundSettings>): void {
   const base = storageWritable ? (readStored() ?? getSoundSettings()) : getSoundSettings();
   const next = normalize({ ...base, ...change });
   cached = next;
-  try {
-    localStorage.setItem(SOUND_SETTINGS_KEY, JSON.stringify(next));
-    storageWritable = true;
-  } catch {
-    storageWritable = false;
-  }
+  storageWritable = writeStored(next);
   notifyListeners();
 }
 
