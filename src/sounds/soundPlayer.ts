@@ -17,6 +17,7 @@ interface SinkSwitchable {
 
 const START_DELAY = 0.02;
 const STOP_MARGIN = 0.05;
+const RESUME_LIMIT_MS = 300;
 
 function hasSinkId(context: AudioContext): context is AudioContext & SinkSwitchable {
   return typeof (context as unknown as Partial<SinkSwitchable>).setSinkId === "function";
@@ -85,20 +86,36 @@ export function createSoundPlayer(createContext: () => AudioContext | null): Sou
       if (target === null) {
         return;
       }
+      const schedule = (): void => {
+        try {
+          applyOutputDevice(target);
+          const sound = SOUND_SET[name];
+          for (const note of sound.notes) {
+            scheduleNote(target, note, sound.noteLength, options);
+          }
+        } catch {
+          return;
+        }
+      };
+      if (target.state === "running") {
+        schedule();
+        return;
+      }
+      const requestedAt = performance.now();
+      let resuming: Promise<void>;
       try {
-        if (target.state === "suspended") {
-          target.resume().catch(() => {
-            return;
-          });
-        }
-        applyOutputDevice(target);
-        const sound = SOUND_SET[name];
-        for (const note of sound.notes) {
-          scheduleNote(target, note, sound.noteLength, options);
-        }
+        resuming = target.resume();
       } catch {
         return;
       }
+      resuming.then(
+        () => {
+          if (performance.now() - requestedAt <= RESUME_LIMIT_MS) {
+            schedule();
+          }
+        },
+        () => undefined,
+      );
     },
     setOutputDevice(deviceId: string): void {
       desiredDeviceId = deviceId;

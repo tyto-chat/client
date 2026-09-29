@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createSoundPlayer } from "@/sounds/soundPlayer";
 import type { SoundPlayer } from "@/sounds/soundPlayer";
 
@@ -45,6 +45,20 @@ function createParam(): FakeAudioParam {
   };
 }
 
+function deferred(): { promise: Promise<void>; resolve: () => void } {
+  let resolve: () => void = () => undefined;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+async function flushPromises(): Promise<void> {
+  for (let i = 0; i < 5; i += 1) {
+    await Promise.resolve();
+  }
+}
+
 let oscillators: FakeOscillator[];
 let gains: FakeGain[];
 let created: number;
@@ -85,6 +99,10 @@ describe("soundPlayer", () => {
       created += 1;
       return context as unknown as AudioContext;
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("schedules every note and partial of a sound", () => {
@@ -131,10 +149,55 @@ describe("soundPlayer", () => {
     expect(created).toBe(1);
   });
 
-  it("resumes a suspended context before playing", () => {
+  it("resumes a suspended context before playing", async () => {
     context.state = "suspended";
+    const resume = deferred();
+    context.resume.mockReturnValue(resume.promise);
     player.play("mute", { volume: 1, scale: 1 });
     expect(context.resume).toHaveBeenCalled();
+    expect(oscillators).toHaveLength(0);
+    resume.resolve();
+    await flushPromises();
+    expect(oscillators.length).toBeGreaterThan(0);
+  });
+
+  it("plays nothing while the context cannot start", async () => {
+    context.state = "suspended";
+    context.resume.mockReturnValue(new Promise<void>(() => undefined));
+    player.play("mute", { volume: 1, scale: 1 });
+    await flushPromises();
+    expect(oscillators).toHaveLength(0);
+  });
+
+  it("drops a sound when the context starts too late", async () => {
+    let now = 1000;
+    vi.spyOn(performance, "now").mockImplementation(() => now);
+    context.state = "suspended";
+    const resume = deferred();
+    context.resume.mockReturnValue(resume.promise);
+    player.play("mute", { volume: 1, scale: 1 });
+    now = 1301;
+    resume.resolve();
+    await flushPromises();
+    expect(oscillators).toHaveLength(0);
+  });
+
+  it("drops a sound when the context refuses to start", async () => {
+    context.state = "suspended";
+    context.resume.mockRejectedValue(new Error("not allowed"));
+    expect(() => player.play("mute", { volume: 1, scale: 1 })).not.toThrow();
+    await flushPromises();
+    expect(oscillators).toHaveLength(0);
+  });
+
+  it("plays normally once the context runs after a dropped sound", async () => {
+    context.state = "suspended";
+    context.resume.mockReturnValue(new Promise<void>(() => undefined));
+    player.play("mute", { volume: 1, scale: 1 });
+    await flushPromises();
+    context.state = "running";
+    player.play("mute", { volume: 1, scale: 1 });
+    expect(oscillators.length).toBeGreaterThan(0);
   });
 
   it.each([
@@ -168,8 +231,11 @@ describe("soundPlayer", () => {
     context.setSinkId = vi.fn().mockRejectedValue(new Error("gone"));
     player.setOutputDevice("unplugged");
     player.play("mute", { volume: 1, scale: 1 });
-    await Promise.resolve();
+    await flushPromises();
     expect(oscillators.length).toBeGreaterThan(0);
+    const firstPlay = oscillators.length;
+    player.play("mute", { volume: 1, scale: 1 });
+    expect(oscillators.length).toBeGreaterThan(firstPlay);
   });
 
   it("works where the browser cannot choose an output device", () => {
