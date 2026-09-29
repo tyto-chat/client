@@ -1,7 +1,7 @@
 {
   "add_identity_title": "Se connecter à un serveur",
   "link_add_server_title": "Ajouter ce serveur ?",
-  "link_add_server_body": "Un lien veut ajouter le serveur {{host}} à tyto. Continue seulement si tu fais confiance à la source du lien.",
+  "link_add_server_body": "Un lien veut ajouter le serveur {{host}} à Tyto. Continue seulement si tu fais confiance à la source du lien.",
   "link_add_server_confirm": "Continuer",
   "server_url_label": "Adresse du serveur",
   "server_url_placeholder": "chat.example.org",
@@ -32,7 +32,7 @@
   "signing_in_as": "Connexion en tant que {{email}}",
   "try_again": "Réessayer",
   "server_incompatible_title": "Ce serveur n'est pas compatible",
-  "server_incompatible": "Ce serveur utilise une version incompatible de tyto. Mets à jour l'application de bureau ou le serveur.",
+  "server_incompatible": "Ce serveur utilise une version incompatible de Tyto. Mets à jour l'application de bureau ou le serveur.",
   "server_status_auth_failed": "Session expirée. Clique pour te reconnecter.",
   "server_status_unreachable": "reconnexion…",
   "relogin_title": "Se reconnecter",

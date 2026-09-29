@@ -1,7 +1,7 @@
 {
   "add_identity_title": "Połącz się z serwerem",
   "link_add_server_title": "Dodać ten serwer?",
-  "link_add_server_body": "Link chce dodać serwer {{host}} do tyto. Kontynuuj tylko wtedy, gdy ufasz źródłu tego linku.",
+  "link_add_server_body": "Link chce dodać serwer {{host}} do Tyto. Kontynuuj tylko wtedy, gdy ufasz źródłu tego linku.",
   "link_add_server_confirm": "Kontynuuj",
   "server_url_label": "Adres serwera",
   "server_url_placeholder": "chat.example.org",
@@ -32,7 +32,7 @@
   "signing_in_as": "Logowanie jako {{email}}",
   "try_again": "Spróbuj ponownie",
   "server_incompatible_title": "Ten serwer jest niezgodny",
-  "server_incompatible": "Ten serwer używa niezgodnej wersji tyto. Zaktualizuj aplikację desktopową lub serwer.",
+  "server_incompatible": "Ten serwer używa niezgodnej wersji Tyto. Zaktualizuj aplikację desktopową lub serwer.",
   "server_status_auth_failed": "Sesja wygasła. Kliknij, aby połączyć się ponownie.",
   "server_status_unreachable": "ponowne łączenie…",
   "relogin_title": "Zaloguj się ponownie",
