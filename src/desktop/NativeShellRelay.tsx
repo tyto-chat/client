@@ -1,6 +1,8 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useSyncExternalStore } from "react";
+import { useTranslation } from "react-i18next";
 import { setManualPresence } from "@/api/presence";
+import { useConfirm } from "@/hooks/useConfirm";
 import { useAudioCall } from "@/context/AudioCallContext";
 import { isManagedIdentityMode } from "@/platform/appMode";
 import { getPlatformBridge } from "@/platform/bridge";
@@ -37,10 +39,43 @@ function sameBadge(a: BridgeBadgeState | null, b: BridgeBadgeState): boolean {
 }
 
 export function NativeShellRelay() {
+  const [bridge] = useState(resolveShellBridge);
+  return bridge ? <ActiveRelay bridge={bridge} /> : null;
+}
+
+function ActiveRelay({ bridge }: { bridge: PlatformBridge }) {
   const connections = useContext(ConnectionsContext);
   const { activeCall, isMuted, toggleMute, leave } = useAudioCall();
-  const [bridge] = useState(resolveShellBridge);
+  const { t } = useTranslation("desktop");
+  const { confirm, confirmDialog } = useConfirm();
   const [addServerUrl, setAddServerUrl] = useState<string | null>(null);
+  const askingRef = useRef(false);
+  const addServerUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    addServerUrlRef.current = addServerUrl;
+  }, [addServerUrl]);
+
+  const offerServer = useCallback(
+    async (serverUrl: string) => {
+      if (askingRef.current || addServerUrlRef.current !== null) return;
+      askingRef.current = true;
+      try {
+        const agreed = await confirm({
+          title: t("link_add_server_title"),
+          message: t("link_add_server_body", { host: new URL(serverUrl).host }),
+          confirmLabel: t("link_add_server_confirm"),
+        });
+        if (agreed) setAddServerUrl(serverUrl);
+      } finally {
+        askingRef.current = false;
+      }
+    },
+    [confirm, t],
+  );
+  const offerServerRef = useRef(offerServer);
+  useEffect(() => {
+    offerServerRef.current = offerServer;
+  }, [offerServer]);
 
   const subscribe = useCallback(
     (listener: () => void) =>
@@ -66,7 +101,7 @@ export function NativeShellRelay() {
 
   const lastBadgeRef = useRef<BridgeBadgeState | null>(null);
   useEffect(() => {
-    const appState = bridge?.appState;
+    const appState = bridge.appState;
     if (!appState || sameBadge(lastBadgeRef.current, badge)) return undefined;
     const timer = setTimeout(() => {
       lastBadgeRef.current = badge;
@@ -81,7 +116,7 @@ export function NativeShellRelay() {
   }, [toggleMute, leave]);
 
   useEffect(() => {
-    const app = bridge?.app;
+    const app = bridge.app;
     if (!app) return undefined;
 
     return app.onTrayCommand((command: TrayCommand | null) => {
@@ -110,7 +145,7 @@ export function NativeShellRelay() {
   }, [connections]);
 
   useEffect(() => {
-    const app = bridge?.app;
+    const app = bridge.app;
     if (!app) return undefined;
 
     return app.onDeepLink((envelope) => {
@@ -126,20 +161,23 @@ export function NativeShellRelay() {
             .catch(() => undefined);
           return;
         case "add-server":
-          setAddServerUrl(resolution.serverUrl);
+          void offerServerRef.current(resolution.serverUrl);
           return;
       }
     });
   }, [bridge]);
 
-  if (!connections || addServerUrl === null) return null;
-
   return (
-    <AddServerModal
-      registry={connections.registry}
-      switchTo={connections.switchTo}
-      initialServerUrl={addServerUrl}
-      onClose={() => setAddServerUrl(null)}
-    />
+    <>
+      {confirmDialog}
+      {connections && addServerUrl !== null && (
+        <AddServerModal
+          registry={connections.registry}
+          switchTo={connections.switchTo}
+          initialServerUrl={addServerUrl}
+          onClose={() => setAddServerUrl(null)}
+        />
+      )}
+    </>
   );
 }

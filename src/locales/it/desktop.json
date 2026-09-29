@@ -1,5 +1,8 @@
 {
   "add_identity_title": "Connettiti a un server",
+  "link_add_server_title": "Aggiungere questo server?",
+  "link_add_server_body": "Un link vuole aggiungere il server {{host}} a tyto. Continua solo se ti fidi della provenienza del link.",
+  "link_add_server_confirm": "Continua",
   "server_url_label": "Indirizzo del server",
   "server_url_placeholder": "chat.example.org",
   "server_url_invalid": "Non sembra un indirizzo server valido.",

@@ -94,6 +94,21 @@ describe("showNativeNotification", () => {
     expect(takeNotificationClick(payload)).toBeNull();
   });
 
+  it("does not confuse a click from before a reload with one issued after it", () => {
+    const { bridge, show } = bridgeWithSpy();
+    const before = vi.fn();
+    showNativeNotification(bridge, "tyto", { body: "old", onClick: before }, context);
+    const stalePayload = show.mock.calls[0]![0].payload;
+
+    resetNativeShellForTests();
+    const after = vi.fn();
+    showNativeNotification(bridge, "tyto", { body: "new", onClick: after }, context);
+
+    expect(show.mock.calls[1]![0].payload).not.toBe(stalePayload);
+    expect(takeNotificationClick(stalePayload)).toBeNull();
+    expect(after).not.toHaveBeenCalled();
+  });
+
   it("ignores a click it never issued", () => {
     expect(takeNotificationClick("nope")).toBeNull();
     expect(takeNotificationClick("__proto__")).toBeNull();

@@ -1,5 +1,8 @@
 {
   "add_identity_title": "Verbinden met een server",
+  "link_add_server_title": "Deze server toevoegen?",
+  "link_add_server_body": "Een link wil de server {{host}} aan tyto toevoegen. Ga alleen verder als je de herkomst van de link vertrouwt.",
+  "link_add_server_confirm": "Doorgaan",
   "server_url_label": "Serveradres",
   "server_url_placeholder": "chat.example.org",
   "server_url_invalid": "Dat lijkt geen geldig serveradres.",

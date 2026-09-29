@@ -1,5 +1,8 @@
 {
   "add_identity_title": "Підключення до сервера",
+  "link_add_server_title": "Додати цей сервер?",
+  "link_add_server_body": "Посилання хоче додати сервер {{host}} до tyto. Продовжуй, лише якщо довіряєш джерелу посилання.",
+  "link_add_server_confirm": "Продовжити",
   "server_url_label": "Адреса сервера",
   "server_url_placeholder": "chat.example.org",
   "server_url_invalid": "Це не схоже на дійсну адресу сервера.",

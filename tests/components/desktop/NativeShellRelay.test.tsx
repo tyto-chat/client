@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { configureApiClient } from "@/api/client";
@@ -235,14 +236,61 @@ describe("NativeShellRelay", () => {
     });
   });
 
-  it("offers the add-server wizard prefilled for an unknown server", async () => {
+  it("asks before adding a server a link points to, and names the host", async () => {
     renderRelay();
     await waitFor(() => expect(deepLink).not.toBeNull());
 
     act(() => deepLink!(url("https://new.example/m/0b1e3c8e-1111-4222-8333-444455556666")));
 
-    expect(await screen.findByTestId("wizard-server-input")).toHaveValue("https://new.example");
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("new.example");
+    expect(screen.queryByTestId("wizard-server-input")).not.toBeInTheDocument();
     expect(switchTo).not.toHaveBeenCalled();
+  });
+
+  it("opens the wizard prefilled once the user agrees", async () => {
+    renderRelay();
+    await waitFor(() => expect(deepLink).not.toBeNull());
+    act(() => deepLink!(url("https://new.example/")));
+
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.setup().click(within(dialog).getByTestId("confirm-dialog-confirm"));
+
+    expect(await screen.findByTestId("wizard-server-input")).toHaveValue("https://new.example");
+  });
+
+  it("does nothing when the user declines", async () => {
+    renderRelay();
+    await waitFor(() => expect(deepLink).not.toBeNull());
+    act(() => deepLink!(url("https://new.example/")));
+
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.setup().click(within(dialog).getByRole("button", { name: /cancel/i }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.queryByTestId("wizard-server-input")).not.toBeInTheDocument();
+    expect(switchTo).not.toHaveBeenCalled();
+  });
+
+  it("shows an internationalised host in its unambiguous encoded form", async () => {
+    renderRelay();
+    await waitFor(() => expect(deepLink).not.toBeNull());
+
+    act(() => deepLink!(url("https://tуto.example/")));
+
+    expect(await screen.findByRole("dialog")).toHaveTextContent("xn--");
+  });
+
+  it("ignores a second link while one is waiting for an answer", async () => {
+    renderRelay();
+    await waitFor(() => expect(deepLink).not.toBeNull());
+
+    act(() => deepLink!(url("https://first.example/")));
+    await screen.findByRole("dialog");
+    act(() => deepLink!(url("https://second.example/")));
+
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.getByRole("dialog")).toHaveTextContent("first.example");
   });
 
   it("runs the stored action for a notification click", async () => {
@@ -298,5 +346,19 @@ describe("NativeShellRelay", () => {
 
     expect(badges).toEqual([]);
     expect(deepLink).toBeNull();
+  });
+});
+
+describe("NativeShellRelay outside the desktop shell", () => {
+  it("does not load the desktop translations in web mode", async () => {
+    vi.stubEnv("VITE_APP_MODE", "web");
+    const i18n = (await import("@/i18n")).default;
+    const loadNamespaces = vi.spyOn(i18n, "loadNamespaces");
+
+    renderRelay();
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(loadNamespaces.mock.calls.flat(2)).not.toContain("desktop");
+    loadNamespaces.mockRestore();
   });
 });

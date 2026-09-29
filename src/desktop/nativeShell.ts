@@ -8,11 +8,13 @@ const MESSAGE_PATH = /^\/m\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-
 
 let snoozedUntil: number | null = null;
 let clickSequence = 0;
+let clickPrefix = crypto.randomUUID();
 const pendingClicks = new Map<string, () => void>();
 
 export function resetNativeShellForTests(): void {
   snoozedUntil = null;
   clickSequence = 0;
+  clickPrefix = crypto.randomUUID();
   pendingClicks.clear();
 }
 
@@ -44,7 +46,7 @@ export function showNativeNotification(
   if (context.focused || isNotificationSnoozed(context.now)) return true;
 
   clickSequence += 1;
-  const payload = `n-${clickSequence}`;
+  const payload = `${clickPrefix}:${clickSequence}`;
   if (options.onClick) {
     pendingClicks.set(payload, options.onClick);
     if (pendingClicks.size > MAX_PENDING_CLICKS) {

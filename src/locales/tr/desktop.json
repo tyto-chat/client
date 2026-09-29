@@ -1,5 +1,8 @@
 {
   "add_identity_title": "Bir sunucuya bağlan",
+  "link_add_server_title": "Bu sunucu eklensin mi?",
+  "link_add_server_body": "Bir bağlantı {{host}} sunucusunu tyto uygulamasına eklemek istiyor. Yalnızca bağlantının kaynağına güveniyorsan devam et.",
+  "link_add_server_confirm": "Devam et",
   "server_url_label": "Sunucu adresi",
   "server_url_placeholder": "chat.example.org",
   "server_url_invalid": "Bu geçerli bir sunucu adresine benzemiyor.",
