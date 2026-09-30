@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { getBaseUrl } from "@/api/client";
 import { sidebarRow, sidebarRowActive, sidebarRowUnread } from "@/components/ui/styles";
 import { isManagedIdentityMode } from "@/platform/appMode";
+import { desktopAppLink, openDesktopApp } from "@/utils/desktopAppLink";
 import { useCommunity } from "@/queries/communityQueries";
 import { ChannelRowsSkeleton } from "@/components/ui/Skeleton";
 import { useCommunityMembership } from "@/queries/membershipQueries";
@@ -62,6 +63,7 @@ import {
   ChevronRightIcon,
   EllipsisIcon,
   ArrowUpDownIcon,
+  MonitorIcon,
 } from "@/components/icons";
 import { useMarkCommunityAllRead } from "@/queries/readStateQueries";
 import { useMobileNav } from "@/context/MobileNavContext";
@@ -149,6 +151,8 @@ export function ChannelSidebar({ communityId }: Props) {
       serverOrigin = null;
     }
   }
+  const desktopLink = isManagedIdentityMode() ? null : desktopAppLink(getBaseUrl());
+  const hasCommunityActions = Boolean(user || isAdmin || canSeeModLog || ownsAnyGroup || hasJoined);
 
   const { navOpen } = useMobileNav();
 
@@ -170,7 +174,7 @@ export function ChannelSidebar({ communityId }: Props) {
             <span className="block cap-trim-truncate truncate">{community?.name ?? "…"}</span>
           </h2>
           <div className="flex h-8 items-center gap-0.5">
-            {(user || isAdmin || canSeeModLog || ownsAnyGroup || hasJoined || serverOrigin) && (
+            {(hasCommunityActions || serverOrigin || desktopLink) && (
               <Menu
                 align="right"
                 label={t("common:more")}
@@ -225,6 +229,16 @@ export function ChannelSidebar({ communityId }: Props) {
                     iconLeft={<LogOutIcon />}
                   >
                     {t("leave_community")}
+                  </MenuItem>
+                )}
+                {desktopLink && hasCommunityActions && <MenuDivider />}
+                {desktopLink && (
+                  <MenuItem
+                    testId="community-menu-open-desktop"
+                    onSelect={() => openDesktopApp(desktopLink)}
+                    iconLeft={<MonitorIcon />}
+                  >
+                    {t("open_in_desktop")}
                   </MenuItem>
                 )}
                 {serverOrigin && <MenuDivider />}
