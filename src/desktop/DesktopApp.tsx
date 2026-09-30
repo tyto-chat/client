@@ -18,6 +18,7 @@ import { ConnectionsContext, type ConnectionsContextValue } from "./connections/
 import { DesktopBootstrap, type DesktopSession } from "./DesktopBootstrap";
 import { performIdentitySwitch, type SwitchTarget } from "./switchIdentity";
 import { TrayLabelsSync } from "./TrayLabelsSync";
+import { WindowTitleBar } from "./WindowTitleBar";
 
 export interface DesktopAppProps {
   renderApp?: (activeIdentityId: string) => ReactNode;
@@ -184,6 +185,7 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
 
   return (
     <>
+      <WindowTitleBar />
       <TrayLabelsSync />
       <DesktopBootstrap onSession={handleSession}>
         {activeIdentityId && (

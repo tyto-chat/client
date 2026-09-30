@@ -97,6 +97,8 @@ export class GuestConnection {
     return Promise.resolve();
   }
 
+  applyUnreadCounts(): void {}
+
   private async connect(): Promise<void> {
     if (this.stopped) return;
     const myId = ++this.connectionId;

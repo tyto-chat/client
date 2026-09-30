@@ -7,7 +7,7 @@ export function VersionMismatchScreen({
 }) {
   const { t } = useTranslation("common");
   return (
-    <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-surface p-6 text-center">
+    <div className="flex h-app w-screen flex-col items-center justify-center gap-3 bg-surface p-6 text-center">
       <h1 className="text-lg font-semibold text-fg">{t("version_mismatch_title")}</h1>
       <p className="max-w-md text-sm text-fg-muted">
         {direction === "server-newer"
