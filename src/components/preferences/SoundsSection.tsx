@@ -74,6 +74,7 @@ export function SoundsSection() {
             step="1"
             value={settings.volume}
             aria-label={t("sound_volume")}
+            aria-valuetext={`${settings.volume}%`}
             data-testid="sounds-volume"
             onChange={(e) => updateSoundSettings({ volume: Number(e.target.value) })}
             className={sliderClass}
@@ -89,6 +90,7 @@ export function SoundsSection() {
             step="1"
             value={settings.pitch}
             aria-label={t("sound_pitch")}
+            aria-valuetext={signed(settings.pitch)}
             data-testid="sounds-pitch"
             onChange={(e) => updateSoundSettings({ pitch: Number(e.target.value) })}
             className={sliderClass}
@@ -106,6 +108,7 @@ export function SoundsSection() {
             step="10"
             value={settings.length}
             aria-label={t("sound_length")}
+            aria-valuetext={`${settings.length}%`}
             data-testid="sounds-length"
             onChange={(e) => updateSoundSettings({ length: Number(e.target.value) })}
             className={sliderClass}

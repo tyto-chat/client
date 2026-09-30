@@ -138,7 +138,7 @@
   "sound_length": "Durée",
   "sound_length_hint": "Plus court ou plus long. 100 % correspond à l'original.",
   "sound_random": "Son aléatoire",
-  "sound_random_label": "Jouer un son aléatoire",
+  "sound_random_label": "Lire un son aléatoire",
   "chat_privacy_continuity": "Confidentialité et continuité",
   "send_typing_indicator": "Laisser les autres voir quand j'écris",
   "send_typing_indicator_hint": "Quand désactivé, personne ne voit d'indicateur « en train d'écrire… » venant de toi.",

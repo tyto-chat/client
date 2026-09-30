@@ -103,6 +103,7 @@ describe("SoundsSection", () => {
     expect(screen.getByTestId("sounds-pitch-value").textContent).toBe("+4");
     fireEvent.change(screen.getByTestId("sounds-pitch"), { target: { value: "-6" } });
     expect(screen.getByTestId("sounds-pitch-value").textContent).toBe("−6");
+    expect(screen.getByTestId("sounds-pitch")).toHaveAttribute("aria-valuetext", "−6");
   });
 
   it("changes the length as a percentage", () => {
@@ -110,6 +111,7 @@ describe("SoundsSection", () => {
     fireEvent.change(screen.getByTestId("sounds-length"), { target: { value: "150" } });
     expect(getSoundSettings().length).toBe(150);
     expect(screen.getByTestId("sounds-length-value").textContent).toBe("150%");
+    expect(screen.getByTestId("sounds-length")).toHaveAttribute("aria-valuetext", "150%");
   });
 
   it("plays a random sound with the pitch and length just chosen", () => {
