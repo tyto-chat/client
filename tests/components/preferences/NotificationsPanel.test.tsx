@@ -12,6 +12,10 @@ import { NotificationsPanel } from "@/components/preferences/NotificationsPanel"
 vi.mock("@/context/AuthContext", () => ({
   useAuthContext: () => ({ user: mockUser, refreshUser: vi.fn() }),
 }));
+vi.mock("@/context/NotificationContext", () => ({
+  useNotification: () => ({ notify: vi.fn() }),
+}));
+
 vi.mock("@/api/users", () => ({
   setEmailNotifications: vi.fn().mockResolvedValue({ emailNotifications: true }),
 }));

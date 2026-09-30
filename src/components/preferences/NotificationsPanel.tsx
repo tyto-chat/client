@@ -15,6 +15,7 @@ import { isDeviceScopedPref } from "@/platform/deviceScopedPreferences";
 import { Switch } from "@/components/ui/Switch";
 import { SettingRow } from "@/components/preferences/SettingRow";
 import { SoundsSection } from "@/components/preferences/SoundsSection";
+import { TestNotificationRow } from "@/components/preferences/TestNotificationRow";
 import { sectionHeading } from "@/components/preferences/panelStyles";
 
 export function NotificationsPanel() {
@@ -99,6 +100,7 @@ export function NotificationsPanel() {
               />
             </SettingRow>
           )}
+          {desktopSupported && <TestNotificationRow />}
           {user && (
             <SettingRow label={t("email_notifications")} hint={t("email_notifications_hint")}>
               <Switch
