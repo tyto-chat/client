@@ -132,7 +132,12 @@ export function badgeTooltip(state: BridgeBadgeState, t: Translate): string | un
 }
 
 export type DeepLinkResolution =
-  | { kind: "switch"; identityId: string; navigateTo?: SwitchTarget["navigateTo"] }
+  | {
+      kind: "switch";
+      identityId: string;
+      navigateTo?: SwitchTarget["navigateTo"];
+      alreadyAdded?: boolean;
+    }
   | { kind: "add-server"; serverUrl: string }
   | { kind: "notification"; payload: string };
 
@@ -178,5 +183,5 @@ export function resolveDeepLink(
         identityId: match.identityId,
         navigateTo: { to: "/m/$messageId", params: { messageId } },
       }
-    : { kind: "switch", identityId: match.identityId };
+    : { kind: "switch", identityId: match.identityId, alreadyAdded: true };
 }

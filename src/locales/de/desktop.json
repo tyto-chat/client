@@ -3,6 +3,7 @@
   "link_add_server_title": "Diesen Server hinzufügen?",
   "link_add_server_body": "Ein Link möchte den Server {{host}} zu Tyto hinzufügen. Fahre nur fort, wenn du der Quelle des Links vertraust.",
   "link_add_server_confirm": "Weiter",
+  "link_server_already_added": "{{host}} ist bereits in der App.",
   "server_url_label": "Serveradresse",
   "server_url_placeholder": "chat.example.org",
   "server_url_invalid": "Das sieht nicht wie eine gültige Serveradresse aus.",

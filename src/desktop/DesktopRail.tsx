@@ -512,6 +512,7 @@ export interface AddServerModalProps {
   onClose: () => void;
   healthyTimeoutMs?: number;
   initialServerUrl?: string;
+  lockServer?: boolean;
 }
 
 export function AddServerModal({
@@ -520,6 +521,7 @@ export function AddServerModal({
   onClose,
   healthyTimeoutMs = DEFAULT_HEALTHY_TIMEOUT_MS,
   initialServerUrl,
+  lockServer = false,
 }: AddServerModalProps) {
   const { t } = useTranslation("desktop");
   const { notify } = useNotification();
@@ -572,6 +574,7 @@ export function AddServerModal({
         <AddIdentityWizard
           onComplete={(result) => void handleComplete(result, close)}
           initialServerUrl={initialServerUrl}
+          lockServer={lockServer}
         />
       )}
     </Modal>

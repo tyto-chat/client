@@ -3,6 +3,7 @@
   "link_add_server_title": "Додати цей сервер?",
   "link_add_server_body": "Посилання хоче додати сервер {{host}} до Tyto. Продовжуй, лише якщо довіряєш джерелу посилання.",
   "link_add_server_confirm": "Продовжити",
+  "link_server_already_added": "{{host}} уже додано до застосунку.",
   "server_url_label": "Адреса сервера",
   "server_url_placeholder": "chat.example.org",
   "server_url_invalid": "Це не схоже на дійсну адресу сервера.",

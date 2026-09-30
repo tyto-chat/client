@@ -274,10 +274,11 @@ describe("resolveDeepLink", () => {
     });
   });
 
-  it("switches without navigating for a bare server link", () => {
+  it("switches for a bare server link and says the server is already there", () => {
     expect(resolveDeepLink(url("https://other.example/"), snapshot)).toEqual({
       kind: "switch",
       identityId: "ib",
+      alreadyAdded: true,
     });
   });
 
@@ -285,10 +286,12 @@ describe("resolveDeepLink", () => {
     expect(resolveDeepLink(url("https://other.example/admin/users"), snapshot)).toEqual({
       kind: "switch",
       identityId: "ib",
+      alreadyAdded: true,
     });
     expect(resolveDeepLink(url("https://other.example/m/not-a-uuid"), snapshot)).toEqual({
       kind: "switch",
       identityId: "ib",
+      alreadyAdded: true,
     });
   });
 

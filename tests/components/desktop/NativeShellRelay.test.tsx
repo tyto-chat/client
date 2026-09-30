@@ -34,6 +34,11 @@ const call = {
   leave: vi.fn(),
 };
 vi.mock("@/context/AudioCallContext", () => ({ useAudioCall: () => call }));
+const notify = vi.fn();
+vi.mock("@/context/NotificationContext", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/context/NotificationContext")>();
+  return { ...actual, useNotification: () => ({ notify }) };
+});
 
 function connection(extra: Partial<ConnectionSnapshot>): ConnectionSnapshot {
   return {
@@ -125,6 +130,7 @@ beforeEach(() => {
   deepLink = null;
   trayCommand = null;
   unsubscribed = [];
+  notify.mockReset();
   switchTo = vi.fn().mockResolvedValue(undefined);
   presenceBodies = [];
   call.activeCall = null;
@@ -264,6 +270,36 @@ describe("NativeShellRelay", () => {
     });
   });
 
+  it("switches and says so for a bare link to a server that is already added", async () => {
+    snapshot = {
+      activeIdentityId: "ia",
+      connections: [
+        connection({ identityId: "ia" }),
+        connection({ identityId: "ib", origin: "https://other.example" }),
+      ],
+    };
+    renderRelay();
+    await waitFor(() => expect(deepLink).not.toBeNull());
+
+    act(() => deepLink!(url("https://other.example/")));
+
+    expect(switchTo).toHaveBeenCalledWith("ib", undefined);
+    expect(notify).toHaveBeenCalledWith("other.example is already in the app.", "info");
+  });
+
+  it("does not repeat that for a link to a message on a known server", async () => {
+    snapshot = {
+      activeIdentityId: "ia",
+      connections: [connection({ identityId: "ib", origin: "https://other.example" })],
+    };
+    renderRelay();
+    await waitFor(() => expect(deepLink).not.toBeNull());
+
+    act(() => deepLink!(url("https://other.example/m/0b1e3c8e-1111-4222-8333-444455556666")));
+
+    expect(notify).not.toHaveBeenCalled();
+  });
+
   it("asks before adding a server a link points to, and names the host", async () => {
     renderRelay();
     await waitFor(() => expect(deepLink).not.toBeNull());
@@ -276,7 +312,13 @@ describe("NativeShellRelay", () => {
     expect(switchTo).not.toHaveBeenCalled();
   });
 
-  it("opens the wizard prefilled once the user agrees", async () => {
+  it("opens the sign-in step for that server once the user agrees", async () => {
+    server.use(
+      http.get("https://new.example/api/versions", () => HttpResponse.json({ versions: ["v1"] })),
+      http.get("https://new.example/api/v1/server-info", () =>
+        HttpResponse.json({ apiUrl: "https://new.example/api", name: "New" }),
+      ),
+    );
     renderRelay();
     await waitFor(() => expect(deepLink).not.toBeNull());
     act(() => deepLink!(url("https://new.example/")));
@@ -284,7 +326,10 @@ describe("NativeShellRelay", () => {
     const dialog = await screen.findByRole("dialog");
     await userEvent.setup().click(within(dialog).getByTestId("confirm-dialog-confirm"));
 
-    expect(await screen.findByTestId("wizard-server-input")).toHaveValue("https://new.example");
+    expect(await screen.findByTestId("wizard-password-input")).toBeInTheDocument();
+    expect(await screen.findByText("New")).toBeInTheDocument();
+    expect(screen.queryByTestId("wizard-server-input")).not.toBeInTheDocument();
+    expect(screen.getByTestId("wizard-change-server")).toBeInTheDocument();
   });
 
   it("does nothing when the user declines", async () => {
