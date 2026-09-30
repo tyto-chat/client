@@ -11,7 +11,7 @@ import {
   type CallSoundEvent,
   type NotificationTarget,
 } from "@/sounds/soundRules";
-import { QUIET_SCALE, type SoundName } from "@/sounds/soundSet";
+import { QUIET_SCALE, SOUND_NAMES, type SoundName } from "@/sounds/soundSet";
 import { getSoundSettings } from "@/sounds/soundSettings";
 import { getPreferredDevice } from "@/utils/deviceSettings";
 
@@ -59,10 +59,16 @@ function scaleFor(decision: "play" | "quiet"): number {
   return decision === "quiet" ? QUIET_SCALE : 1;
 }
 
-function playSound(name: SoundName, volume: number, scale: number): void {
+function playSound(name: SoundName, scale: number): void {
+  const settings = getSoundSettings();
   const player = getSoundPlayer();
   player.setOutputDevice(getPreferredDevice("audiooutput"));
-  player.play(name, { volume, scale });
+  player.play(name, {
+    volume: settings.volume / 100,
+    scale,
+    pitch: settings.pitch,
+    stretch: settings.length / 100,
+  });
 }
 
 export function playCallSound(event: CallSoundEvent): void {
@@ -75,7 +81,7 @@ export function playCallSound(event: CallSoundEvent): void {
   if (decision === "silent") {
     return;
   }
-  playSound(soundForCallEvent(event), settings.volume / 100, scaleFor(decision));
+  playSound(soundForCallEvent(event), scaleFor(decision));
 }
 
 export function playNotificationSound(target: NotificationTarget): void {
@@ -100,11 +106,17 @@ export function playNotificationSound(target: NotificationTarget): void {
   }
   lastNotificationSoundAt = now;
   writeSharedNotificationSoundAt(now);
-  playSound("notification", settings.volume / 100, scaleFor(decision));
+  playSound("notification", scaleFor(decision));
 }
 
 export function playTestSound(name: SoundName): void {
-  playSound(name, getSoundSettings().volume / 100, 1);
+  playSound(name, 1);
+}
+
+export function playRandomSound(): SoundName {
+  const name = SOUND_NAMES[Math.floor(Math.random() * SOUND_NAMES.length)] ?? "notification";
+  playSound(name, 1);
+  return name;
 }
 
 export function resetSoundsForTests(): void {

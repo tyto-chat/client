@@ -20,7 +20,7 @@ vi.mock("@livekit/components-react", () => ({
 
 import { PeerCallSounds } from "@/sounds/PeerCallSounds";
 
-const QUIET = { volume: 0.6, scale: 0.45 };
+const QUIET = { volume: 0.6, scale: 0.45, pitch: 0, stretch: 1 };
 
 let played: Array<[SoundName, PlayOptions]>;
 

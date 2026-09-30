@@ -1,5 +1,13 @@
 export type SoundName = "join" | "leave" | "mute" | "unmute" | "notification";
 
+export const SOUND_NAMES: readonly SoundName[] = [
+  "join",
+  "leave",
+  "mute",
+  "unmute",
+  "notification",
+];
+
 export interface SoundNote {
   frequency: number;
   at: number;

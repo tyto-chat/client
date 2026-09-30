@@ -4,6 +4,8 @@ import type { SoundName, SoundNote } from "@/sounds/soundSet";
 export interface PlayOptions {
   volume: number;
   scale: number;
+  pitch: number;
+  stretch: number;
 }
 
 export interface SoundPlayer {
@@ -29,15 +31,17 @@ function scheduleNote(
   noteLength: number,
   options: PlayOptions,
 ): void {
-  const start = context.currentTime + START_DELAY + note.at;
+  const start = context.currentTime + START_DELAY + note.at * options.stretch;
+  const frequency = note.frequency * Math.pow(2, options.pitch / 12);
+  const length = noteLength * options.stretch;
   for (const partial of TONE.partials) {
     const oscillator = context.createOscillator();
     const gain = context.createGain();
-    oscillator.frequency.setValueAtTime(note.frequency * partial.ratio, start);
+    oscillator.frequency.setValueAtTime(frequency * partial.ratio, start);
     const peak = Math.max(SILENCE, MASTER_LEVEL * options.volume * options.scale * partial.gain);
     gain.gain.setValueAtTime(SILENCE, start);
     gain.gain.exponentialRampToValueAtTime(peak, start + TONE.attack);
-    const decayAt = start + noteLength / Math.sqrt(Math.max(1, partial.ratio));
+    const decayAt = start + length / Math.sqrt(Math.max(1, partial.ratio));
     gain.gain.exponentialRampToValueAtTime(SILENCE, decayAt);
     oscillator.connect(gain);
     gain.connect(context.destination);
