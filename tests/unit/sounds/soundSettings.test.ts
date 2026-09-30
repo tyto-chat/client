@@ -19,13 +19,25 @@ describe("soundSettings", () => {
   });
 
   it("starts with both groups on at volume 60", () => {
-    expect(getSoundSettings()).toEqual({ callSounds: true, notificationSounds: true, volume: 60 });
+    expect(getSoundSettings()).toEqual({
+      callSounds: true,
+      notificationSounds: true,
+      volume: 60,
+      pitch: 0,
+      length: 100,
+    });
   });
 
   it("remembers a change", () => {
     updateSoundSettings({ notificationSounds: false, volume: 35 });
     resetSoundSettingsForTests();
-    expect(getSoundSettings()).toEqual({ callSounds: true, notificationSounds: false, volume: 35 });
+    expect(getSoundSettings()).toEqual({
+      callSounds: true,
+      notificationSounds: false,
+      volume: 35,
+      pitch: 0,
+      length: 100,
+    });
   });
 
   it.each([
@@ -38,17 +50,51 @@ describe("soundSettings", () => {
   });
 
   it.each([
-    ["not json", { callSounds: true, notificationSounds: true, volume: 60 }],
+    ["not json", { callSounds: true, notificationSounds: true, volume: 60, pitch: 0, length: 100 }],
     [
       '{"volume":"loud","callSounds":"yes"}',
-      { callSounds: true, notificationSounds: true, volume: 60 },
+      { callSounds: true, notificationSounds: true, volume: 60, pitch: 0, length: 100 },
     ],
-    ['{"callSounds":false}', { callSounds: false, notificationSounds: true, volume: 60 }],
-    ["[1,2]", { callSounds: true, notificationSounds: true, volume: 60 }],
+    [
+      '{"callSounds":false}',
+      { callSounds: false, notificationSounds: true, volume: 60, pitch: 0, length: 100 },
+    ],
+    ["[1,2]", { callSounds: true, notificationSounds: true, volume: 60, pitch: 0, length: 100 }],
   ])("reads %s as defaults where it is unusable", (stored, expected) => {
     localStorage.setItem(SOUND_SETTINGS_KEY, stored);
     resetSoundSettingsForTests();
     expect(getSoundSettings()).toEqual(expected);
+  });
+
+  it.each([
+    [-30, -12],
+    [30, 12],
+    [2.4, 2],
+    [-2.6, -3],
+  ])("keeps pitch %s in range as %s semitones", (given, stored) => {
+    updateSoundSettings({ pitch: given });
+    expect(getSoundSettings().pitch).toBe(stored);
+  });
+
+  it.each([
+    [10, 50],
+    [500, 200],
+    [149.5, 150],
+  ])("keeps length %s in range as %s percent", (given, stored) => {
+    updateSoundSettings({ length: given });
+    expect(getSoundSettings().length).toBe(stored);
+  });
+
+  it("reads unusable pitch and length as their defaults", () => {
+    localStorage.setItem(SOUND_SETTINGS_KEY, '{"pitch":"high","length":null,"volume":20}');
+    resetSoundSettingsForTests();
+    expect(getSoundSettings()).toEqual({
+      callSounds: true,
+      notificationSounds: true,
+      volume: 20,
+      pitch: 0,
+      length: 100,
+    });
   });
 
   it("keeps working when storage throws", () => {
@@ -68,8 +114,20 @@ describe("soundSettings", () => {
     act(() => {
       window.dispatchEvent(new StorageEvent("storage", { key: SOUND_SETTINGS_KEY }));
     });
-    expect(getSoundSettings()).toEqual({ callSounds: false, notificationSounds: true, volume: 25 });
-    expect(result.current).toEqual({ callSounds: false, notificationSounds: true, volume: 25 });
+    expect(getSoundSettings()).toEqual({
+      callSounds: false,
+      notificationSounds: true,
+      volume: 25,
+      pitch: 0,
+      length: 100,
+    });
+    expect(result.current).toEqual({
+      callSounds: false,
+      notificationSounds: true,
+      volume: 25,
+      pitch: 0,
+      length: 100,
+    });
   });
 
   it("returns to defaults when another tab clears storage", () => {
@@ -101,7 +159,13 @@ describe("soundSettings", () => {
     expect(getSoundSettings().notificationSounds).toBe(true);
     localStorage.setItem(SOUND_SETTINGS_KEY, '{"notificationSounds":false}');
     updateSoundSettings({ volume: 20 });
-    expect(getSoundSettings()).toEqual({ callSounds: true, notificationSounds: false, volume: 20 });
+    expect(getSoundSettings()).toEqual({
+      callSounds: true,
+      notificationSounds: false,
+      volume: 20,
+      pitch: 0,
+      length: 100,
+    });
   });
 
   it("keeps every change until reload when storage cannot be written", () => {
@@ -110,7 +174,13 @@ describe("soundSettings", () => {
     });
     updateSoundSettings({ volume: 20 });
     updateSoundSettings({ callSounds: false });
-    expect(getSoundSettings()).toEqual({ callSounds: false, notificationSounds: true, volume: 20 });
+    expect(getSoundSettings()).toEqual({
+      callSounds: false,
+      notificationSounds: true,
+      volume: 20,
+      pitch: 0,
+      length: 100,
+    });
   });
 
   it("tells subscribers", () => {

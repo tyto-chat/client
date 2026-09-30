@@ -4,7 +4,12 @@ export interface SoundSettings {
   callSounds: boolean;
   notificationSounds: boolean;
   volume: number;
+  pitch: number;
+  length: number;
 }
+
+export const PITCH_RANGE = { min: -12, max: 12 } as const;
+export const LENGTH_RANGE = { min: 50, max: 200 } as const;
 
 export const SOUND_SETTINGS_KEY = "tyto.sounds";
 
@@ -12,18 +17,20 @@ export const DEFAULT_SOUND_SETTINGS: SoundSettings = {
   callSounds: true,
   notificationSounds: true,
   volume: 60,
+  pitch: 0,
+  length: 100,
 };
 
 const listeners = new Set<() => void>();
 let cached: SoundSettings | null = null;
 let storageWritable = true;
 
-function clampVolume(value: unknown): number {
+function clampInteger(value: unknown, min: number, max: number, fallback: number): number {
   const num = typeof value === "number" ? value : Number.NaN;
   if (!Number.isFinite(num)) {
-    return DEFAULT_SOUND_SETTINGS.volume;
+    return fallback;
   }
-  return Math.min(100, Math.max(0, Math.round(num)));
+  return Math.min(max, Math.max(min, Math.round(num)));
 }
 
 function normalize(raw: unknown): SoundSettings {
@@ -38,7 +45,14 @@ function normalize(raw: unknown): SoundSettings {
       typeof obj.notificationSounds === "boolean"
         ? obj.notificationSounds
         : DEFAULT_SOUND_SETTINGS.notificationSounds,
-    volume: "volume" in obj ? clampVolume(obj.volume) : DEFAULT_SOUND_SETTINGS.volume,
+    volume: clampInteger(obj.volume, 0, 100, DEFAULT_SOUND_SETTINGS.volume),
+    pitch: clampInteger(obj.pitch, PITCH_RANGE.min, PITCH_RANGE.max, DEFAULT_SOUND_SETTINGS.pitch),
+    length: clampInteger(
+      obj.length,
+      LENGTH_RANGE.min,
+      LENGTH_RANGE.max,
+      DEFAULT_SOUND_SETTINGS.length,
+    ),
   };
 }
 
