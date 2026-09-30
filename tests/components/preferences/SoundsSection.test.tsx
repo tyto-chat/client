@@ -8,14 +8,17 @@ import { SoundsSection } from "@/components/preferences/SoundsSection";
 
 let played: SoundName[];
 let playedVolumes: number[];
+let playedOptions: { pitch: number; stretch: number }[];
 
 beforeEach(() => {
   played = [];
   playedVolumes = [];
+  playedOptions = [];
   setSoundPlayerForTests({
     play: (name, options) => {
       played.push(name);
       playedVolumes.push(options.volume);
+      playedOptions.push({ pitch: options.pitch, stretch: options.stretch });
     },
     setOutputDevice: () => undefined,
   });
@@ -83,6 +86,49 @@ describe("SoundsSection", () => {
     fireEvent.click(screen.getByTestId("sounds-call-toggle"));
     fireEvent.click(screen.getByTestId("sounds-test-call"));
     expect(played).toEqual(["join"]);
+  });
+
+  it("shows pitch at 0 and length at 100%", () => {
+    render(<SoundsSection />);
+    expect(screen.getByTestId("sounds-pitch")).toHaveValue("0");
+    expect(screen.getByTestId("sounds-length")).toHaveValue("100");
+    expect(screen.getByTestId("sounds-pitch-value").textContent).toBe("0");
+    expect(screen.getByTestId("sounds-length-value").textContent).toBe("100%");
+  });
+
+  it("changes the pitch in semitones and shows the sign", () => {
+    render(<SoundsSection />);
+    fireEvent.change(screen.getByTestId("sounds-pitch"), { target: { value: "4" } });
+    expect(getSoundSettings().pitch).toBe(4);
+    expect(screen.getByTestId("sounds-pitch-value").textContent).toBe("+4");
+    fireEvent.change(screen.getByTestId("sounds-pitch"), { target: { value: "-6" } });
+    expect(screen.getByTestId("sounds-pitch-value").textContent).toBe("−6");
+  });
+
+  it("changes the length as a percentage", () => {
+    render(<SoundsSection />);
+    fireEvent.change(screen.getByTestId("sounds-length"), { target: { value: "150" } });
+    expect(getSoundSettings().length).toBe(150);
+    expect(screen.getByTestId("sounds-length-value").textContent).toBe("150%");
+  });
+
+  it("plays a random sound with the pitch and length just chosen", () => {
+    render(<SoundsSection />);
+    fireEvent.change(screen.getByTestId("sounds-pitch"), { target: { value: "3" } });
+    fireEvent.change(screen.getByTestId("sounds-length"), { target: { value: "50" } });
+    fireEvent.click(screen.getByTestId("sounds-test-random"));
+    expect(played).toHaveLength(1);
+    expect(["join", "leave", "mute", "unmute", "notification"]).toContain(played[0]);
+    expect(playedOptions).toEqual([{ pitch: 3, stretch: 0.5 }]);
+  });
+
+  it("labels the new sliders and the random button for screen readers", () => {
+    render(<SoundsSection />);
+    expect(screen.getByLabelText("Pitch")).toBe(screen.getByTestId("sounds-pitch"));
+    expect(screen.getByLabelText("Length")).toBe(screen.getByTestId("sounds-length"));
+    expect(screen.getByLabelText("Play a random sound")).toBe(
+      screen.getByTestId("sounds-test-random"),
+    );
   });
 
   it("labels the slider and the test buttons for screen readers", () => {
