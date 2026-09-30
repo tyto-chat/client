@@ -222,7 +222,7 @@ export function UserModerationModal({
   }
 
   return (
-    <Modal onClose={onClose} size={canModerate ? "md" : "sm"}>
+    <Modal onClose={onClose} size={canModerate ? "lg" : "sm"}>
       {() => (
         <div className="flex flex-col gap-4">
           {reportOpen && (

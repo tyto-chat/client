@@ -18,6 +18,8 @@ import {
 import { useToggleConversationReaction } from "@/queries/reactionQueries";
 import { conversationDisplayName } from "@/utils/conversationDisplayName";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useReadWhileViewing } from "@/hooks/useReadWhileViewing";
+import { useNotificationUnreadCounts } from "@/queries/notificationQueries";
 import { fetchConversationPage, fetchConversationPages } from "@/api/pages";
 import { fetchMessage } from "@/api/messages";
 import { prefetchMessagePermalinks } from "@/utils/prefetchMessagePermalinks";
@@ -154,6 +156,9 @@ function ConversationPage() {
   useEffect(() => {
     updateLastViewed();
   }, [updateLastViewed]);
+
+  const { data: unreadCounts } = useNotificationUnreadCounts();
+  useReadWhileViewing(updateLastViewed, unreadCounts?.counts?.dm ?? 0);
 
   useEffect(() => {
     if (user) {

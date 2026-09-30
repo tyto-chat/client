@@ -7,7 +7,12 @@ import type { ReactNode } from "react";
 import { server } from "../../mocks/server";
 import { configureApiClient } from "@/api/client";
 import { TEST_BASE_URL as BASE } from "../../fixtures";
-import { useInfiniteConversationMessages } from "@/queries/conversationQueries";
+import {
+  useInfiniteConversationMessages,
+  useMarkConversationRead,
+} from "@/queries/conversationQueries";
+import { queryKeys } from "@/queries/queryKeys";
+import { getDmListRevision } from "@/platform/dmListRevision";
 
 function makeWrapper(qc: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
@@ -68,5 +73,32 @@ describe("useInfiniteConversationMessages", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.hasNextPage).toBe(false);
+  });
+});
+
+describe("useMarkConversationRead", () => {
+  it("reloads the merged DM list and the unread counts once the server has marked it read", async () => {
+    server.use(
+      http.post(`${BASE}/api/v1/conversations/abc/mark-read`, () =>
+        HttpResponse.json({ identifier: "abc" }),
+      ),
+    );
+    const qc = makeQueryClient();
+    qc.setQueryData(queryKeys.notificationUnreadCounts(), { counts: { dm: 1 } });
+    qc.setQueryData(queryKeys.dmNotifications(), []);
+    qc.setQueryData(queryKeys.conversations(), []);
+    const revisionBefore = getDmListRevision();
+
+    const { result } = renderHook(() => useMarkConversationRead("abc"), {
+      wrapper: makeWrapper(qc),
+    });
+    await act(async () => {
+      await result.current.mutateAsync();
+    });
+
+    expect(getDmListRevision()).toBe(revisionBefore + 1);
+    expect(qc.getQueryState(queryKeys.notificationUnreadCounts())?.isInvalidated).toBe(true);
+    expect(qc.getQueryState(queryKeys.dmNotifications())?.isInvalidated).toBe(true);
+    expect(qc.getQueryState(queryKeys.conversations())?.isInvalidated).toBe(true);
   });
 });

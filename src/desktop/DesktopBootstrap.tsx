@@ -38,7 +38,7 @@ function FullScreenWizard({ children }: { children: ReactNode }) {
   return (
     <NotificationProvider>
       <div
-        className="flex h-screen w-screen items-center justify-center bg-canvas p-6"
+        className="flex h-app w-screen items-center justify-center bg-canvas p-6"
         style={{
           backgroundImage:
             "radial-gradient(ellipse 90% 70% at 50% -10%, color-mix(in srgb, var(--accent) 7%, transparent), transparent)",

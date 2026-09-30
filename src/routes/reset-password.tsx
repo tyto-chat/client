@@ -69,7 +69,7 @@ function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-canvas">
+    <div className="flex min-h-app items-center justify-center bg-canvas">
       <div className="w-full max-w-sm space-y-4 rounded-xl bg-canvas p-8 shadow-xl">
         <h1 className="text-2xl font-bold text-white">{t("reset_password_title")}</h1>
 

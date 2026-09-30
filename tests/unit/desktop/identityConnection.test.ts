@@ -89,6 +89,39 @@ describe("IdentityConnection", () => {
     connection.stop();
   });
 
+  it("takes the unread counts the app hands it and tells its listeners", () => {
+    const callbacks = makeCallbacks();
+    const connection = new IdentityConnection(
+      createFakePlatformBridge(),
+      PROFILE_ID,
+      makeIdentity(),
+      callbacks,
+    );
+
+    connection.applyUnreadCounts({ dm: 1, "7": 2 });
+    expect(connection.getSnapshot().unreadCounts).toEqual({ dm: 1, "7": 2 });
+    expect(callbacks.onChange).toHaveBeenCalledTimes(1);
+
+    connection.applyUnreadCounts({ dm: 0, "7": 2 });
+    expect(connection.getSnapshot().unreadCounts).toEqual({ dm: 0, "7": 2 });
+    expect(callbacks.onChange).toHaveBeenCalledTimes(2);
+  });
+
+  it("stays quiet when the app hands it the counts it already has", () => {
+    const callbacks = makeCallbacks();
+    const connection = new IdentityConnection(
+      createFakePlatformBridge(),
+      PROFILE_ID,
+      makeIdentity(),
+      callbacks,
+    );
+
+    connection.applyUnreadCounts({ dm: 1 });
+    connection.applyUnreadCounts({ dm: 1 });
+
+    expect(callbacks.onChange).toHaveBeenCalledTimes(1);
+  });
+
   it("captures each connection's own negotiated api version even when negotiations interleave", async () => {
     const ORIGIN_A = "https://alpha.example";
     const ORIGIN_B = "https://beta.example";

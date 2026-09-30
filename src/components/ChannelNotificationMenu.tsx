@@ -117,14 +117,14 @@ function Dropdown({
     <div
       ref={popoverRef}
       style={{ position: "fixed", top: pos.top, left: pos.left }}
-      className="z-50 w-44 rounded-md bg-canvas ring-1 ring-inset ring-line py-1 text-sm shadow-soft-md"
+      className="z-50 w-44 rounded-lg border border-line bg-overlay py-1 text-sm shadow-soft-md"
     >
       {(["all", "mentions", "none"] as const).map((v) => (
         <button
           key={v}
           data-testid={`notif-level-${v}`}
           onClick={() => apply(v)}
-          className="flex w-full items-center justify-between px-3 py-1.5 text-left hover:bg-surface"
+          className="flex w-full items-center justify-between px-3 py-1.5 text-left text-fg hover:bg-surface"
         >
           <span>{t(`notification_levels.${v}`)}</span>
           {level === v && <CheckIcon size={12} />}

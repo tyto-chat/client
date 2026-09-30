@@ -19,6 +19,7 @@ import {
 } from "@/platform/activeIdentity";
 import { ConnectionNotificationBridge } from "@/desktop/ConnectionNotificationBridge";
 import { NativeShellRelay } from "@/desktop/NativeShellRelay";
+import { ActiveUnreadSync } from "@/desktop/ActiveUnreadSync";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerInfo } from "@/hooks/useServerInfo";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
@@ -300,7 +301,7 @@ function AppShell() {
         <AudioCallProvider>
           <MobileNavProvider>
             <MessagePopoverProvider>
-              <div className="flex h-dvh flex-col bg-canvas text-fg">
+              <div className="flex h-app flex-col bg-canvas text-fg">
                 <a
                   href="#main-content"
                   className="sr-only z-[200] rounded-lg bg-accent-gradient px-4 py-2 text-sm font-semibold text-on-accent focus:not-sr-only focus:absolute focus:left-4 focus:top-4"
@@ -352,6 +353,7 @@ function AppShell() {
                     </DesktopRailGroups>
                     <ConnectionNotificationBridge />
                     <NativeShellRelay />
+                    <ActiveUnreadSync />
                     <div className="mt-auto" />
                     <ActiveVoiceButton />
                     <UserProfileButton />

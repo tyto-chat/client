@@ -74,6 +74,9 @@ export function useMarkConversationRead(identifier: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
       queryClient.invalidateQueries({ queryKey: queryKeys.conversation(identifier) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dmNotifications() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationUnreadCounts() });
+      bumpDmListRevision();
     },
   });
 }
