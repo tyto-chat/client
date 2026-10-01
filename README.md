@@ -2,7 +2,102 @@
 
 Standalone React SPA for the tyto.chat platform. Consumes the [core](https://github.com/tyto-chat/core) backend API and connects to Mercure for real-time message delivery.
 
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://tyto.chat/shots/channel-desktop-dark.webp">
+  <img src="https://tyto.chat/shots/channel-desktop-light.webp" alt="A community with channels grouped into collapsible sections in the sidebar and an open text channel" width="880">
+</picture>
+</p>
+
 > This document will be most useful for developers working on the codebase. If you just want to install and run your own Tyto server, [tyto.chat](https://tyto.chat) has you covered — see below.
+
+## Screenshots
+
+<table>
+<tr>
+<td align="center" width="50%">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://tyto.chat/shots/docs-thread-panel-dark.webp">
+  <img src="https://tyto.chat/shots/docs-thread-panel-light.webp" alt="A thread panel open to the right of the channel timeline, showing the root message and its five replies" width="440">
+</picture>
+
+<sub>Threads open beside the timeline; the channel keeps its own flow.</sub>
+
+</td>
+<td align="center" width="50%">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://tyto.chat/shots/direct-messages-desktop-dark.webp">
+  <img src="https://tyto.chat/shots/direct-messages-desktop-light.webp" alt="The direct-messages view with a conversation list carrying unread badges and an open one-to-one conversation" width="440">
+</picture>
+
+<sub>Direct messages, sorted unread-first.</sub>
+
+</td>
+</tr>
+<tr>
+<td align="center" width="50%">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://tyto.chat/shots/docs-search-dialog-dark.webp">
+  <img src="https://tyto.chat/shots/docs-search-dialog-light.webp" alt="The search dialog with a query, scope toggle, author and date filters, and highlighted results" width="440">
+</picture>
+
+<sub>Search with scope, author and date filters, highlighted hits.</sub>
+
+</td>
+<td align="center" width="50%">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://tyto.chat/shots/docs-voice-active-dark.webp">
+  <img src="https://tyto.chat/shots/docs-voice-active-light.webp" alt="A live voice call with two participant tiles and the call controls dock" width="440">
+</picture>
+
+<sub>Voice channels on LiveKit: mute, deafen, camera, screen share.</sub>
+
+</td>
+</tr>
+</table>
+
+The same build is responsive down to phone width:
+
+<table>
+<tr>
+<td align="center" width="33%">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://tyto.chat/shots/channel-mobile-dark.webp">
+  <img src="https://tyto.chat/shots/channel-mobile-light.webp" alt="A text channel on a phone-sized screen" width="240">
+</picture>
+
+<sub>Channel</sub>
+
+</td>
+<td align="center" width="33%">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://tyto.chat/shots/direct-messages-mobile-dark.webp">
+  <img src="https://tyto.chat/shots/direct-messages-mobile-light.webp" alt="The direct-messages list on a phone-sized screen" width="240">
+</picture>
+
+<sub>Direct messages</sub>
+
+</td>
+<td align="center" width="33%">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://tyto.chat/shots/threads-mobile-dark.webp">
+  <img src="https://tyto.chat/shots/threads-mobile-light.webp" alt="A thread on a phone-sized screen" width="240">
+</picture>
+
+<sub>Thread</sub>
+
+</td>
+</tr>
+</table>
+
+More on [tyto.chat/features](https://tyto.chat/features); every screen is documented under [tyto.chat/docs](https://tyto.chat/docs).
 
 ## Running Tyto in production
 
