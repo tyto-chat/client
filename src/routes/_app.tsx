@@ -20,6 +20,7 @@ import {
 import { ConnectionNotificationBridge } from "@/desktop/ConnectionNotificationBridge";
 import { NativeShellRelay } from "@/desktop/NativeShellRelay";
 import { ActiveUnreadSync } from "@/desktop/ActiveUnreadSync";
+import { CallSounds } from "@/sounds/CallSounds";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerInfo } from "@/hooks/useServerInfo";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
@@ -354,6 +355,7 @@ function AppShell() {
                     <ConnectionNotificationBridge />
                     <NativeShellRelay />
                     <ActiveUnreadSync />
+                    <CallSounds />
                     <div className="mt-auto" />
                     <ActiveVoiceButton />
                     <UserProfileButton />

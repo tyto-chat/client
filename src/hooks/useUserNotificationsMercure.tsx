@@ -9,6 +9,7 @@ import { navigationFromNotification } from "@/utils/notificationLink";
 import { notificationText } from "@/utils/notificationText";
 import { showDesktopNotification } from "@/utils/desktopNotifications";
 import { parseMercureEvent } from "@/utils/parseMercureEvent";
+import { playNotificationSound } from "@/sounds/sounds";
 import type { AppNotification, NotificationMercureEvent } from "@/types/api";
 
 export function useUserNotificationsMercure() {
@@ -161,6 +162,14 @@ export function useUserNotificationsMercure() {
       })();
 
       notify(text, variant);
+
+      playNotificationSound({
+        notificationType: data.notificationType,
+        sameServer: true,
+        conversationIdentifier: data.conversationIdentifier,
+        communityIdentifier: data.communityIdentifier,
+        channelIdentifier: data.channelIdentifier,
+      });
 
       showDesktopNotification(t("desktop_title"), {
         body: text,

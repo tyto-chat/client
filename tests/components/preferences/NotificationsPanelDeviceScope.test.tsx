@@ -9,6 +9,10 @@ import { setAccessToken } from "@/api/tokenStore";
 import { TEST_BASE_URL as BASE, mockUser } from "../../fixtures";
 import { NotificationsPanel } from "@/components/preferences/NotificationsPanel";
 
+vi.mock("@/context/NotificationContext", () => ({
+  useNotification: () => ({ notify: vi.fn() }),
+}));
+
 vi.mock("@/context/AuthContext", () => ({
   useAuthContext: () => ({ user: mockUser, refreshUser: vi.fn() }),
 }));

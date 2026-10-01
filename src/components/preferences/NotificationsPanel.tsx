@@ -14,6 +14,8 @@ import { setEmailNotifications } from "@/api/users";
 import { isDeviceScopedPref } from "@/platform/deviceScopedPreferences";
 import { Switch } from "@/components/ui/Switch";
 import { SettingRow } from "@/components/preferences/SettingRow";
+import { SoundsSection } from "@/components/preferences/SoundsSection";
+import { TestNotificationRow } from "@/components/preferences/TestNotificationRow";
 import { sectionHeading } from "@/components/preferences/panelStyles";
 
 export function NotificationsPanel() {
@@ -69,7 +71,10 @@ export function NotificationsPanel() {
 
   if (!desktopSupported && !user) {
     return (
-      <p className="py-8 text-center text-sm text-fg-muted">{t("notifications_unavailable")}</p>
+      <div className="flex flex-col gap-5">
+        <p className="py-8 text-center text-sm text-fg-muted">{t("notifications_unavailable")}</p>
+        <SoundsSection />
+      </div>
     );
   }
 
@@ -95,6 +100,7 @@ export function NotificationsPanel() {
               />
             </SettingRow>
           )}
+          {desktopSupported && <TestNotificationRow />}
           {user && (
             <SettingRow label={t("email_notifications")} hint={t("email_notifications_hint")}>
               <Switch
@@ -107,6 +113,8 @@ export function NotificationsPanel() {
           )}
         </div>
       </section>
+
+      <SoundsSection />
 
       <section>
         <h3 className={sectionHeading}>{t("notif_levels_heading")}</h3>

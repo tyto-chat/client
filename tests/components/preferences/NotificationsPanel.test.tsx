@@ -12,6 +12,10 @@ import { NotificationsPanel } from "@/components/preferences/NotificationsPanel"
 vi.mock("@/context/AuthContext", () => ({
   useAuthContext: () => ({ user: mockUser, refreshUser: vi.fn() }),
 }));
+vi.mock("@/context/NotificationContext", () => ({
+  useNotification: () => ({ notify: vi.fn() }),
+}));
+
 vi.mock("@/api/users", () => ({
   setEmailNotifications: vi.fn().mockResolvedValue({ emailNotifications: true }),
 }));
@@ -55,8 +59,7 @@ describe("NotificationsPanel", () => {
   it("toggles the email switch on click", async () => {
     const { default: userEvent } = await import("@testing-library/user-event");
     render(<NotificationsPanel />, { wrapper: makeWrapper() });
-    const toggles = screen.getAllByRole("switch");
-    const emailToggle = toggles[toggles.length - 1]!;
+    const emailToggle = screen.getByLabelText("Daily email summary");
     expect(emailToggle).toHaveAttribute("aria-checked", "false");
     await userEvent.setup().click(emailToggle);
     expect(emailToggle).toHaveAttribute("aria-checked", "true");
