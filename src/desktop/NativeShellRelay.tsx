@@ -3,6 +3,8 @@ import { useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { setManualPresence } from "@/api/presence";
 import { useConfirm } from "@/hooks/useConfirm";
+import { useNotification } from "@/context/NotificationContext";
+import { hostFromOrigin } from "@/utils/serverDisplay";
 import { useAudioCall } from "@/context/AudioCallContext";
 import { isManagedIdentityMode } from "@/platform/appMode";
 import { getPlatformBridge } from "@/platform/bridge";
@@ -49,6 +51,7 @@ function ActiveRelay({ bridge }: { bridge: PlatformBridge }) {
   const connections = useContext(ConnectionsContext);
   const { activeCall, isMuted, toggleMute, leave } = useAudioCall();
   const { t } = useTranslation("desktop");
+  const { notify } = useNotification();
   const { confirm, confirmDialog } = useConfirm();
   const [addServerUrl, setAddServerUrl] = useState<string | null>(null);
   const askingRef = useRef(false);
@@ -74,6 +77,15 @@ function ActiveRelay({ bridge }: { bridge: PlatformBridge }) {
     },
     [confirm, t],
   );
+  const announceAlreadyAdded = useCallback(
+    (host: string) => notify(t("link_server_already_added", { host }), "info"),
+    [notify, t],
+  );
+  const announceRef = useRef(announceAlreadyAdded);
+  useEffect(() => {
+    announceRef.current = announceAlreadyAdded;
+  }, [announceAlreadyAdded]);
+
   const offerServerRef = useRef(offerServer);
   useEffect(() => {
     offerServerRef.current = offerServer;
@@ -158,6 +170,12 @@ function ActiveRelay({ bridge }: { bridge: PlatformBridge }) {
           takeNotificationClick(resolution.payload)?.();
           return;
         case "switch":
+          if (resolution.alreadyAdded) {
+            const server = current?.registry
+              .getSnapshot()
+              .connections.find((c) => c.identityId === resolution.identityId);
+            if (server) announceRef.current(hostFromOrigin(server.origin));
+          }
           void current
             ?.switchTo(resolution.identityId, resolution.navigateTo)
             .catch(() => undefined);
@@ -177,6 +195,7 @@ function ActiveRelay({ bridge }: { bridge: PlatformBridge }) {
           registry={connections.registry}
           switchTo={connections.switchTo}
           initialServerUrl={addServerUrl}
+          lockServer
           onClose={() => setAddServerUrl(null)}
         />
       )}

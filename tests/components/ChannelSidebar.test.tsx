@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { configureApiClient } from "@/api/client";
 import { TEST_BASE_URL as BASE, mockUser } from "../fixtures";
 import { ChannelSidebar } from "@/components/ChannelSidebar";
+import * as desktopAppLinkModule from "@/utils/desktopAppLink";
 import type { Community } from "@/types/api";
 
 const COMMUNITY_ID = "dragon";
@@ -123,8 +124,9 @@ describe("ChannelSidebar community menu — desktop server origin", () => {
     expect(screen.queryAllByRole("menuitem")).toHaveLength(0);
   });
 
-  it("web mode never shows the community menu when the user has no other actions", () => {
+  it("web mode never shows the community menu when there is nothing to offer", () => {
     vi.stubEnv("VITE_APP_MODE", "");
+    configureApiClient("http://plain.example");
     render(<ChannelSidebar communityId={COMMUNITY_ID} />);
     expect(screen.queryByTestId("community-actions-btn")).toBeNull();
   });
@@ -157,7 +159,50 @@ describe("ChannelSidebar community menu — desktop server origin", () => {
 
     expect(await screen.findByRole("menu")).toBeInTheDocument();
     expect(screen.queryByTestId("community-menu-server-origin")).toBeNull();
+  });
+});
+
+describe("ChannelSidebar community menu — open in the desktop app", () => {
+  it("web mode offers the desktop app to a visitor and opens the link for this server", async () => {
+    vi.stubEnv("VITE_APP_MODE", "");
+    configureApiClient("https://chat.example/");
+    const open = vi.spyOn(desktopAppLinkModule, "openDesktopApp").mockImplementation(() => {});
+    render(<ChannelSidebar communityId={COMMUNITY_ID} />);
+
+    await userEvent.click(screen.getByTestId("community-actions-btn"));
     expect(screen.queryByRole("separator")).toBeNull();
+    await userEvent.click(await screen.findByTestId("community-menu-open-desktop"));
+
+    expect(open).toHaveBeenCalledWith("tyto://open?url=https%3A%2F%2Fchat.example");
+    open.mockRestore();
+  });
+
+  it("web mode puts the desktop app entry last, after a divider, when there are other actions", async () => {
+    vi.stubEnv("VITE_APP_MODE", "");
+    configureApiClient("https://chat.example");
+    mockAuthUser = mockUser;
+    mockMembership = { role: null, hasMembership: true };
+    render(<ChannelSidebar communityId={COMMUNITY_ID} />);
+
+    await userEvent.click(screen.getByTestId("community-actions-btn"));
+
+    const children = Array.from((await screen.findByRole("menu")).children);
+    expect(children[children.length - 1]).toHaveAttribute(
+      "data-testid",
+      "community-menu-open-desktop",
+    );
+    expect(children[children.length - 2]).toHaveAttribute("role", "separator");
+  });
+
+  it("desktop mode never offers the desktop app", async () => {
+    vi.stubEnv("VITE_APP_MODE", "desktop");
+    configureApiClient("https://chat.example");
+    render(<ChannelSidebar communityId={COMMUNITY_ID} />);
+
+    await userEvent.click(screen.getByTestId("community-actions-btn"));
+
+    expect(await screen.findByTestId("community-menu-server-origin")).toBeInTheDocument();
+    expect(screen.queryByTestId("community-menu-open-desktop")).toBeNull();
   });
 });
 

@@ -28,6 +28,7 @@
   "leave_community_leaving": "Leaving…",
   "leave_community_done": "You left the community.",
   "leave_community_failed": "Failed to leave community.",
+  "open_in_desktop": "Open in Tyto desktop",
   "mark_community_read": "Mark community as read",
   "mark_community_read_done": "Community marked as read",
   "notifications": "Notifications",

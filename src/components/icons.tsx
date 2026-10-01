@@ -73,6 +73,7 @@ import {
   Eye,
   CloudOff,
   AlertTriangle,
+  Monitor,
 } from "lucide-react";
 import type { LucideProps } from "lucide-react";
 
@@ -112,6 +113,7 @@ export const ReadonlyRepliesIcon = make(MessageSquareReply, 11);
 export const BellIcon = make(Bell, 14);
 export const BellOffIcon = make(BellOff, 14);
 export const LogOutIcon = make(LogOut, 14);
+export const MonitorIcon = make(Monitor, 14);
 export const PinIcon = make(Pin, 14);
 export const MicrophoneIcon = make(Mic, 14);
 export const MicOffIcon = make(MicOff, 18);
