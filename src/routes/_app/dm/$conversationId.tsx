@@ -324,7 +324,7 @@ function ConversationPage() {
             </button>
           }
         />
-        <header className="border-b border-line px-4 py-3 max-md:hidden">
+        <header className="flex h-14 shrink-0 items-center border-b border-line px-4 max-md:hidden">
           <h1 className="flex items-center gap-1.5 font-semibold">
             <ChatBubbleIcon size={14} className="text-fg-subtle" />
             {isGroup ? (
