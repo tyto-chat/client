@@ -357,7 +357,7 @@ export function MessageGroup({
               key={stableMessageKey(msg["@id"])}
               data-message-id={msg["@id"]}
               tabIndex={readOnly ? undefined : 0}
-              className={`group/msg relative focus:outline-none ${i > 0 ? "animate-message-in pt-2" : ""} ${i === group.msgs.length - 1 ? (compact ? "pb-0.5" : "pb-3") : ""}`}
+              className={`group/msg relative focus:outline-none ${i > 0 ? "animate-message-in pt-2" : ""} ${i === group.msgs.length - 1 ? (compact ? "pb-0.5" : "pb-3") : ""} ${i > 0 && isTouch && !readOnly && hasTouchActions ? "pr-9" : ""}`}
               onMouseEnter={() => setHoverOwner(ownerKey)}
               onMouseLeave={() => releaseHover(ownerKey)}
             >
