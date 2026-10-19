@@ -26,6 +26,22 @@ beforeEach(() => {
   configureApiClient("https://server.example.com/api/v1");
 });
 
+describe("normalizeHost on hostile input", () => {
+  it("stays fast on a long run of slashes followed by a newline", () => {
+    const hostile = `example.com${"/".repeat(60_000)}\nrest`;
+    const started = performance.now();
+    const result = normalizeHost(hostile);
+    expect(performance.now() - started).toBeLessThan(250);
+    expect(result).toBe("example.com");
+  });
+
+  it("cuts at the first slash", () => {
+    expect(normalizeHost("https://www.Example.com/path/more?x=1")).toBe("example.com");
+    expect(normalizeHost("example.com/a/b")).toBe("example.com");
+    expect(normalizeHost("example.com")).toBe("example.com");
+  });
+});
+
 describe("canAutoLoad with added servers", () => {
   afterEach(clearFakeDirectory);
 
