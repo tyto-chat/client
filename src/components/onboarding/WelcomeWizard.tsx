@@ -131,10 +131,12 @@ function WelcomeWizardInner({ user, onClose }: { user: User; onClose: () => void
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-10"
       onMouseDown={() => void finish()}
     >
       <div
+        role="presentation"
         className="grid w-full max-w-3xl grid-cols-1 overflow-hidden rounded-2xl bg-canvas ring-1 ring-inset ring-line shadow-soft-lg sm:grid-cols-[216px_1fr]"
         onMouseDown={(e) => e.stopPropagation()}
       >

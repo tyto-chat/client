@@ -85,6 +85,7 @@ export function Lightbox({
       )}
 
       <div
+        role="presentation"
         className="relative flex max-h-[90vh] max-w-[90vw] flex-col items-center"
         onClick={(e) => e.stopPropagation()}
       >

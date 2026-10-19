@@ -1,5 +1,6 @@
 import { permalinkOrigins } from "@/utils/permalinkOrigins";
 
+const TRAILING_PUNCTUATION = ".,!?:;)]";
 const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`[\]]*/g;
 const MAX_DISPLAY_LENGTH = 60;
 const MIN_URL_LENGTH = 11;
@@ -31,7 +32,9 @@ function processTextNode(node: Text): void {
 
   while ((match = URL_REGEX.exec(text)) !== null) {
     const rawUrl = match[0];
-    const url = rawUrl.replace(/[.,!?:;)\]]+$/, "");
+    let end = rawUrl.length;
+    while (end > 0 && TRAILING_PUNCTUATION.includes(rawUrl.charAt(end - 1))) end--;
+    const url = rawUrl.slice(0, end);
     if (url.length < MIN_URL_LENGTH) continue;
 
     if (match.index > lastIndex) {

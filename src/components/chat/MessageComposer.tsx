@@ -346,6 +346,7 @@ function MessageComposer({
         />
       )}
       <div
+        role="presentation"
         onMouseDown={(e) => {
           const target = e.target as HTMLElement;
           if (target.closest(".ProseMirror")) return;

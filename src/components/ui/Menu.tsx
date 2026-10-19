@@ -83,7 +83,7 @@ export function Menu({ trigger, label, children, align = "left", testId }: MenuP
   }
 
   return (
-    <div ref={ref} className="relative inline-block" onKeyDown={onKeyDown}>
+    <div role="presentation" ref={ref} className="relative inline-block" onKeyDown={onKeyDown}>
       <button
         ref={triggerRef}
         type="button"

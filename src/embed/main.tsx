@@ -4,7 +4,11 @@ import { EmbedCard } from "./EmbedCard";
 import { bootstrapEmbedApiBase } from "./api";
 
 function parseUuid(): string {
-  return /\/embed\/m\/([^/?#]+)/.exec(location.pathname)?.[1] ?? "";
+  return (
+    /\/embed\/m\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[/?#]|$)/i.exec(
+      location.pathname,
+    )?.[1] ?? ""
+  );
 }
 
 function applyTheme(): void {
@@ -21,4 +25,4 @@ function applyTheme(): void {
   await bootstrapEmbedApiBase();
 
   createRoot(document.getElementById("root")!).render(<EmbedCard uuid={uuid} />);
-})();
+})().catch((error: unknown) => console.error(error));

@@ -192,6 +192,7 @@ export function MessageGroup({
             <>
               {sysTouchOpen && (
                 <div
+                  role="presentation"
                   className="fixed inset-0 z-[9]"
                   onClick={() => {
                     setTouchOwner(null);
@@ -418,7 +419,11 @@ export function MessageGroup({
                 <>
                   {/* z-9: must stay below the z-10 action bar it dismisses. */}
                   {isTouchActive && (
-                    <div className="fixed inset-0 z-[9]" onClick={() => setTouchOwner(null)} />
+                    <div
+                      role="presentation"
+                      className="fixed inset-0 z-[9]"
+                      onClick={() => setTouchOwner(null)}
+                    />
                   )}
                   {/* The bar opens into this slot, so the trigger steps aside while
                       it is up. Closing is the overlay above or any action button. */}

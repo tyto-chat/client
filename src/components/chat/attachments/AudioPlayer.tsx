@@ -99,7 +99,7 @@ export function AudioPlayer({
             step={0.01}
             value={currentTime}
             onChange={(e) => {
-              const val = parseFloat(e.target.value);
+              const val = Number.parseFloat(e.target.value);
               setCurrentTime(val);
               if (audioRef.current) audioRef.current.currentTime = val;
             }}
