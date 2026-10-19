@@ -77,7 +77,9 @@ export function normalizeHost(input: string): string | null {
       return null;
     }
   }
-  host = host.replace(/^www\./, "").replace(/\/.*$/, "");
+  host = host.replace(/^www\./, "");
+  const slash = host.indexOf("/");
+  if (slash !== -1) host = host.slice(0, slash);
   return HOST_RE.test(host) ? host : null;
 }
 
