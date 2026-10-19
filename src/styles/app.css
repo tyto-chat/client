@@ -398,20 +398,14 @@ button {
 .tiptap p + p {
   margin-top: 0.2rem;
 }
-.tiptap p.is-editor-empty:first-child {
-  position: relative;
-}
-.tiptap p.is-editor-empty:first-child::before {
-  content: attr(data-placeholder);
-  position: absolute;
-  inset-inline: 0;
-  overflow: hidden;
+/* Padding keeps overflow:clip off the glyphs; the negative margin cancels it so the cap top stays on the wrapper's content edge. */
+.composer-placeholder {
+  margin-top: -0.2em;
+  padding-block: 0.2em 0.35em;
+  overflow: clip;
   text-overflow: ellipsis;
   white-space: nowrap;
   pointer-events: none;
-  color: #6b7280;
-}
-.dark .tiptap p.is-editor-empty:first-child::before {
   color: #6b7280;
 }
 .tiptap h1 {

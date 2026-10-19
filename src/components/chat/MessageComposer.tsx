@@ -5,7 +5,6 @@ import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import { htmlToMarkdown, markdownToHtml } from "@/utils/markdownConverter";
 import { UnifiedEmojiPicker } from "@/components/chat/UnifiedEmojiPicker";
 import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { lowlight } from "@/utils/lowlight";
 import { CodeBlockComponent } from "./CodeBlockComponent";
@@ -135,7 +134,6 @@ function MessageComposer({
   const handleFilesRef = useRef<(files: FileList) => void>(() => {});
   const allowAttachmentsRef = useRef(allowAttachments ?? false);
   const convertEmoticonsRef = useRef(userPrefs?.convertEmoticons ?? true);
-  const placeholderRef = useRef(placeholder);
 
   const editor = useEditor({
     extensions: [
@@ -148,7 +146,6 @@ function MessageComposer({
       /* eslint-disable react-hooks/refs -- the extension factories only store
          these refs and dereference them at event time (keystrokes), never
          during render */
-      Placeholder.configure({ placeholder: () => placeholderRef.current ?? "" }),
       createChannelMentionExtension(channelsRef, setChannelSuggestion),
       createUserMentionExtension(membersRef, broadcastsRef, setUserSuggestion),
       createEmojiAutocompleteExtension(communityEmojisRef, setEmojiSuggestion),
@@ -207,13 +204,6 @@ function MessageComposer({
       },
     },
   });
-
-  useEffect(() => {
-    placeholderRef.current = placeholder;
-    if (editor && editor.isEmpty) {
-      editor.view.dispatch(editor.state.tr);
-    }
-  }, [editor, placeholder]);
 
   useEffect(() => {
     onCancelRef.current = onCancel;
@@ -383,12 +373,22 @@ function MessageComposer({
 
         <div className={`flex items-center gap-2 pr-2 ${expanded ? "" : "min-h-[3.5rem]"}`}>
           <div
-            className={`min-w-0 flex-1 cap-trim overflow-y-auto px-3.5 text-sm text-fg ${
+            className={`relative min-w-0 flex-1 cap-trim overflow-y-auto px-3.5 text-sm text-fg ${
               expanded ? "py-2.5" : "py-3.5"
             }`}
             style={{ maxHeight: "6rem" }}
           >
             <EditorContent editor={editor} />
+            {isEmpty && placeholder && (
+              <span
+                aria-hidden
+                className={`composer-placeholder absolute inset-x-3.5 cap-trim ${
+                  expanded ? "top-2.5" : "top-3.5"
+                }`}
+              >
+                {placeholder}
+              </span>
+            )}
           </div>
           {!expanded && !isEditMode && (
             <button
