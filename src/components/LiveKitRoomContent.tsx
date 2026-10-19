@@ -137,7 +137,7 @@ function SpeakingStateSync() {
       new Set(
         lkParticipants
           .filter((p) => p.isSpeaking && p.identity.startsWith("user-"))
-          .map((p) => parseInt(p.identity.slice(5), 10)),
+          .map((p) => Number.parseInt(p.identity.slice(5), 10)),
       ),
     );
   }, [lkParticipants]);
@@ -346,7 +346,9 @@ function CallAudioRenderer() {
     <>
       {tracks.map((trackRef) => {
         const identity = trackRef.participant.identity;
-        const userId = identity.startsWith("user-") ? parseInt(identity.slice(5), 10) : NaN;
+        const userId = identity.startsWith("user-")
+          ? Number.parseInt(identity.slice(5), 10)
+          : Number.NaN;
         const member = memberAudio.get(userId);
         const volume =
           member?.muted === true ? 0 : (outputVolume / 100) * ((member?.volume ?? 100) / 100);

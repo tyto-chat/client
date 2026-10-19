@@ -169,6 +169,7 @@ export function SearchDialog(props: Props) {
 
   return (
     <div
+      role="presentation"
       className={`${isClosing ? "animate-backdrop-out" : "animate-backdrop-in"} fixed inset-0 z-50 flex items-start justify-center bg-black/60 px-4 pt-24 max-md:px-2 max-md:pt-16`}
       onMouseDown={close}
     >

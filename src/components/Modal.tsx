@@ -100,6 +100,7 @@ export function Modal({
   // Portalled: a transformed ancestor would become the containing block for `fixed`.
   return createPortal(
     <div
+      role="presentation"
       className={cn(
         "fixed inset-0 z-50 overflow-y-auto bg-black/60",
         isClosing ? "animate-backdrop-out" : "animate-backdrop-in",

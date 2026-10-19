@@ -101,9 +101,12 @@ function LegalDocEditor({
 
   useEffect(() => {
     let cancelled = false;
-    fetchLegalDocument(type, "default").then((doc) => {
-      if (!cancelled) setDefaultText(doc.content);
-    });
+    fetchLegalDocument(type, "default").then(
+      (doc) => {
+        if (!cancelled) setDefaultText(doc.content);
+      },
+      () => undefined,
+    );
     return () => {
       cancelled = true;
     };

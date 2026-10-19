@@ -7,7 +7,7 @@ export function unwrapCollection<T>(collection: HydraCollection<T> | T[]): T[] {
 }
 
 export function iriToId(iri: string): number {
-  return parseInt(iri.split("/").at(-1) ?? "", 10);
+  return Number.parseInt(iri.split("/").at(-1) ?? "", 10);
 }
 
 export function uuidFromIri(iri: string): string {

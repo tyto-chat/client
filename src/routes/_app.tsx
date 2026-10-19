@@ -244,6 +244,7 @@ function NavScrim() {
   if (!navOpen) return null;
   return (
     <div
+      role="presentation"
       data-testid="mobile-nav-scrim"
       onClick={closeNav}
       className="fixed inset-0 z-30 bg-black/50 md:hidden"

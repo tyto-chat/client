@@ -93,4 +93,4 @@ function Providers({ children }: { children: ReactNode }) {
       <AppShell />
     </Providers>,
   );
-})();
+})().catch((error: unknown) => console.error(error));

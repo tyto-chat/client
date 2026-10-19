@@ -194,8 +194,8 @@ export function MessageContent({
     }
     const userMention = (e.target as Element).closest<HTMLSpanElement>("span.mention-user");
     if (userMention && onUserClick) {
-      const userId = parseInt(userMention.dataset.userId ?? "", 10);
-      if (!isNaN(userId)) {
+      const userId = Number.parseInt(userMention.dataset.userId ?? "", 10);
+      if (!Number.isNaN(userId)) {
         onUserClick(userId);
         return;
       }
@@ -225,6 +225,7 @@ export function MessageContent({
       {previewUuid && <MessageQuotePreview messageId={previewUuid} selfMessageIri={messageIri} />}
       <div className="relative">
         <div
+          role="presentation"
           ref={contentRef}
           style={
             collapsible && !expanded

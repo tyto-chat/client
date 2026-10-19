@@ -163,10 +163,15 @@ export function EmbedCard({ uuid }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    fetchEmbedData(uuid).then((data) => {
-      if (cancelled) return;
-      setState(data ? { status: "ready", data } : { status: "unavailable" });
-    });
+    fetchEmbedData(uuid).then(
+      (data) => {
+        if (cancelled) return;
+        setState(data ? { status: "ready", data } : { status: "unavailable" });
+      },
+      () => {
+        if (!cancelled) setState({ status: "unavailable" });
+      },
+    );
     return () => {
       cancelled = true;
     };
