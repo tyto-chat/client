@@ -224,5 +224,11 @@
   "two_factor_regenerate_hint": "Mevcut kurtarma kodların çalışmayı durduracak.",
   "two_factor_password_label": "Mevcut parola",
   "two_factor_password_failed": "Yanlış parola.",
-  "two_factor_disabled_success": "İki adımlı doğrulama devre dışı bırakıldı."
+  "two_factor_disabled_success": "İki adımlı doğrulama devre dışı bırakıldı.",
+  "spellcheck_title": "Yazım denetimi",
+  "spellcheck_languages": "Diller",
+  "spellcheck_hint": "Editörde yanlış yazılan sözcüklerin altı çizilir; öneriler için sağ tıklayın. Sözlükler ilk kullanımda indirilir.",
+  "spellcheck_add": "Dil ekle…",
+  "spellcheck_remove": "{{language}} dilini kaldır",
+  "spellcheck_off": "Yazım denetimi kapalı."
 }

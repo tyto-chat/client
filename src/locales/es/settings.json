@@ -224,5 +224,11 @@
   "two_factor_regenerate_hint": "Tus códigos de recuperación actuales dejarán de funcionar.",
   "two_factor_password_label": "Contraseña actual",
   "two_factor_password_failed": "Contraseña incorrecta.",
-  "two_factor_disabled_success": "Autenticación de dos factores desactivada."
+  "two_factor_disabled_success": "Autenticación de dos factores desactivada.",
+  "spellcheck_title": "Corrector ortográfico",
+  "spellcheck_languages": "Idiomas",
+  "spellcheck_hint": "Las palabras mal escritas en el editor se subrayan; haz clic derecho para ver sugerencias. Los diccionarios se descargan al usarlos por primera vez.",
+  "spellcheck_add": "Añadir idioma…",
+  "spellcheck_remove": "Quitar {{language}}",
+  "spellcheck_off": "El corrector ortográfico está desactivado."
 }

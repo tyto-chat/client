@@ -224,5 +224,11 @@
   "two_factor_regenerate_hint": "Deine aktuellen Wiederherstellungscodes funktionieren nicht mehr.",
   "two_factor_password_label": "Aktuelles Passwort",
   "two_factor_password_failed": "Passwort ist falsch.",
-  "two_factor_disabled_success": "Zwei-Faktor-Authentifizierung deaktiviert."
+  "two_factor_disabled_success": "Zwei-Faktor-Authentifizierung deaktiviert.",
+  "spellcheck_title": "Rechtschreibprüfung",
+  "spellcheck_languages": "Sprachen",
+  "spellcheck_hint": "Falsch geschriebene Wörter im Editor werden unterstrichen; ein Rechtsklick zeigt Vorschläge. Wörterbücher werden bei der ersten Verwendung geladen.",
+  "spellcheck_add": "Sprache hinzufügen…",
+  "spellcheck_remove": "{{language}} entfernen",
+  "spellcheck_off": "Die Rechtschreibprüfung ist aus."
 }

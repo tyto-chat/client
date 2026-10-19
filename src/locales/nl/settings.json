@@ -224,5 +224,11 @@
   "two_factor_regenerate_hint": "Je huidige herstelcodes werken dan niet meer.",
   "two_factor_password_label": "Huidig wachtwoord",
   "two_factor_password_failed": "Onjuist wachtwoord.",
-  "two_factor_disabled_success": "Tweestapsverificatie uitgeschakeld."
+  "two_factor_disabled_success": "Tweestapsverificatie uitgeschakeld.",
+  "spellcheck_title": "Spellingcontrole",
+  "spellcheck_languages": "Talen",
+  "spellcheck_hint": "Verkeerd gespelde woorden in de editor worden onderstreept; klik met rechts voor suggesties. Woordenboeken worden bij het eerste gebruik gedownload.",
+  "spellcheck_add": "Taal toevoegen…",
+  "spellcheck_remove": "{{language}} verwijderen",
+  "spellcheck_off": "Spellingcontrole staat uit."
 }

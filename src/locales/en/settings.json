@@ -224,5 +224,11 @@
   "two_factor_regenerate_hint": "Your current recovery codes will stop working.",
   "two_factor_password_label": "Current password",
   "two_factor_password_failed": "Incorrect password.",
-  "two_factor_disabled_success": "Two-factor authentication disabled."
+  "two_factor_disabled_success": "Two-factor authentication disabled.",
+  "spellcheck_title": "Spell check",
+  "spellcheck_languages": "Languages",
+  "spellcheck_hint": "Misspelled words in the composer get underlined; right-click one for suggestions. Dictionaries download on first use.",
+  "spellcheck_add": "Add language…",
+  "spellcheck_remove": "Remove {{language}}",
+  "spellcheck_off": "Spell check is off."
 }

@@ -224,5 +224,11 @@
   "two_factor_regenerate_hint": "Поточні коди відновлення перестануть працювати.",
   "two_factor_password_label": "Поточний пароль",
   "two_factor_password_failed": "Неправильний пароль.",
-  "two_factor_disabled_success": "Двофакторну автентифікацію вимкнено."
+  "two_factor_disabled_success": "Двофакторну автентифікацію вимкнено.",
+  "spellcheck_title": "Перевірка правопису",
+  "spellcheck_languages": "Мови",
+  "spellcheck_hint": "Слова з помилками в редакторі підкреслюються; клацніть правою кнопкою, щоб побачити пропозиції. Словники завантажуються під час першого використання.",
+  "spellcheck_add": "Додати мову…",
+  "spellcheck_remove": "Вилучити {{language}}",
+  "spellcheck_off": "Перевірку правопису вимкнено."
 }

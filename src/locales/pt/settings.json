@@ -224,5 +224,11 @@
   "two_factor_regenerate_hint": "Seus códigos de recuperação atuais deixarão de funcionar.",
   "two_factor_password_label": "Senha atual",
   "two_factor_password_failed": "Senha incorreta.",
-  "two_factor_disabled_success": "Autenticação em duas etapas desativada."
+  "two_factor_disabled_success": "Autenticação em duas etapas desativada.",
+  "spellcheck_title": "Verificação ortográfica",
+  "spellcheck_languages": "Idiomas",
+  "spellcheck_hint": "Palavras com erros no editor ficam sublinhadas; clique com o botão direito para ver sugestões. Os dicionários são baixados na primeira utilização.",
+  "spellcheck_add": "Adicionar idioma…",
+  "spellcheck_remove": "Remover {{language}}",
+  "spellcheck_off": "A verificação ortográfica está desligada."
 }
