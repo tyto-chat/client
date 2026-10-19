@@ -1,4 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  clearFakeDirectory,
+  fakeEndpoint,
+  registerFakeDirectory,
+} from "../../mocks/serverDirectory";
 import { configureApiClient } from "@/api/client";
 import {
   _resetSessionHostsForTests,
@@ -19,6 +24,29 @@ beforeEach(() => {
   localStorage.clear();
   _resetSessionHostsForTests();
   configureApiClient("https://server.example.com/api/v1");
+});
+
+describe("canAutoLoad with added servers", () => {
+  afterEach(clearFakeDirectory);
+
+  it("loads media from the typed and the api origin of an added server", () => {
+    registerFakeDirectory(
+      [fakeEndpoint("ib", "https://b.example", { apiOrigin: "https://api.b.example" })],
+      "ia",
+    );
+    expect(canAutoLoad("https://b.example/media/x/a.png")).toBe(true);
+    expect(canAutoLoad("https://api.b.example/media/x/a.png")).toBe(true);
+  });
+
+  it("still gates an unknown host and a lookalike of an added server", () => {
+    registerFakeDirectory([fakeEndpoint("ib", "https://b.example")], "ia");
+    expect(canAutoLoad("https://stranger.example/a.png")).toBe(false);
+    expect(canAutoLoad("https://b.example.evil.com/a.png")).toBe(false);
+  });
+
+  it("gates everything external when no directory is registered", () => {
+    expect(canAutoLoad("https://b.example/media/x/a.png")).toBe(false);
+  });
 });
 
 describe("canAutoLoad", () => {

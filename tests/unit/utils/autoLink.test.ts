@@ -1,6 +1,49 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect } from "vitest";
+import { getServerDirectory } from "@/platform/serverDirectory";
+import {
+  clearFakeDirectory,
+  fakeEndpoint,
+  registerFakeDirectory,
+} from "../../mocks/serverDirectory";
 import { configureApiClient } from "@/api/client";
 import { autoLinkUrls } from "@/utils/autoLink";
+
+describe("autoLinkUrls with added servers", () => {
+  const uuid = "11111111-1111-1111-1111-111111111111";
+
+  afterEach(clearFakeDirectory);
+
+  it("tags a permalink on an added server as internal and records its origin", () => {
+    registerFakeDirectory([fakeEndpoint("ib", "https://b.example")], "ia");
+    const result = autoLinkUrls(`<p>see https://b.example/m/${uuid}</p>`);
+    expect(result).toContain(`data-internal-link="${uuid}"`);
+    expect(result).toContain('data-internal-origin="https://b.example"');
+    expect(result).not.toContain("data-external-link");
+  });
+
+  it("records the current server origin on a current-server permalink", () => {
+    const origin = window.location.origin;
+    const result = autoLinkUrls(`<p>see ${origin}/m/${uuid}</p>`);
+    expect(result).toContain(`data-internal-origin="${origin}"`);
+  });
+
+  it("uses the directory snapshot it is given instead of the registered one", () => {
+    registerFakeDirectory([fakeEndpoint("ib", "https://b.example")], "ia");
+    const snapshot = getServerDirectory();
+    clearFakeDirectory();
+    const result = autoLinkUrls(`<p>see https://b.example/m/${uuid}</p>`, snapshot);
+    expect(result).toContain(`data-internal-link="${uuid}"`);
+  });
+
+  it("keeps an unknown host and a lookalike external", () => {
+    registerFakeDirectory([fakeEndpoint("ib", "https://b.example")], "ia");
+    const result = autoLinkUrls(
+      `<p>https://stranger.example/m/${uuid} https://b.example.evil.com/m/${uuid}</p>`,
+    );
+    expect(result).not.toContain("data-internal-link");
+    expect(result.match(/data-external-link/g)).toHaveLength(2);
+  });
+});
 
 describe("autoLinkUrls", () => {
   it("converts a plain URL in text to an anchor", () => {

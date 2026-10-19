@@ -6,6 +6,13 @@ export const queryKeys = {
   messages: (communityId: string | number, channelIdentifier: string) =>
     ["messages", communityId, channelIdentifier] as const,
   message: (uuid: string) => ["message", uuid] as const,
+  foreignMessage: (origin: string, uuid: string) => ["foreignMessage", origin, uuid] as const,
+  foreignEmojis: (origin: string, communityIdentifier: string) =>
+    ["foreignEmojis", origin, communityIdentifier] as const,
+  linkedChannel: (origin: string, communityIdentifier: string, channelIdentifier: string) =>
+    ["linkedChannel", origin, communityIdentifier, channelIdentifier] as const,
+  linkedCommunity: (origin: string, communityIdentifier: string) =>
+    ["linkedCommunity", origin, communityIdentifier] as const,
   messageHistory: (messageIri: string) => ["messageHistory", messageIri] as const,
   channelPages: (communityId: string, channelIdentifier: string) =>
     ["channelPages", communityId, channelIdentifier] as const,

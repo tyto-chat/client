@@ -1,6 +1,15 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useMessage } from "@/queries/messageQueries";
+import {
+  useLinkedEmojis,
+  useLinkedMessage,
+  useLinkedPlaces,
+  useLinkScope,
+} from "@/queries/linkedMessageQueries";
+import { linkedHeaderParts } from "@/utils/linkedHeader";
+import { openLinkedMessage } from "@/utils/openLinkedMessage";
+import type { PermalinkTarget } from "@/utils/linkScope";
+import { LinkedMessageHeader } from "./LinkedMessageHeader";
 import { Avatar } from "@/components/Avatar";
 import { avatarUrl } from "@/api/client";
 import { getUserTextColor } from "@/utils/userColor";
@@ -12,20 +21,27 @@ import { isImageMime } from "@/utils/attachmentFormat";
 const MAX_PREVIEW_IMAGES = 2;
 
 interface Props {
-  messageId: string;
+  target: PermalinkTarget;
   selfMessageIri?: string;
+  hostCommunityId?: string;
 }
 
-export function MessageQuotePreview({ messageId, selfMessageIri }: Props) {
+export function MessageQuotePreview({ target, selfMessageIri, hostCommunityId }: Props) {
   const { t } = useTranslation("channel");
   const navigate = useNavigate();
   const { timezone } = useTimezone();
-  const { data, isLoading, isError } = useMessage(messageId);
+  const scope = useLinkScope(target.origin);
+  const { data, isLoading, isError } = useLinkedMessage(target);
+  const places = useLinkedPlaces(target, data);
+  const foreign = scope?.kind === "foreign";
+  const emojis = useLinkedEmojis(
+    target,
+    foreign ? (data?.communityIdentifier ?? undefined) : undefined,
+  );
 
-  const goToMessage = () => {
-    void navigate({ to: "/m/$messageId", params: { messageId } });
-  };
+  const goToMessage = () => openLinkedMessage(target, navigate);
 
+  if (!scope) return null;
   if (data && selfMessageIri && data["@id"] === selfMessageIri) return null;
 
   if (isLoading) {
@@ -54,6 +70,8 @@ export function MessageQuotePreview({ messageId, selfMessageIri }: Props) {
     );
   }
 
+  if (foreign && (isError || !data || !data.channelIdentifier)) return null;
+
   if (isError || !data) {
     return (
       <div className="mb-1.5 rounded border-l-2 border-line bg-surface px-2 py-1.5 text-xs italic text-fg-muted">
@@ -80,6 +98,9 @@ export function MessageQuotePreview({ messageId, selfMessageIri }: Props) {
       }}
       className="mb-1.5 cursor-pointer rounded border-l-2 border-[var(--accent)] bg-surface px-2 py-1.5 transition-colors hover:bg-raised"
     >
+      <LinkedMessageHeader
+        parts={linkedHeaderParts({ scope, hostCommunityId, message: data, places })}
+      />
       <div className="mb-0.5 flex items-baseline gap-2">
         <Avatar
           name={author?.profile.name ?? ""}
@@ -103,7 +124,8 @@ export function MessageQuotePreview({ messageId, selfMessageIri }: Props) {
       <div className="line-clamp-3 text-xs text-fg-muted">
         <MessageContent
           text={data.text}
-          communityId={data.communityIdentifier ?? undefined}
+          communityId={foreign ? undefined : (data.communityIdentifier ?? undefined)}
+          emojis={foreign ? emojis : undefined}
           renderPermalinkPreview={false}
         />
       </div>
