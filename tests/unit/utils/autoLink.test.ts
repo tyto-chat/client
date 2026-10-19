@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { configureApiClient } from "@/api/client";
 import { autoLinkUrls } from "@/utils/autoLink";
 
 describe("autoLinkUrls", () => {
@@ -45,6 +46,17 @@ describe("autoLinkUrls", () => {
     const result = autoLinkUrls(`<p>see ${origin}/m/${uuid}</p>`);
     expect(result).toContain(`data-internal-link="${uuid}"`);
     expect(result).not.toContain("data-external-link");
+  });
+
+  it("tags API-server-origin /m/<uuid> permalinks as internal", () => {
+    configureApiClient("https://server.example.com/api/v1");
+    try {
+      const uuid = "11111111-1111-1111-1111-111111111111";
+      const result = autoLinkUrls(`<p>see https://server.example.com/m/${uuid}</p>`);
+      expect(result).toContain(`data-internal-link="${uuid}"`);
+    } finally {
+      configureApiClient("");
+    }
   });
 
   it("tags external URLs with data-external-link", () => {

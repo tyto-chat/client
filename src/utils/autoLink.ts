@@ -1,3 +1,5 @@
+import { permalinkOrigins } from "@/utils/permalinkOrigins";
+
 const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`[\]]*/g;
 const MAX_DISPLAY_LENGTH = 60;
 const MIN_URL_LENGTH = 11;
@@ -12,7 +14,7 @@ function truncateUrl(url: string): string {
 function internalPermalinkUuid(url: string): string | null {
   try {
     const parsed = new URL(url, window.location.origin);
-    if (parsed.origin !== window.location.origin) return null;
+    if (!permalinkOrigins().includes(parsed.origin)) return null;
     return PERMALINK_PATH_RE.exec(parsed.pathname)?.[1]?.toLowerCase() ?? null;
   } catch {
     return null;
