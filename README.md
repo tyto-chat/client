@@ -222,6 +222,21 @@ Production deployments configure the app at runtime (no rebuild) via the
 container env — see [`.env.prod.example`](.env.prod.example) and the
 [Quick Start](https://tyto.chat/quickstart).
 
+## About this project and AI usage
+
+AI is part of the daily workflow behind the tyto.chat client, and a large part of this codebase
+was written with it. That does not make the client the result of typing prompts. Its maintainer
+acts as the project manager: every product, design and architecture decision is a human one, code
+is reviewed and in part written by hand, and the interface is tested manually in real browsers
+before releases. The practices that keep a frontend like this healthy are enforced regardless of
+who wrote a given line: type checking, linting, the unit test suite and the production build run
+on every pull request, the Playwright end-to-end suite runs against a real backend, and the code
+has gone through dedicated security and code-quality reviews. It is a client that would not have
+been attempted at this scope without AI assistance.
+
+AI was also used to translate the UI into the supported languages. Translations into languages the
+maintainer does not speak have not been reviewed by native speakers yet; corrections are welcome.
+
 ## Contributing
 
 See the [contribution guide](https://tyto.chat/docs/contributing) and
