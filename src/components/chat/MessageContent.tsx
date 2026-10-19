@@ -17,6 +17,10 @@ import { useAllowRemoteHost } from "@/hooks/useAllowRemoteHost";
 import { ExternalLinkModal } from "./ExternalLinkModal";
 import { MessageQuotePreview } from "./MessageQuotePreview";
 import { extractFirstPermalink } from "@/utils/extractFirstPermalink";
+import { openLinkedMessage } from "@/utils/openLinkedMessage";
+import { serverOrigin } from "@/utils/permalinkOrigins";
+import { useServerDirectory } from "@/platform/serverDirectory";
+import type { CommunityEmoji } from "@/types/api";
 
 const COLLAPSE_VIEWPORT_RATIO = 0.3;
 
@@ -28,6 +32,7 @@ interface Props {
   messageIri?: string;
   renderPermalinkPreview?: boolean;
   highlightTerms?: readonly string[];
+  emojis?: CommunityEmoji[];
 }
 
 function convertMentionLinks(html: string): string {
@@ -128,9 +133,12 @@ export function MessageContent({
   messageIri,
   renderPermalinkPreview = true,
   highlightTerms: terms,
+  emojis,
 }: Props) {
   const { t } = useTranslation("channel");
-  const { data: communityEmojis } = useCommunityEmojis(communityId);
+  const { data: fetchedEmojis } = useCommunityEmojis(emojis ? undefined : communityId);
+  const communityEmojis = emojis ?? fetchedEmojis;
+  const serverDirectory = useServerDirectory();
   const remoteContent = useRemoteContentPolicy();
   const allowRemoteHost = useAllowRemoteHost();
   const __html = useMemo(() => {
@@ -144,6 +152,7 @@ export function MessageContent({
           normalizeRenderedHtml(
             sanitizeMessageHtml(convertMentionLinks(marked.parse(normalized, { async: false }))),
           ),
+          serverDirectory,
         ),
         {
           load: (host) => t("remote_content_load_image", { host }),
@@ -157,11 +166,11 @@ export function MessageContent({
       html = highlightTerms(html, terms);
     }
     return highlightCodeBlocks(html);
-  }, [text, communityEmojis, terms, t, remoteContent]);
+  }, [text, communityEmojis, terms, t, remoteContent, serverDirectory]);
 
   const youtubeIds = useMemo(() => extractYouTubeIds(text ?? ""), [text]);
   const imageUrls = useMemo(() => extractImageUrls(text ?? ""), [text]);
-  const previewUuid = useMemo(
+  const previewTarget = useMemo(
     () => (renderPermalinkPreview ? extractFirstPermalink(__html) : null),
     [__html, renderPermalinkPreview],
   );
@@ -231,7 +240,12 @@ export function MessageContent({
     if (internal) {
       e.preventDefault();
       const uuid = internal.dataset.internalLink;
-      if (uuid) navigate({ to: "/m/$messageId", params: { messageId: uuid } });
+      if (uuid) {
+        openLinkedMessage(
+          { origin: internal.dataset.internalOrigin ?? serverOrigin(), uuid },
+          navigate,
+        );
+      }
       return;
     }
     const link = (e.target as Element).closest<HTMLAnchorElement>("a[data-external-link]");
@@ -249,7 +263,13 @@ export function MessageContent({
       className={`message-content text-sm leading-relaxed text-fg ${className ?? ""}`}
     >
       {pendingUrl && <ExternalLinkModal url={pendingUrl} onClose={() => setPendingUrl(null)} />}
-      {previewUuid && <MessageQuotePreview messageId={previewUuid} selfMessageIri={messageIri} />}
+      {previewTarget && (
+        <MessageQuotePreview
+          target={previewTarget}
+          selfMessageIri={messageIri}
+          hostCommunityId={communityId}
+        />
+      )}
       <div className="relative">
         <div
           role="presentation"

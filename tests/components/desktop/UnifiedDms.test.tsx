@@ -79,6 +79,7 @@ function connectionSnapshot(overrides: Partial<ConnectionSnapshot>): ConnectionS
     userId: 1,
     communities: [],
     unreadCounts: {},
+    apiOrigin: null,
     conversationActivityAt: null,
     error: null,
     ...overrides,
@@ -384,6 +385,7 @@ describe("ConversationsSidebar desktop variant", () => {
           serverName: "Alpha",
           origin: BASE,
           unreadCounts: { dm: 3 },
+          apiOrigin: null,
           conversationActivityAt: Date.now(),
         }),
       ]);

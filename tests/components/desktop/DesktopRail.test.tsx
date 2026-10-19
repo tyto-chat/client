@@ -101,6 +101,7 @@ function makeConnection(overrides: Partial<ConnectionSnapshot>): ConnectionSnaps
     userId: 1,
     communities: [],
     unreadCounts: {},
+    apiOrigin: null,
     conversationActivityAt: null,
     error: null,
     ...overrides,

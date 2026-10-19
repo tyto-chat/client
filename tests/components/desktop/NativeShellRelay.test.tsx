@@ -52,6 +52,7 @@ function connection(extra: Partial<ConnectionSnapshot>): ConnectionSnapshot {
     userId: 1,
     communities: [],
     unreadCounts: {},
+    apiOrigin: null,
     conversationActivityAt: null,
     error: null,
     ...extra,

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { permalinkOrigins } from "@/utils/permalinkOrigins";
+import { getServerDirectory } from "@/platform/serverDirectory";
 import type { RemoteContentLevel } from "@/api/userPreferences";
 
 export const REMOTE_CONTENT_LEVELS: readonly RemoteContentLevel[] = ["custom", "all"];
@@ -127,6 +128,7 @@ export function canAutoLoad(url: string): boolean {
   }
   if (LOCAL_SCHEMES.has(parsed.protocol)) return true;
   if (permalinkOrigins().includes(parsed.origin)) return true;
+  if (getServerDirectory().origins().includes(parsed.origin)) return true;
   const host = parsed.hostname;
   if (sessionHosts.has(host)) return true;
   if (getRemoteContentLevel() === "all") return true;

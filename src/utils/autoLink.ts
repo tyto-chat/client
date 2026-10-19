@@ -1,4 +1,5 @@
-import { permalinkOrigins } from "@/utils/permalinkOrigins";
+import type { ServerDirectorySnapshot } from "@/platform/serverDirectory";
+import { linkScope, type PermalinkTarget } from "@/utils/linkScope";
 
 const TRAILING_PUNCTUATION = ".,!?:;)]";
 const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`[\]]*/g;
@@ -12,17 +13,21 @@ function truncateUrl(url: string): string {
   return display.slice(0, MAX_DISPLAY_LENGTH) + "…";
 }
 
-function internalPermalinkUuid(url: string): string | null {
+function internalPermalink(
+  url: string,
+  directory?: ServerDirectorySnapshot,
+): PermalinkTarget | null {
   try {
     const parsed = new URL(url, window.location.origin);
-    if (!permalinkOrigins().includes(parsed.origin)) return null;
-    return PERMALINK_PATH_RE.exec(parsed.pathname)?.[1]?.toLowerCase() ?? null;
+    if (!linkScope(parsed.origin, directory)) return null;
+    const uuid = PERMALINK_PATH_RE.exec(parsed.pathname)?.[1]?.toLowerCase();
+    return uuid ? { origin: parsed.origin, uuid } : null;
   } catch {
     return null;
   }
 }
 
-function processTextNode(node: Text): void {
+function processTextNode(node: Text, directory?: ServerDirectorySnapshot): void {
   const text = node.textContent ?? "";
 
   URL_REGEX.lastIndex = 0;
@@ -61,9 +66,10 @@ function processTextNode(node: Text): void {
     } else {
       const a = document.createElement("a");
       a.href = part.url;
-      const internalUuid = internalPermalinkUuid(part.url);
-      if (internalUuid) {
-        a.dataset.internalLink = internalUuid;
+      const internal = internalPermalink(part.url, directory);
+      if (internal) {
+        a.dataset.internalLink = internal.uuid;
+        a.dataset.internalOrigin = internal.origin;
       } else {
         a.dataset.externalLink = part.url;
       }
@@ -75,7 +81,7 @@ function processTextNode(node: Text): void {
   node.parentNode?.replaceChild(fragment, node);
 }
 
-export function autoLinkUrls(html: string): string {
+export function autoLinkUrls(html: string, directory?: ServerDirectorySnapshot): string {
   const div = document.createElement("div");
   div.innerHTML = html;
 
@@ -98,7 +104,7 @@ export function autoLinkUrls(html: string): string {
   }
 
   for (const node of nodes) {
-    processTextNode(node);
+    processTextNode(node, directory);
   }
 
   return div.innerHTML;

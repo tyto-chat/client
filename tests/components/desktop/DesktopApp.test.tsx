@@ -26,6 +26,7 @@ import { __resetRefreshStateForTests, refreshAccessToken } from "@/api/auth";
 import { _resetNegotiationForTests } from "@/api/apiVersion";
 import { getBaseUrl } from "@/api/client";
 import { executeIdentityRequest } from "@/platform/activeIdentity";
+import { getServerDirectory } from "@/platform/serverDirectory";
 
 const ORIGIN_A = "https://a.example";
 const ORIGIN_B = "https://b.example";
@@ -180,6 +181,35 @@ describe("DesktopApp", () => {
       expect(renders.at(-1)?.activeIdentityId).toBe("ia");
     });
     expect(renders.at(-1)!.queryClient).toBe(clientForA);
+  });
+
+  it("registers the server directory so a second identity is findable by origin and cleans up on unmount", async () => {
+    stubHealthyServer(ORIGIN_A, "Alpha");
+    stubHealthyServer(ORIGIN_B, "Beta");
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    await seedTwoIdentities(bridge);
+
+    const { unmount } = render(
+      <DesktopApp
+        renderApp={(activeIdentityId) => (
+          <Probe activeIdentityId={activeIdentityId} onRender={() => {}} />
+        )}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(getServerDirectory().find(ORIGIN_B)?.identityId).toBe("ib");
+    });
+    const found = getServerDirectory().find(ORIGIN_B);
+    expect(found?.serverName).toBe("Beta");
+    expect(found?.ctx.origin).toBe(ORIGIN_B);
+    expect(found?.ctx.getToken()).toBe("jwt-live");
+    expect(getServerDirectory().origins()).toEqual(expect.arrayContaining([ORIGIN_A, ORIGIN_B]));
+    expect(getServerDirectory().activeIdentityId()).toBe("ia");
+
+    unmount();
+    expect(getServerDirectory().origins()).toEqual([]);
   });
 
   it("stops the registry on unmount", async () => {

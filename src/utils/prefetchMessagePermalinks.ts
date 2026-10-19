@@ -1,29 +1,38 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { fetchMessage } from "@/api/messages";
+import { fetchMessageIn } from "@/api/linkedMessages";
 import { queryKeys } from "@/queries/queryKeys";
-import type { Message } from "@/types/api";
-import { extractPermalinkUuids } from "@/utils/extractPermalinkUuids";
 import { StaleTime } from "@/queries/staleTimes";
+import type { Message } from "@/types/api";
+import { extractPermalinkTargets } from "@/utils/extractPermalinkTargets";
+import { linkScope } from "@/utils/linkScope";
 
 export async function prefetchMessagePermalinks(
   queryClient: QueryClient,
   messages: readonly Message[],
 ): Promise<void> {
-  const uuids = new Set<string>();
-  for (const msg of messages) {
-    for (const u of extractPermalinkUuids(msg.text)) uuids.add(u);
+  const jobs = new Map<string, Promise<void>>();
+  for (const message of messages) {
+    for (const target of extractPermalinkTargets(message.text)) {
+      const scope = linkScope(target.origin);
+      if (!scope) continue;
+      const queryKey =
+        scope.kind === "foreign"
+          ? queryKeys.foreignMessage(target.origin, target.uuid)
+          : queryKeys.message(target.uuid);
+      const id = queryKey.join("|");
+      if (jobs.has(id)) continue;
+      jobs.set(
+        id,
+        queryClient
+          .prefetchQuery({
+            queryKey,
+            queryFn: () => fetchMessageIn(scope, target.uuid),
+            staleTime: StaleTime.long,
+            meta: { noGlobalRedirect: true },
+          })
+          .catch(() => {}),
+      );
+    }
   }
-  if (uuids.size === 0) return;
-  await Promise.all(
-    [...uuids].map((uuid) =>
-      queryClient
-        .prefetchQuery({
-          queryKey: queryKeys.message(uuid),
-          queryFn: () => fetchMessage(uuid),
-          staleTime: StaleTime.long,
-          meta: { noGlobalRedirect: true },
-        })
-        .catch(() => {}),
-    ),
-  );
+  await Promise.all(jobs.values());
 }
