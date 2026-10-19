@@ -92,5 +92,7 @@
   "tray_in_call": "En llamada: {{place}}",
   "tray_in_call_muted": "En llamada (silenciado): {{place}}",
   "tray_unread_one": "{{count}} sin leer",
-  "tray_unread_other": "{{count}} sin leer"
+  "tray_unread_other": "{{count}} sin leer",
+  "waiting_for_network": "Esperando la red…",
+  "retrying_automatically": "Reintentando automáticamente cada pocos segundos."
 }

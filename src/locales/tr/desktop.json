@@ -92,5 +92,7 @@
   "tray_in_call": "Görüşmede: {{place}}",
   "tray_in_call_muted": "Görüşmede (sessiz): {{place}}",
   "tray_unread_one": "{{count}} okunmamış",
-  "tray_unread_other": "{{count}} okunmamış"
+  "tray_unread_other": "{{count}} okunmamış",
+  "waiting_for_network": "Ağ bekleniyor…",
+  "retrying_automatically": "Birkaç saniyede bir otomatik olarak yeniden deneniyor."
 }

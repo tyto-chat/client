@@ -92,5 +92,7 @@
   "tray_in_call": "Im Anruf: {{place}}",
   "tray_in_call_muted": "Im Anruf (stumm): {{place}}",
   "tray_unread_one": "{{count}} ungelesen",
-  "tray_unread_other": "{{count}} ungelesen"
+  "tray_unread_other": "{{count}} ungelesen",
+  "waiting_for_network": "Warte auf das Netzwerk …",
+  "retrying_automatically": "Es wird automatisch alle paar Sekunden erneut versucht."
 }

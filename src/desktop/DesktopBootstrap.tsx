@@ -24,9 +24,10 @@ import {
 import { persistWizardResult } from "./identitySetup";
 import { setServerOrderSnapshot } from "./serverOrderStore";
 import { BridgeVersionError } from "@/platform/PlatformBridge";
+import { getBootTiming, waitForRetry } from "./bootConnect";
 
 type BootState =
-  | { kind: "loading" }
+  | { kind: "loading"; waiting?: boolean }
   | { kind: "first-run" }
   | { kind: "relogin"; identity: DesktopIdentity }
   | { kind: "unreachable"; identity: DesktopIdentity; error: unknown }
@@ -70,17 +71,25 @@ export function DesktopBootstrap({
   const configRef = useRef<DesktopConfig | null>(null);
   const profileIdRef = useRef<string | null>(null);
   const startedRef = useRef(false);
+  const runRef = useRef<AbortController | null>(null);
   const [state, setState] = useState<BootState>({ kind: "loading" });
   const [bootGeneration, setBootGeneration] = useState(0);
 
-  async function finishConnected(profileId: string, identityId: string, token: string | null) {
+  async function finishConnected(
+    profileId: string,
+    identityId: string,
+    token: string | null,
+    rememberAsLastActive = true,
+  ) {
     const bridge = bridgeRef.current!;
     const current = configRef.current;
     let identities: DesktopIdentity[] = [];
     if (current) {
-      const next = setLastActiveIdentity(current, profileId, identityId);
+      const next = rememberAsLastActive
+        ? setLastActiveIdentity(current, profileId, identityId)
+        : current;
       configRef.current = next;
-      await saveDesktopConfig(bridge, next);
+      if (next !== current) await saveDesktopConfig(bridge, next);
       const profile = next.profiles.find((p) => p.id === profileId);
       identities = profile?.identities ?? [];
       setServerOrderSnapshot(profile ? getServerOrder(profile) : []);
@@ -95,28 +104,91 @@ export function DesktopBootstrap({
     setState({ kind: "ready" });
   }
 
-  async function tryConnect(profileId: string, identity: DesktopIdentity, asGuest = false) {
+  async function attempt(
+    profileId: string,
+    identity: DesktopIdentity,
+    asGuest = false,
+  ): Promise<"connected" | "handled" | "unreachable"> {
     const bridge = bridgeRef.current!;
     if (asGuest || identityKind(identity) === "guest") {
       const guestOutcome = await connectGuest(identity);
       if (guestOutcome.status === "connected") {
         await finishConnected(profileId, identity.id, null);
-      } else if (guestOutcome.status === "version-mismatch") {
-        setState({ kind: "incompatible", identity, direction: guestOutcome.direction });
-      } else {
-        setState({ kind: "unreachable", identity, error: guestOutcome.error });
+        return "connected";
       }
-      return;
+      if (guestOutcome.status === "version-mismatch") {
+        setState({ kind: "incompatible", identity, direction: guestOutcome.direction });
+        return "handled";
+      }
+      return "unreachable";
     }
     const outcome = await connectIdentity(bridge, profileId, identity);
     if (outcome.status === "connected") {
       await finishConnected(profileId, identity.id, outcome.token);
-    } else if (outcome.status === "needs-login") {
+      return "connected";
+    }
+    if (outcome.status === "needs-login") {
       setState({ kind: "relogin", identity });
-    } else if (outcome.status === "version-mismatch") {
+      return "handled";
+    }
+    if (outcome.status === "version-mismatch") {
       setState({ kind: "incompatible", identity, direction: outcome.direction });
-    } else {
-      setState({ kind: "unreachable", identity, error: outcome.error });
+      return "handled";
+    }
+    return "unreachable";
+  }
+
+  async function attemptFallback(profileId: string, identity: DesktopIdentity): Promise<boolean> {
+    const bridge = bridgeRef.current!;
+    if (identityKind(identity) === "guest") {
+      const guestOutcome = await connectGuest(identity);
+      if (guestOutcome.status !== "connected") return false;
+      await finishConnected(profileId, identity.id, null, false);
+      return true;
+    }
+    const outcome = await connectIdentity(bridge, profileId, identity);
+    if (outcome.status !== "connected") return false;
+    await finishConnected(profileId, identity.id, outcome.token, false);
+    return true;
+  }
+
+  function fallbackCandidates(profileId: string, identity: DesktopIdentity): DesktopIdentity[] {
+    const profile = configRef.current?.profiles.find((p) => p.id === profileId);
+    if (!profile) return [];
+    const order = getServerOrder(profile);
+    const rank = (i: DesktopIdentity) => {
+      const index = order.indexOf(i.id);
+      return index === -1 ? order.length : index;
+    };
+    return profile.identities.filter((i) => i.id !== identity.id).sort((a, b) => rank(a) - rank(b));
+  }
+
+  async function bootConnect(profileId: string, identity: DesktopIdentity, asGuest = false) {
+    runRef.current?.abort();
+    const run = new AbortController();
+    runRef.current = run;
+    const { signal } = run;
+    const timing = getBootTiming();
+
+    if ((await attempt(profileId, identity, asGuest)) !== "unreachable" || signal.aborted) return;
+
+    setState({ kind: "loading", waiting: true });
+    for (const delay of timing.retryDelaysMs) {
+      await waitForRetry(delay, signal);
+      if (signal.aborted) return;
+      if ((await attempt(profileId, identity, asGuest)) !== "unreachable" || signal.aborted) return;
+    }
+
+    for (const other of fallbackCandidates(profileId, identity)) {
+      if (await attemptFallback(profileId, other)) return;
+      if (signal.aborted) return;
+    }
+
+    setState({ kind: "unreachable", identity, error: null });
+    while (!signal.aborted) {
+      await waitForRetry(timing.unreachableRetryMs, signal);
+      if (signal.aborted) return;
+      if ((await attempt(profileId, identity, asGuest)) !== "unreachable" || signal.aborted) return;
     }
   }
 
@@ -145,11 +217,12 @@ export function DesktopBootstrap({
           profile.identities.find((i) => i.id === profile.lastActiveIdentityId) ??
           profile.identities[0]!;
 
-        await tryConnect(profile.id, identity);
+        await bootConnect(profile.id, identity);
       } catch (error) {
         setState({ kind: "boot-error", error });
       }
     })();
+    return () => runRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bootGeneration]);
 
@@ -182,7 +255,21 @@ export function DesktopBootstrap({
   if (state.kind === "ready") return <>{children}</>;
 
   if (state.kind === "loading") {
-    return <AppSkeleton />;
+    return (
+      <>
+        <AppSkeleton />
+        {state.waiting && (
+          <div className="fixed inset-x-0 bottom-6 z-10 flex justify-center">
+            <div
+              className="rounded-full bg-overlay px-4 py-2 text-[13px] text-fg-muted shadow-soft-sm ring-1 ring-inset ring-line"
+              data-testid="desktop-boot-waiting"
+            >
+              {t("waiting_for_network")}
+            </div>
+          </div>
+        )}
+      </>
+    );
   }
 
   if (state.kind === "boot-error" && state.error instanceof BridgeVersionError) {
@@ -249,7 +336,7 @@ export function DesktopBootstrap({
           type="button"
           onClick={() => {
             setState({ kind: "loading" });
-            void tryConnect(profileIdRef.current ?? "", relogin.identity, true);
+            void bootConnect(profileIdRef.current ?? "", relogin.identity, true);
           }}
           className="mt-3 w-full py-1.5 text-center text-[13px] font-medium text-fg-muted underline decoration-fg-muted/45 underline-offset-[3px] transition hover:text-fg"
           data-testid="desktop-continue-as-guest"
@@ -273,7 +360,7 @@ export function DesktopBootstrap({
             type="button"
             onClick={() => {
               setState({ kind: "loading" });
-              void tryConnect(profileIdRef.current ?? "", incompatible.identity);
+              void bootConnect(profileIdRef.current ?? "", incompatible.identity);
             }}
             className="w-full rounded-md bg-accent-gradient py-2.5 font-semibold text-on-accent shadow-soft-sm transition hover:opacity-90"
             data-testid="desktop-retry"
@@ -299,11 +386,14 @@ export function DesktopBootstrap({
         >
           {unreachable.identity.serverUrl}
         </p>
+        <p className="text-center text-[13px] text-fg-muted" data-testid="desktop-auto-retry">
+          {t("retrying_automatically")}
+        </p>
         <button
           type="button"
           onClick={() => {
             setState({ kind: "loading" });
-            void tryConnect(profileIdRef.current ?? "", unreachable.identity);
+            void bootConnect(profileIdRef.current ?? "", unreachable.identity);
           }}
           className="w-full rounded-md bg-accent-gradient py-2.5 font-semibold text-on-accent shadow-soft-sm transition hover:opacity-90"
           data-testid="desktop-retry"

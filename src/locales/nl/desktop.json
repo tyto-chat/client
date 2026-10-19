@@ -92,5 +92,7 @@
   "tray_in_call": "In gesprek: {{place}}",
   "tray_in_call_muted": "In gesprek (gedempt): {{place}}",
   "tray_unread_one": "{{count}} ongelezen",
-  "tray_unread_other": "{{count}} ongelezen"
+  "tray_unread_other": "{{count}} ongelezen",
+  "waiting_for_network": "Wachten op het netwerk…",
+  "retrying_automatically": "Er wordt automatisch om de paar seconden opnieuw geprobeerd."
 }

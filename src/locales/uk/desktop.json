@@ -94,5 +94,7 @@
   "tray_unread_one": "{{count}} непрочитане",
   "tray_unread_few": "{{count}} непрочитані",
   "tray_unread_many": "{{count}} непрочитаних",
-  "tray_unread_other": "{{count}} непрочитаного"
+  "tray_unread_other": "{{count}} непрочитаного",
+  "waiting_for_network": "Очікування мережі…",
+  "retrying_automatically": "Автоматична повторна спроба кожні кілька секунд."
 }

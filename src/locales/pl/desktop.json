@@ -94,5 +94,7 @@
   "tray_unread_one": "{{count}} nieprzeczytana",
   "tray_unread_few": "{{count}} nieprzeczytane",
   "tray_unread_many": "{{count}} nieprzeczytanych",
-  "tray_unread_other": "{{count}} nieprzeczytanej"
+  "tray_unread_other": "{{count}} nieprzeczytanej",
+  "waiting_for_network": "Czekam na połączenie z siecią…",
+  "retrying_automatically": "Ponawiam automatycznie co kilka sekund."
 }

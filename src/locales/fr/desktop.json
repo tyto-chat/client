@@ -92,5 +92,7 @@
   "tray_in_call": "En appel : {{place}}",
   "tray_in_call_muted": "En appel (micro coupé) : {{place}}",
   "tray_unread_one": "{{count}} non lu",
-  "tray_unread_other": "{{count}} non lus"
+  "tray_unread_other": "{{count}} non lus",
+  "waiting_for_network": "En attente du réseau…",
+  "retrying_automatically": "Nouvelle tentative automatique toutes les quelques secondes."
 }
