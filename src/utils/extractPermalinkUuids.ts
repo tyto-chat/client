@@ -1,3 +1,5 @@
+import { permalinkOrigins } from "@/utils/permalinkOrigins";
+
 const UUID_RE_SOURCE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 function escapeForRegex(s: string): string {
@@ -6,10 +8,11 @@ function escapeForRegex(s: string): string {
 
 export function extractPermalinkUuids(
   text: string | null | undefined,
-  origin: string = window.location.origin,
+  origins: string | string[] = permalinkOrigins(),
 ): string[] {
   if (!text || text.indexOf("/m/") === -1) return [];
-  const re = new RegExp(`${escapeForRegex(origin)}/m/(${UUID_RE_SOURCE})`, "gi");
+  const alternation = (Array.isArray(origins) ? origins : [origins]).map(escapeForRegex).join("|");
+  const re = new RegExp(`(?:${alternation})/m/(${UUID_RE_SOURCE})`, "gi");
   const uuids = new Set<string>();
   for (const m of text.matchAll(re)) {
     if (m[1]) uuids.add(m[1].toLowerCase());

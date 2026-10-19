@@ -224,5 +224,21 @@
   "two_factor_regenerate_hint": "I tuoi attuali codici di recupero smetteranno di funzionare.",
   "two_factor_password_label": "Password attuale",
   "two_factor_password_failed": "Password non corretta.",
-  "two_factor_disabled_success": "Autenticazione a due fattori disabilitata."
+  "two_factor_disabled_success": "Autenticazione a due fattori disabilitata.",
+  "spellcheck_title": "Controllo ortografico",
+  "spellcheck_languages": "Lingue",
+  "spellcheck_hint": "Le parole errate nell'editor vengono sottolineate; con il tasto destro vedi i suggerimenti. I dizionari si scaricano al primo utilizzo.",
+  "spellcheck_add": "Aggiungi lingua…",
+  "spellcheck_remove": "Rimuovi {{language}}",
+  "spellcheck_off": "Il controllo ortografico è disattivato.",
+  "remote_content_title": "Contenuti esterni",
+  "remote_content_label": "Carica immagini e anteprime da",
+  "remote_content_hint": "Caricare i contenuti rivela a quel sito chi li ha visti. Il tuo server è sempre consentito.",
+  "remote_content_custom": "Solo i siti che ho aggiunto",
+  "remote_content_all": "Tutto",
+  "remote_content_hosts": "Siti affidabili",
+  "remote_content_hosts_hint": "Immagini e anteprime da questi siti si caricano senza chiedere.",
+  "remote_content_add_host": "Aggiungi sito…",
+  "remote_content_add": "Aggiungi",
+  "remote_content_remove_host": "Rimuovi {{host}}"
 }

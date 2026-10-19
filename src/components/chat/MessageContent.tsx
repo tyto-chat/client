@@ -12,6 +12,8 @@ import { extractYouTubeIds } from "@/utils/youtube";
 import { extractImageUrls } from "@/utils/images";
 import { YoutubeEmbed } from "./YoutubeEmbed";
 import { ImageEmbed } from "./ImageEmbed";
+import { gateRemoteImages, revealRemoteImage, useRemoteContentPolicy } from "@/utils/remoteContent";
+import { useAllowRemoteHost } from "@/hooks/useAllowRemoteHost";
 import { ExternalLinkModal } from "./ExternalLinkModal";
 import { MessageQuotePreview } from "./MessageQuotePreview";
 import { extractFirstPermalink } from "@/utils/extractFirstPermalink";
@@ -129,16 +131,25 @@ export function MessageContent({
 }: Props) {
   const { t } = useTranslation("channel");
   const { data: communityEmojis } = useCommunityEmojis(communityId);
+  const remoteContent = useRemoteContentPolicy();
+  const allowRemoteHost = useAllowRemoteHost();
   const __html = useMemo(() => {
     const normalized = (text ?? "")
       .replace(/\r\n/g, "\n")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
     let html = replaceEmojiShortcodes(
-      autoLinkUrls(
-        normalizeRenderedHtml(
-          sanitizeMessageHtml(convertMentionLinks(marked.parse(normalized, { async: false }))),
+      gateRemoteImages(
+        autoLinkUrls(
+          normalizeRenderedHtml(
+            sanitizeMessageHtml(convertMentionLinks(marked.parse(normalized, { async: false }))),
+          ),
         ),
+        {
+          load: (host) => t("remote_content_load_image", { host }),
+          always: (domain) => t("remote_content_always_load", { host: domain }),
+        },
+        remoteContent,
       ),
       communityEmojis,
     );
@@ -146,7 +157,7 @@ export function MessageContent({
       html = highlightTerms(html, terms);
     }
     return highlightCodeBlocks(html);
-  }, [text, communityEmojis, terms]);
+  }, [text, communityEmojis, terms, t, remoteContent]);
 
   const youtubeIds = useMemo(() => extractYouTubeIds(text ?? ""), [text]);
   const imageUrls = useMemo(() => extractImageUrls(text ?? ""), [text]);
@@ -199,6 +210,22 @@ export function MessageContent({
         onUserClick(userId);
         return;
       }
+    }
+    const alwaysLoad = (e.target as Element).closest<HTMLButtonElement>(
+      "button.remote-image-always",
+    );
+    if (alwaysLoad) {
+      e.preventDefault();
+      if (alwaysLoad.dataset.remoteHost) allowRemoteHost(alwaysLoad.dataset.remoteHost);
+      return;
+    }
+    const blockedImage = (e.target as Element).closest<HTMLButtonElement>(
+      "button.remote-image-placeholder",
+    );
+    if (blockedImage) {
+      e.preventDefault();
+      revealRemoteImage(blockedImage);
+      return;
     }
     const internal = (e.target as Element).closest<HTMLAnchorElement>("a[data-internal-link]");
     if (internal) {

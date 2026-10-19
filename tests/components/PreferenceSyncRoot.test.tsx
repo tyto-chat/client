@@ -87,6 +87,14 @@ describe("PreferenceSyncRoot in web mode", () => {
     expect(localStorage.getItem(STORAGE_KEYS.SEND_TYPING_INDICATOR)).toBe("false");
   });
 
+  it("mirrors the remote-content level and host list from the server", async () => {
+    serverPrefs = { ...EMPTY_PREFS, remoteContent: "all", remoteContentHosts: ["imgur.com"] };
+    renderRoot();
+
+    await waitFor(() => expect(localStorage.getItem(STORAGE_KEYS.REMOTE_CONTENT)).toBe("all"));
+    expect(localStorage.getItem(STORAGE_KEYS.REMOTE_CONTENT_HOSTS)).toBe('["imgur.com"]');
+  });
+
   it("migrates local device values to the server", async () => {
     seedLocalValues();
     renderRoot();

@@ -11,4 +11,6 @@ export const STORAGE_KEYS = {
   PREFS_MIGRATED: "prefsMigrated",
   HAD_SESSION: "hadSession",
   DEVICE_PREFS_SEEDED: "devicePrefsSeeded",
+  REMOTE_CONTENT: "remoteContent",
+  REMOTE_CONTENT_HOSTS: "remoteContentHosts",
 } as const;

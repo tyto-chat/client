@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/Modal";
 import { uuidFromIri } from "@/api/hydra";
 import { buildEmbedSnippet } from "@/utils/embedSnippet";
+import { serverOrigin } from "@/utils/permalinkOrigins";
 
 interface Props {
   messageIri: string;
@@ -24,7 +25,7 @@ export function EmbedMessageModal({
 
   const uuid = uuidFromIri(messageIri);
   const snippet = buildEmbedSnippet({
-    origin: window.location.origin,
+    origin: serverOrigin(),
     uuid,
     fallbackText,
     authorName,

@@ -168,7 +168,7 @@ export function ChannelSidebar({ communityId }: Props) {
           "md:static md:w-60",
         )}
       >
-        <div className="group flex shrink-0 items-center justify-between gap-2 border-b-2 border-[color-mix(in_srgb,var(--accent)_55%,transparent)] px-4 py-3">
+        <div className="group flex h-14 shrink-0 items-center justify-between gap-2 border-b-2 border-[color-mix(in_srgb,var(--accent)_55%,transparent)] px-4">
           <h2
             className="min-w-0 flex-1 text-[0.9375rem] font-bold text-fg"
             title={community?.name ?? undefined}

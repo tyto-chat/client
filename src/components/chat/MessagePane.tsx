@@ -180,7 +180,7 @@ export function MessagePane({
       <div
         ref={scrollContainerRef}
         data-testid="message-scroll"
-        className="scrollbar-autohide absolute inset-0 flex flex-col-reverse overflow-y-auto px-[18px] [scrollbar-color:color-mix(in_srgb,var(--accent)_35%,transparent)_transparent]"
+        className="scrollbar-autohide absolute inset-0 isolate flex flex-col-reverse overflow-y-auto px-[18px] [scrollbar-color:color-mix(in_srgb,var(--accent)_35%,transparent)_transparent]"
       >
         <div className="shrink-0" style={{ height: composerHeight + 2 }} />
         <div ref={bottomSentinelRef} className="shrink-0" />

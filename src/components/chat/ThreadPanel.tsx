@@ -211,7 +211,7 @@ export function ThreadPanel({
       data-testid="thread-panel"
       className="relative z-10 flex w-96 shrink-0 flex-col border-l border-line bg-canvas max-md:fixed max-md:inset-0 max-md:z-40 max-md:w-full"
     >
-      <header className="flex items-center gap-2 border-b border-line bg-canvas px-4 py-3">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line bg-canvas px-4">
         <ReplyIcon size={16} className="text-fg-muted" />
         <h2 className="cap-trim text-[0.9375rem] font-semibold">{t("thread_title")}</h2>
         <button

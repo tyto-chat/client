@@ -41,8 +41,8 @@ describe("TrayLabelsSync", () => {
       presenceDnd: "Do not disturb",
       quit: "Quit",
     });
-    expect(Object.keys(sent[0]!)).toHaveLength(17);
-    for (const label of Object.values(sent[0]!)) expect(label).not.toMatch(/^tray_/);
+    expect(Object.keys(sent[0]!)).toHaveLength(26);
+    for (const label of Object.values(sent[0]!)) expect(label).not.toMatch(/^(tray|context)_/);
   });
 
   it("sends them again when the language changes", async () => {

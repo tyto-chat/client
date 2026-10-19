@@ -62,7 +62,7 @@
   "attachments_purged_other": "{{count}} anexos removidos",
   "message_unavailable_title": "Mensagem indisponível",
   "message_unavailable_body": "Esta mensagem não existe ou você não tem acesso a ela.",
-  "linked_message_unavailable": "Mensagem vinculada indisponível",
+  "linked_message_unavailable": "Esta mensagem não existe ou não tens permissão para a ver",
   "loading_linked_message": "Carregando mensagem vinculada…",
   "pin_message": "Fixar mensagem",
   "unpin_message": "Desafixar",
@@ -197,5 +197,9 @@
   "play_video": "Reproduzir vídeo",
   "image": "Imagem",
   "previous": "Anterior",
-  "next": "Próxima"
+  "next": "Próxima",
+  "copy_message": "Copiar mensagem",
+  "remote_content_load_image": "Carregar imagem de {{host}}",
+  "remote_content_load_preview": "Carregar pré-visualização de {{host}}",
+  "remote_content_always_load": "Carregar sempre de {{host}}"
 }

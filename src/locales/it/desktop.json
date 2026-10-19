@@ -92,5 +92,16 @@
   "tray_in_call": "In chiamata: {{place}}",
   "tray_in_call_muted": "In chiamata (microfono disattivato): {{place}}",
   "tray_unread_one": "{{count}} non letto",
-  "tray_unread_other": "{{count}} non letti"
+  "tray_unread_other": "{{count}} non letti",
+  "waiting_for_network": "In attesa della rete…",
+  "retrying_automatically": "Nuovo tentativo automatico ogni pochi secondi.",
+  "context_cut": "Taglia",
+  "context_copy": "Copia",
+  "context_paste": "Incolla",
+  "context_select_all": "Seleziona tutto",
+  "context_open_link": "Apri il link nel browser",
+  "context_copy_link": "Copia link",
+  "context_copy_image": "Copia immagine",
+  "context_copy_image_address": "Copia indirizzo immagine",
+  "context_add_to_dictionary": "Aggiungi al dizionario"
 }

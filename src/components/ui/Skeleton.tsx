@@ -62,7 +62,7 @@ export function MessagePaneSkeleton({ composer = true }: { composer?: boolean })
       aria-hidden="true"
       className="flex min-w-0 flex-1 flex-col"
     >
-      <header className="flex items-center gap-1.5 border-b border-line px-4 py-3 max-md:hidden">
+      <header className="flex h-14 items-center gap-1.5 border-b border-line px-4 max-md:hidden">
         <SkeletonBlock className="h-4 w-32" />
         <div className="ml-auto flex items-center gap-1.5">
           <SkeletonBlock className="h-8 w-8 rounded-lg" />
@@ -83,7 +83,7 @@ export function ChannelSidebarSkeleton() {
       aria-hidden="true"
       className="flex w-60 shrink-0 flex-col bg-surface px-2 pb-4 max-md:hidden"
     >
-      <div className="-mx-2 mb-2 flex items-center justify-between gap-2 border-b-2 border-[color-mix(in_srgb,var(--accent)_55%,transparent)] px-4 py-3">
+      <div className="-mx-2 mb-2 flex h-14 shrink-0 items-center justify-between gap-2 border-b-2 border-[color-mix(in_srgb,var(--accent)_55%,transparent)] px-4">
         <SkeletonBlock className="h-4 w-28" />
         <div className="flex h-8 items-center gap-0.5">
           <SkeletonBlock className="h-7 w-7 rounded-lg" />

@@ -224,5 +224,21 @@
   "two_factor_regenerate_hint": "Je huidige herstelcodes werken dan niet meer.",
   "two_factor_password_label": "Huidig wachtwoord",
   "two_factor_password_failed": "Onjuist wachtwoord.",
-  "two_factor_disabled_success": "Tweestapsverificatie uitgeschakeld."
+  "two_factor_disabled_success": "Tweestapsverificatie uitgeschakeld.",
+  "spellcheck_title": "Spellingcontrole",
+  "spellcheck_languages": "Talen",
+  "spellcheck_hint": "Verkeerd gespelde woorden in de editor worden onderstreept; klik met rechts voor suggesties. Woordenboeken worden bij het eerste gebruik gedownload.",
+  "spellcheck_add": "Taal toevoegen…",
+  "spellcheck_remove": "{{language}} verwijderen",
+  "spellcheck_off": "Spellingcontrole staat uit.",
+  "remote_content_title": "Externe inhoud",
+  "remote_content_label": "Afbeeldingen en voorbeelden laden van",
+  "remote_content_hint": "Door inhoud te laden weet die site wie ernaar keek. Je eigen server is altijd toegestaan.",
+  "remote_content_custom": "Alleen sites die ik toevoegde",
+  "remote_content_all": "Alles",
+  "remote_content_hosts": "Vertrouwde sites",
+  "remote_content_hosts_hint": "Afbeeldingen en voorbeelden van deze sites laden zonder te vragen.",
+  "remote_content_add_host": "Site toevoegen…",
+  "remote_content_add": "Toevoegen",
+  "remote_content_remove_host": "{{host}} verwijderen"
 }

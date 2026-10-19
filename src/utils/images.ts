@@ -1,4 +1,7 @@
+const MARKDOWN_IMAGE = /!\[[^\]]*\]\([^)]*\)/g;
+
 export function extractImageUrls(text: string): string[] {
+  text = text.replace(MARKDOWN_IMAGE, " ");
   const regex =
     /https?:\/\/[^\s<>"{}|\\^`[\]]*\.(?:jpg|jpeg|png|gif|webp|bmp|svg)(?:[?#][^\s<>"{}|\\^`[\]]*)?/gi;
 

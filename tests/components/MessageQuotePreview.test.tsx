@@ -66,6 +66,32 @@ describe("MessageQuotePreview", () => {
     expect(screen.getByText("Hello from preview")).toBeInTheDocument();
   });
 
+  it("renders image attachments as thumbnails, two at most", async () => {
+    const image = (n: number) => ({
+      "@id": `/api/v1/media_objects/${n}`,
+      "@type": "MediaObject",
+      contentUrl: `https://cdn.example/${n}.png`,
+      originalName: `shot-${n}.png`,
+      mimeType: "image/png",
+      size: 1,
+      width: 10,
+      height: 10,
+    });
+    const file = { ...image(9), mimeType: "application/pdf", originalName: "doc.pdf" };
+    server.use(
+      http.get(`${BASE}/api/v1/messages/${TARGET_UUID}`, () =>
+        HttpResponse.json({ ...targetMessage, attachments: [file, image(1), image(2), image(3)] }),
+      ),
+    );
+
+    render(<MessageQuotePreview messageId={TARGET_UUID} />, { wrapper: makeWrapper() });
+
+    await waitFor(() => expect(screen.getByAltText("shot-1.png")).toBeInTheDocument());
+    expect(screen.getByAltText("shot-2.png")).toHaveAttribute("src", "https://cdn.example/2.png");
+    expect(screen.queryByAltText("shot-3.png")).not.toBeInTheDocument();
+    expect(screen.queryByAltText("doc.pdf")).not.toBeInTheDocument();
+  });
+
   it("renders an 'unavailable' fallback on 404", async () => {
     server.use(
       http.get(
@@ -77,7 +103,7 @@ describe("MessageQuotePreview", () => {
     render(<MessageQuotePreview messageId={TARGET_UUID} />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText(/Linked message unavailable/i)).toBeInTheDocument();
+      expect(screen.getByText(/doesn't exist or you don't have permission/i)).toBeInTheDocument();
     });
   });
 

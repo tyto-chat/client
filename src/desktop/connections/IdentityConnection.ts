@@ -199,6 +199,7 @@ export class IdentityConnection {
   stop(): void {
     this.stopped = true;
     this.connectionId += 1;
+    if (this.token) this.setToken(null);
     if (this.retryTimer) {
       clearTimeout(this.retryTimer);
       this.retryTimer = null;
@@ -336,7 +337,7 @@ export class IdentityConnection {
     try {
       const token = await this.authenticate(this.apiBase);
       if (this.stopped || this.connectionId !== myId) return;
-      this.token = token;
+      this.setToken(token);
       this.errorValue = null;
       this.retryAttempt = 0;
       this.setStatus("healthy");
@@ -345,7 +346,7 @@ export class IdentityConnection {
       void this.loadData(myId);
     } catch (error) {
       if (this.stopped || this.connectionId !== myId) return;
-      this.token = null;
+      this.setToken(null);
       this.errorValue = error;
       if (error instanceof AuthFailedError) {
         this.setStatus("auth-failed");
@@ -368,7 +369,7 @@ export class IdentityConnection {
     try {
       const token = await this.authenticate(this.apiBase);
       if (this.stopped) return token;
-      this.token = token;
+      this.setToken(token);
       this.errorValue = null;
       this.retryAttempt = 0;
       this.setStatus("healthy");
@@ -376,7 +377,7 @@ export class IdentityConnection {
       return token;
     } catch (error) {
       if (this.stopped) throw error;
-      this.token = null;
+      this.setToken(null);
       this.errorValue = error;
       if (error instanceof AuthFailedError) {
         this.setStatus("auth-failed");
@@ -430,6 +431,12 @@ export class IdentityConnection {
       this.retryTimer = null;
       void this.connect();
     }, delay);
+  }
+
+  private setToken(token: string | null): void {
+    this.token = token;
+    const origin = new URL(this.apiBase ?? this.identity.serverUrl, this.identity.serverUrl).origin;
+    this.bridge.appState?.setMediaAuth?.({ origin, token });
   }
 
   private scheduleTokenRefresh(token: string): void {

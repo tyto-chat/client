@@ -62,7 +62,7 @@
   "attachments_purged_other": "{{count}} bijlagen verwijderd",
   "message_unavailable_title": "Bericht niet beschikbaar",
   "message_unavailable_body": "Dit bericht bestaat niet of je hebt er geen toegang toe.",
-  "linked_message_unavailable": "Gekoppeld bericht niet beschikbaar",
+  "linked_message_unavailable": "Dit bericht bestaat niet of je hebt geen toestemming om het te bekijken",
   "loading_linked_message": "Gekoppeld bericht laden…",
   "pin_message": "Bericht vastzetten",
   "unpin_message": "Losmaken",
@@ -197,5 +197,9 @@
   "play_video": "Video afspelen",
   "image": "Afbeelding",
   "previous": "Vorige",
-  "next": "Volgende"
+  "next": "Volgende",
+  "copy_message": "Bericht kopiëren",
+  "remote_content_load_image": "Afbeelding van {{host}} laden",
+  "remote_content_load_preview": "Voorbeeld van {{host}} laden",
+  "remote_content_always_load": "Altijd laden van {{host}}"
 }

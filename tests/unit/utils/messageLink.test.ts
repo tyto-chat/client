@@ -1,7 +1,19 @@
 import { describe, it, expect, vi } from "vitest";
 import { messageLinkFromIri, copyMessageLinkToClipboard } from "@/utils/messageLink";
+import { configureApiClient } from "@/api/client";
 
 describe("messageLinkFromIri", () => {
+  it("defaults to the API server origin, not the page origin", () => {
+    configureApiClient("https://server.example.com/api/v1");
+    try {
+      expect(messageLinkFromIri("/api/messages/abc-uuid-123")).toBe(
+        "https://server.example.com/m/abc-uuid-123",
+      );
+    } finally {
+      configureApiClient("");
+    }
+  });
+
   it("builds an absolute /m/<uuid> URL from a Message IRI", () => {
     expect(messageLinkFromIri("/api/messages/abc-uuid-123", "https://chat.example.com")).toBe(
       "https://chat.example.com/m/abc-uuid-123",

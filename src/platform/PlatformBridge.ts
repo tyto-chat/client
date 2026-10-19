@@ -34,6 +34,15 @@ export interface BridgeTrayLabels {
   startOnBoot: string;
   startMinimized: string;
   quit: string;
+  contextCut: string;
+  contextCopy: string;
+  contextPaste: string;
+  contextSelectAll: string;
+  contextOpenLink: string;
+  contextCopyLink: string;
+  contextCopyImage: string;
+  contextCopyImageAddress: string;
+  contextAddToDictionary: string;
 }
 
 export type BridgePresence = "online" | "away" | "dnd" | "invisible";
@@ -47,6 +56,16 @@ export type TrayCommand =
 export interface BridgeWindowTheme {
   color: string;
   symbolColor: string;
+}
+
+export interface BridgeMediaAuth {
+  origin: string;
+  token: string | null;
+}
+
+export interface BridgeSpellCheck {
+  available: string[];
+  enabled: string[];
 }
 
 export interface PlatformBridge {
@@ -67,6 +86,11 @@ export interface PlatformBridge {
     setBadge(state: BridgeBadgeState): void;
     setTrayLabels?(labels: BridgeTrayLabels): void;
     setWindowTheme?(theme: BridgeWindowTheme): void;
+    setMediaAuth?(auth: BridgeMediaAuth): void;
+  };
+  spellCheck?: {
+    get(): Promise<BridgeSpellCheck>;
+    set(languages: string[]): Promise<BridgeSpellCheck>;
   };
   app?: {
     getVersion(): Promise<string>;

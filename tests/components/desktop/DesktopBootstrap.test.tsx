@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
@@ -19,6 +19,7 @@ import {
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { _resetNegotiationForTests } from "@/api/apiVersion";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
+import { _setBootTimingForTests } from "@/desktop/bootConnect";
 
 const ORIGIN = "https://srv.example";
 
@@ -40,6 +41,11 @@ describe("DesktopBootstrap", () => {
     setAccessToken(null);
     setPlatformBridgeForTests(createFakePlatformBridge());
     _resetNegotiationForTests();
+    _setBootTimingForTests({ retryDelaysMs: [], unreachableRetryMs: 60_000 });
+  });
+
+  afterEach(() => {
+    _setBootTimingForTests(null);
   });
 
   it("shows the wizard on first run (no identities)", async () => {
@@ -296,6 +302,130 @@ describe("DesktopBootstrap", () => {
 
     expect(await screen.findByTestId("desktop-unreachable-server")).toHaveTextContent(ORIGIN);
     expect(screen.queryByTestId("app")).not.toBeInTheDocument();
+  });
+
+  async function seedIdentity(bridge: PlatformBridge, id: string, origin: string, refresh = "r1") {
+    const cfg = await loadDesktopConfig(bridge);
+    const pid = cfg.profiles[0]!.id;
+    await saveDesktopConfig(
+      bridge,
+      addIdentity(cfg, pid, {
+        id,
+        serverUrl: origin,
+        email: "a@b.c",
+        userId: null,
+        displayName: null,
+      }),
+    );
+    await bridge.secrets.set(secretKey(pid, id, "refreshToken"), refresh);
+    return pid;
+  }
+
+  it("keeps waiting through the grace window and connects when the server comes up", async () => {
+    _setBootTimingForTests({ retryDelaysMs: [10, 10, 10], unreachableRetryMs: 60_000 });
+    let failures = 2;
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => {
+        if (failures > 0) {
+          failures -= 1;
+          return HttpResponse.error();
+        }
+        return HttpResponse.json({ versions: ["v1"] });
+      }),
+      http.get(`${ORIGIN}/api/v1/server-info`, () =>
+        HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "Srv" }),
+      ),
+      http.post(`${ORIGIN}/api/token/refresh`, () =>
+        HttpResponse.json({ token: "jwt-live", refresh_token: "r2" }),
+      ),
+    );
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    const pid = await seedIdentity(bridge, "i1", ORIGIN);
+    await saveDesktopConfig(
+      bridge,
+      setLastActiveIdentity(await loadDesktopConfig(bridge), pid, "i1"),
+    );
+
+    render(
+      <DesktopBootstrap>
+        <div data-testid="app" />
+      </DesktopBootstrap>,
+    );
+    expect(await screen.findByTestId("desktop-boot-waiting")).toBeInTheDocument();
+    expect(await screen.findByTestId("app")).toBeInTheDocument();
+    expect(screen.queryByTestId("desktop-unreachable-server")).not.toBeInTheDocument();
+    expect(failures).toBe(0);
+  });
+
+  it("boots into another reachable server after the grace window without changing the last active one", async () => {
+    _setBootTimingForTests({ retryDelaysMs: [10], unreachableRetryMs: 60_000 });
+    const OTHER = "https://other.example";
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () => HttpResponse.error()),
+      http.get(`${OTHER}/api/versions`, () => HttpResponse.json({ versions: ["v1"] })),
+      http.get(`${OTHER}/api/v1/server-info`, () =>
+        HttpResponse.json({ apiUrl: `${OTHER}/api`, name: "Other" }),
+      ),
+      http.post(`${OTHER}/api/token/refresh`, () =>
+        HttpResponse.json({ token: "jwt-other", refresh_token: "r-other" }),
+      ),
+    );
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    const pid = await seedIdentity(bridge, "i1", ORIGIN);
+    await seedIdentity(bridge, "i2", OTHER, "r-o");
+    await saveDesktopConfig(
+      bridge,
+      setLastActiveIdentity(await loadDesktopConfig(bridge), pid, "i1"),
+    );
+
+    const sessions: string[] = [];
+    render(
+      <DesktopBootstrap onSession={(s) => sessions.push(s.identityId)}>
+        <div data-testid="app" />
+      </DesktopBootstrap>,
+    );
+    expect(await screen.findByTestId("app")).toBeInTheDocument();
+    expect(sessions).toEqual(["i2"]);
+    expect(getAccessToken()).toBe("jwt-other");
+    const cfg = await loadDesktopConfig(bridge);
+    expect(cfg.profiles[0]!.lastActiveIdentityId).toBe("i1");
+  });
+
+  it("shows the unreachable screen when nothing responds, then recovers when the network comes back", async () => {
+    _setBootTimingForTests({ retryDelaysMs: [10], unreachableRetryMs: 60_000 });
+    let down = true;
+    server.use(
+      http.get(`${ORIGIN}/api/versions`, () =>
+        down ? HttpResponse.error() : HttpResponse.json({ versions: ["v1"] }),
+      ),
+      http.get(`${ORIGIN}/api/v1/server-info`, () =>
+        HttpResponse.json({ apiUrl: `${ORIGIN}/api`, name: "Srv" }),
+      ),
+      http.post(`${ORIGIN}/api/token/refresh`, () =>
+        HttpResponse.json({ token: "jwt-live", refresh_token: "r2" }),
+      ),
+    );
+    const bridge = createFakePlatformBridge();
+    setPlatformBridgeForTests(bridge);
+    const pid = await seedIdentity(bridge, "i1", ORIGIN);
+    await saveDesktopConfig(
+      bridge,
+      setLastActiveIdentity(await loadDesktopConfig(bridge), pid, "i1"),
+    );
+
+    render(
+      <DesktopBootstrap>
+        <div data-testid="app" />
+      </DesktopBootstrap>,
+    );
+    expect(await screen.findByTestId("desktop-unreachable-server")).toHaveTextContent(ORIGIN);
+    expect(screen.getByTestId("desktop-auto-retry")).toBeInTheDocument();
+
+    down = false;
+    window.dispatchEvent(new Event("online"));
+    expect(await screen.findByTestId("app")).toBeInTheDocument();
   });
 
   it("shows a boot-error screen when the bridge fails to load config, and retries", async () => {

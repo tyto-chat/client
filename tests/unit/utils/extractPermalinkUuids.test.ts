@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { extractPermalinkUuids } from "@/utils/extractPermalinkUuids";
+import { configureApiClient } from "@/api/client";
 
 const ORIGIN = "https://app.example.com";
 const A = "11111111-1111-1111-1111-111111111111";
@@ -10,6 +11,16 @@ describe("extractPermalinkUuids", () => {
     expect(extractPermalinkUuids(null)).toEqual([]);
     expect(extractPermalinkUuids("")).toEqual([]);
     expect(extractPermalinkUuids(undefined)).toEqual([]);
+  });
+
+  it("matches both the API server origin and the page origin by default", () => {
+    configureApiClient("https://server.example.com/api/v1");
+    try {
+      const text = `x https://server.example.com/m/${A} y ${window.location.origin}/m/${B}`;
+      expect(extractPermalinkUuids(text)).toEqual([A, B]);
+    } finally {
+      configureApiClient("");
+    }
   });
 
   it("returns [] when no /m/ occurs in text", () => {

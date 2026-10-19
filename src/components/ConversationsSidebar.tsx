@@ -141,7 +141,7 @@ function LegacyConversationsSidebar() {
         "md:static md:w-60",
       )}
     >
-      <div className="-mx-2 mb-2 flex items-center justify-between gap-2 border-b-2 border-[color-mix(in_srgb,var(--accent)_55%,transparent)] px-4 py-3">
+      <div className="-mx-2 mb-2 flex h-14 shrink-0 items-center justify-between gap-2 border-b-2 border-[color-mix(in_srgb,var(--accent)_55%,transparent)] px-4">
         <h2 className="min-w-0 flex-1 text-[0.9375rem] font-bold text-fg">
           <span className="block cap-trim-truncate truncate">{t("direct_messages")}</span>
         </h2>
@@ -439,7 +439,7 @@ function UnifiedConversationsSidebar({ registry }: { registry: ConnectionRegistr
         "md:static md:w-60",
       )}
     >
-      <div className="-mx-2 mb-2 flex items-center justify-between gap-2 border-b-2 border-[color-mix(in_srgb,var(--accent)_55%,transparent)] px-4 py-3">
+      <div className="-mx-2 mb-2 flex h-14 shrink-0 items-center justify-between gap-2 border-b-2 border-[color-mix(in_srgb,var(--accent)_55%,transparent)] px-4">
         <h2 className="min-w-0 flex-1 text-[0.9375rem] font-bold text-fg">
           <span className="block cap-trim-truncate truncate">{t("direct_messages")}</span>
         </h2>

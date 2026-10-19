@@ -64,7 +64,7 @@
   "attachments_purged_other": "{{count}} załącznika zostało usunięte",
   "message_unavailable_title": "Wiadomość niedostępna",
   "message_unavailable_body": "Ta wiadomość nie istnieje lub nie masz do niej dostępu.",
-  "linked_message_unavailable": "Linkowana wiadomość niedostępna",
+  "linked_message_unavailable": "Ta wiadomość nie istnieje lub nie masz uprawnień, aby ją zobaczyć",
   "loading_linked_message": "Ładowanie linkowanej wiadomości…",
   "pin_message": "Przypnij wiadomość",
   "unpin_message": "Odepnij",
@@ -205,5 +205,9 @@
   "play_video": "Odtwórz wideo",
   "image": "Obraz",
   "previous": "Poprzedni",
-  "next": "Następny"
+  "next": "Następny",
+  "copy_message": "Kopiuj wiadomość",
+  "remote_content_load_image": "Załaduj obraz z {{host}}",
+  "remote_content_load_preview": "Załaduj podgląd z {{host}}",
+  "remote_content_always_load": "Zawsze ładuj z {{host}}"
 }

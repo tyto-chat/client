@@ -64,7 +64,7 @@
   "attachments_purged_other": "{{count}} вкладення видалено",
   "message_unavailable_title": "Повідомлення недоступне",
   "message_unavailable_body": "Це повідомлення не існує або в тебе немає до нього доступу.",
-  "linked_message_unavailable": "Пов'язане повідомлення недоступне",
+  "linked_message_unavailable": "Це повідомлення не існує або у вас немає дозволу на його перегляд",
   "loading_linked_message": "Завантаження пов'язаного повідомлення…",
   "pin_message": "Закріпити повідомлення",
   "unpin_message": "Відкріпити",
@@ -199,5 +199,9 @@
   "play_video": "Відтворити відео",
   "image": "Зображення",
   "previous": "Попереднє",
-  "next": "Наступне"
+  "next": "Наступне",
+  "copy_message": "Копіювати повідомлення",
+  "remote_content_load_image": "Завантажити зображення з {{host}}",
+  "remote_content_load_preview": "Завантажити попередній перегляд з {{host}}",
+  "remote_content_always_load": "Завжди завантажувати з {{host}}"
 }

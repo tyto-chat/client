@@ -1,7 +1,13 @@
 import { devices, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { test, expect } from "./worldFixtures";
 import { testIds } from "./testIds";
-import { setupServerInfoRoute, attachPageDiagnostics, E2E_BASE_URL, T } from "./fixtures";
+import {
+  setupServerInfoRoute,
+  attachPageDiagnostics,
+  E2E_API_URL,
+  E2E_BASE_URL,
+  T,
+} from "./fixtures";
 import { AppShell } from "../pages/AppShell";
 import { ChannelPage } from "../pages/ChannelPage";
 
@@ -62,8 +68,17 @@ test.describe.serial("Message permalinks", () => {
       await channel.expectMessage(messageText);
 
       permalink = await copyPermalinkOfLastMessage(page);
+      expect(permalink).toMatch(new RegExp(`^${E2E_API_URL}/m/[0-9a-f-]{36}$`));
 
       await page.goto(permalink);
+      await expect(
+        page.locator(".embed-card").getByText(messageText, { exact: false }),
+      ).toBeVisible({
+        timeout: T(10_000),
+      });
+      await expect(page.getByRole("link", { name: "Open in Tyto desktop" })).toBeVisible();
+
+      await page.goto(permalink.replace(/^https?:\/\/[^/]+/, E2E_BASE_URL));
       await expect(page).toHaveURL(new RegExp(`/${world.communityId}/${world.textChannelId}`), {
         timeout: T(15_000),
       });

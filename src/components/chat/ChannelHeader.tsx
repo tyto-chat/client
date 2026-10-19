@@ -60,7 +60,7 @@ export function ChannelHeader({
   const showMenu = showEdit || showMembers || showManageAccess;
 
   return (
-    <header className="flex items-center gap-1.5 border-b border-line px-4 py-3 max-md:hidden">
+    <header className="flex h-14 items-center gap-1.5 border-b border-line px-4 max-md:hidden">
       <h1 className="flex min-w-0 items-center gap-1.5 text-[0.9375rem] font-semibold">
         {isAudio ? (
           <>

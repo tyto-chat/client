@@ -228,6 +228,15 @@ describe("buildTrayLabels", () => {
       startOnBoot: "<tray_start_on_boot>",
       startMinimized: "<tray_start_minimized>",
       quit: "<tray_quit>",
+      contextCut: "<context_cut>",
+      contextCopy: "<context_copy>",
+      contextPaste: "<context_paste>",
+      contextSelectAll: "<context_select_all>",
+      contextOpenLink: "<context_open_link>",
+      contextCopyLink: "<context_copy_link>",
+      contextCopyImage: "<context_copy_image>",
+      contextCopyImageAddress: "<context_copy_image_address>",
+      contextAddToDictionary: "<context_add_to_dictionary>",
     });
   });
 });
