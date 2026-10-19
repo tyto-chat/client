@@ -94,5 +94,14 @@
   "tray_unread_one": "{{count}} ungelesen",
   "tray_unread_other": "{{count}} ungelesen",
   "waiting_for_network": "Warte auf das Netzwerk …",
-  "retrying_automatically": "Es wird automatisch alle paar Sekunden erneut versucht."
+  "retrying_automatically": "Es wird automatisch alle paar Sekunden erneut versucht.",
+  "context_cut": "Ausschneiden",
+  "context_copy": "Kopieren",
+  "context_paste": "Einfügen",
+  "context_select_all": "Alles auswählen",
+  "context_open_link": "Link im Browser öffnen",
+  "context_copy_link": "Link kopieren",
+  "context_copy_image": "Bild kopieren",
+  "context_copy_image_address": "Bildadresse kopieren",
+  "context_add_to_dictionary": "Zum Wörterbuch hinzufügen"
 }

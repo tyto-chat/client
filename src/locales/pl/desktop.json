@@ -96,5 +96,14 @@
   "tray_unread_many": "{{count}} nieprzeczytanych",
   "tray_unread_other": "{{count}} nieprzeczytanej",
   "waiting_for_network": "Czekam na połączenie z siecią…",
-  "retrying_automatically": "Ponawiam automatycznie co kilka sekund."
+  "retrying_automatically": "Ponawiam automatycznie co kilka sekund.",
+  "context_cut": "Wytnij",
+  "context_copy": "Kopiuj",
+  "context_paste": "Wklej",
+  "context_select_all": "Zaznacz wszystko",
+  "context_open_link": "Otwórz link w przeglądarce",
+  "context_copy_link": "Kopiuj link",
+  "context_copy_image": "Kopiuj obraz",
+  "context_copy_image_address": "Kopiuj adres obrazu",
+  "context_add_to_dictionary": "Dodaj do słownika"
 }

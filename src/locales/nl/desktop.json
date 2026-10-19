@@ -94,5 +94,14 @@
   "tray_unread_one": "{{count}} ongelezen",
   "tray_unread_other": "{{count}} ongelezen",
   "waiting_for_network": "Wachten op het netwerk…",
-  "retrying_automatically": "Er wordt automatisch om de paar seconden opnieuw geprobeerd."
+  "retrying_automatically": "Er wordt automatisch om de paar seconden opnieuw geprobeerd.",
+  "context_cut": "Knippen",
+  "context_copy": "Kopiëren",
+  "context_paste": "Plakken",
+  "context_select_all": "Alles selecteren",
+  "context_open_link": "Link openen in browser",
+  "context_copy_link": "Link kopiëren",
+  "context_copy_image": "Afbeelding kopiëren",
+  "context_copy_image_address": "Afbeeldingsadres kopiëren",
+  "context_add_to_dictionary": "Toevoegen aan woordenboek"
 }

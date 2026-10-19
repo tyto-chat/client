@@ -121,6 +121,15 @@ export function buildTrayLabels(t: Translate): BridgeTrayLabels {
     startOnBoot: t("tray_start_on_boot"),
     startMinimized: t("tray_start_minimized"),
     quit: t("tray_quit"),
+    contextCut: t("context_cut"),
+    contextCopy: t("context_copy"),
+    contextPaste: t("context_paste"),
+    contextSelectAll: t("context_select_all"),
+    contextOpenLink: t("context_open_link"),
+    contextCopyLink: t("context_copy_link"),
+    contextCopyImage: t("context_copy_image"),
+    contextCopyImageAddress: t("context_copy_image_address"),
+    contextAddToDictionary: t("context_add_to_dictionary"),
   };
 }
 

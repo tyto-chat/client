@@ -94,5 +94,14 @@
   "tray_unread_one": "{{count}} unread",
   "tray_unread_other": "{{count}} unread",
   "waiting_for_network": "Waiting for the network…",
-  "retrying_automatically": "Retrying automatically every few seconds."
+  "retrying_automatically": "Retrying automatically every few seconds.",
+  "context_cut": "Cut",
+  "context_copy": "Copy",
+  "context_paste": "Paste",
+  "context_select_all": "Select all",
+  "context_open_link": "Open link in browser",
+  "context_copy_link": "Copy link",
+  "context_copy_image": "Copy image",
+  "context_copy_image_address": "Copy image address",
+  "context_add_to_dictionary": "Add to dictionary"
 }

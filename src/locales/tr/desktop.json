@@ -94,5 +94,14 @@
   "tray_unread_one": "{{count}} okunmamış",
   "tray_unread_other": "{{count}} okunmamış",
   "waiting_for_network": "Ağ bekleniyor…",
-  "retrying_automatically": "Birkaç saniyede bir otomatik olarak yeniden deneniyor."
+  "retrying_automatically": "Birkaç saniyede bir otomatik olarak yeniden deneniyor.",
+  "context_cut": "Kes",
+  "context_copy": "Kopyala",
+  "context_paste": "Yapıştır",
+  "context_select_all": "Tümünü seç",
+  "context_open_link": "Bağlantıyı tarayıcıda aç",
+  "context_copy_link": "Bağlantıyı kopyala",
+  "context_copy_image": "Görseli kopyala",
+  "context_copy_image_address": "Görsel adresini kopyala",
+  "context_add_to_dictionary": "Sözlüğe ekle"
 }

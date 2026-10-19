@@ -94,5 +94,14 @@
   "tray_unread_one": "{{count}} non lu",
   "tray_unread_other": "{{count}} non lus",
   "waiting_for_network": "En attente du réseau…",
-  "retrying_automatically": "Nouvelle tentative automatique toutes les quelques secondes."
+  "retrying_automatically": "Nouvelle tentative automatique toutes les quelques secondes.",
+  "context_cut": "Couper",
+  "context_copy": "Copier",
+  "context_paste": "Coller",
+  "context_select_all": "Tout sélectionner",
+  "context_open_link": "Ouvrir le lien dans le navigateur",
+  "context_copy_link": "Copier le lien",
+  "context_copy_image": "Copier l'image",
+  "context_copy_image_address": "Copier l'adresse de l'image",
+  "context_add_to_dictionary": "Ajouter au dictionnaire"
 }

@@ -94,5 +94,14 @@
   "tray_unread_one": "{{count}} não lida",
   "tray_unread_other": "{{count}} não lidas",
   "waiting_for_network": "Aguardando a rede…",
-  "retrying_automatically": "Tentando novamente de forma automática a cada poucos segundos."
+  "retrying_automatically": "Tentando novamente de forma automática a cada poucos segundos.",
+  "context_cut": "Cortar",
+  "context_copy": "Copiar",
+  "context_paste": "Colar",
+  "context_select_all": "Selecionar tudo",
+  "context_open_link": "Abrir link no navegador",
+  "context_copy_link": "Copiar link",
+  "context_copy_image": "Copiar imagem",
+  "context_copy_image_address": "Copiar endereço da imagem",
+  "context_add_to_dictionary": "Adicionar ao dicionário"
 }
