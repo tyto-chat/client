@@ -58,6 +58,7 @@ export interface ConnectionSnapshot {
   status: ConnectionStatus;
   serverName: string | null;
   origin: string;
+  apiOrigin: string | null;
   userId: number | null;
   communities: ConnectionCommunity[];
   unreadCounts: Record<string, number>;
@@ -104,6 +105,15 @@ async function fetchAvatarDataUrl(ctx: ServerContext, source: string): Promise<s
     if (!response.ok) return null;
     const blob = await response.blob();
     return blob.size <= MAX_CACHED_AVATAR_BYTES ? await blobToDataUrl(blob) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function originOf(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).origin;
   } catch {
     return null;
   }
@@ -472,6 +482,7 @@ export class IdentityConnection {
       status: this.status,
       serverName: this.serverInfoValue?.name ?? null,
       origin: this.identity.serverUrl,
+      apiOrigin: originOf(this.serverInfoValue?.apiUrl),
       userId: this.userIdValue ?? this.identity.userId,
       communities: this.communitiesValue,
       unreadCounts: this.unreadCountsValue,

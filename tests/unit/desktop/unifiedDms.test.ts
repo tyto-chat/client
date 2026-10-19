@@ -48,6 +48,7 @@ function connectionSnapshot(overrides: Partial<ConnectionSnapshot>): ConnectionS
     userId: 1,
     communities: [],
     unreadCounts: {},
+    apiOrigin: null,
     conversationActivityAt: null,
     error: null,
     ...overrides,

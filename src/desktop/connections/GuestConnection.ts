@@ -4,6 +4,7 @@ import type { DesktopIdentity } from "@/desktop/desktopConfig";
 import type { Community, HydraCollection, ServerInfo } from "@/types/api";
 import {
   buildConnectionCommunities,
+  originOf,
   RETRY_DELAYS_MS,
   type ConnectionCallbacks,
   type ConnectionCommunity,
@@ -179,6 +180,7 @@ export class GuestConnection {
       status: this.status,
       serverName: this.serverInfoValue?.name ?? null,
       origin: this.identity.serverUrl,
+      apiOrigin: originOf(this.serverInfoValue?.apiUrl),
       userId: null,
       communities: this.communitiesValue,
       unreadCounts: {},

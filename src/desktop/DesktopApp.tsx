@@ -14,6 +14,7 @@ import {
 } from "@/platform/activeIdentity";
 import { buildUrl } from "./connections/identityFetch";
 import { ConnectionRegistry } from "./connections/ConnectionRegistry";
+import { registerServerDirectory } from "@/platform/serverDirectory";
 import { ConnectionsContext, type ConnectionsContextValue } from "./connections/ConnectionsContext";
 import { DesktopBootstrap, type DesktopSession } from "./DesktopBootstrap";
 import { performIdentitySwitch, type SwitchTarget } from "./switchIdentity";
@@ -149,6 +150,31 @@ export function DesktopApp({ renderApp }: DesktopAppProps) {
       return connection ? { serverName: connection.serverName, origin: connection.origin } : null;
     });
     return () => registerIdentityInfoProvider(null);
+  }, [registry]);
+
+  useEffect(() => {
+    registerServerDirectory({
+      list: () =>
+        registry.getSnapshot().connections.flatMap((connection) => {
+          const live = registry.getConnection(connection.identityId);
+          if (!live) return [];
+          return [
+            {
+              identityId: connection.identityId,
+              origin: connection.origin,
+              apiOrigin: connection.apiOrigin,
+              serverName: connection.serverName,
+              kind: connection.kind,
+              status: connection.status,
+              communities: connection.communities,
+              ctx: live.serverContext(),
+            },
+          ];
+        }),
+      activeIdentityId: () => registry.getSnapshot().activeIdentityId,
+      subscribe: (listener) => registry.subscribe(listener),
+    });
+    return () => registerServerDirectory(null);
   }, [registry]);
 
   useEffect(() => {

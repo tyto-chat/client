@@ -493,3 +493,29 @@ describe("ConnectionRegistry.stopAll", () => {
     expect(refreshSpy).not.toHaveBeenCalled();
   });
 });
+
+describe("ConnectionSnapshot.apiOrigin", () => {
+  it("is null before server info is read and the advertised api origin afterwards", async () => {
+    stubServerInfo(ORIGIN_A, "Alpha");
+    stubRefresh(ORIGIN_A);
+    stubData(ORIGIN_A, 1);
+    const { registry } = await bootWithFakeBridge([makeIdentity("ia", ORIGIN_A)], "ia");
+
+    expect(registry.getSnapshot().connections[0]?.apiOrigin).toBeNull();
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
+    expect(registry.getSnapshot().connections[0]?.apiOrigin).toBe(ORIGIN_A);
+
+    registry.stopAll();
+  });
+
+  it("is set on a guest connection too", async () => {
+    stubServerInfo(ORIGIN_B, "Beta");
+    stubPublicCommunities(ORIGIN_B);
+    const { registry } = await bootWithFakeBridge([makeGuest("gb", ORIGIN_B)], "gb");
+
+    await vi.waitFor(() => expect(registry.getSnapshot().connections[0]?.status).toBe("healthy"));
+    expect(registry.getSnapshot().connections[0]?.apiOrigin).toBe(ORIGIN_B);
+
+    registry.stopAll();
+  });
+});

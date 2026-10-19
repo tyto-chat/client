@@ -28,6 +28,7 @@ function connection(extra: Partial<ConnectionSnapshot>): ConnectionSnapshot {
     userId: 1,
     communities: [],
     unreadCounts: {},
+    apiOrigin: null,
     conversationActivityAt: null,
     error: null,
     ...extra,
@@ -348,5 +349,55 @@ describe("resolveDeepLink", () => {
     JSON.stringify({ kind: "other", url: "https://srv.example/" }),
   ])("ignores the malformed envelope %j", (envelope) => {
     expect(resolveDeepLink(envelope, snapshot)).toBeNull();
+  });
+});
+
+describe("resolveDeepLink api origin", () => {
+  const UUID = "0b1e3c8e-1111-4222-8333-444455556666";
+  const snapshot: RegistrySnapshot = {
+    activeIdentityId: "ia",
+    connections: [
+      connection({
+        identityId: "ib",
+        origin: "https://typed.example.test",
+        apiOrigin: "https://api.example.test",
+      }),
+    ],
+  };
+
+  it("matches a link carrying the api origin of an added server", () => {
+    const envelope = JSON.stringify({ kind: "url", url: `https://api.example.test/m/${UUID}` });
+    expect(resolveDeepLink(envelope, snapshot)).toEqual({
+      kind: "switch",
+      identityId: "ib",
+      navigateTo: { to: "/m/$messageId", params: { messageId: UUID } },
+    });
+  });
+
+  it("still offers to add a server whose origin matches neither address", () => {
+    const envelope = JSON.stringify({
+      kind: "url",
+      url: `https://api.example.test.evil.com/m/${UUID}`,
+    });
+    expect(resolveDeepLink(envelope, snapshot)).toEqual({
+      kind: "add-server",
+      serverUrl: "https://api.example.test.evil.com",
+    });
+  });
+});
+
+describe("resolveDeepLink with an unhealthy active identity", () => {
+  const UUID = "0b1e3c8e-1111-4222-8333-444455556666";
+
+  it("still prefers the active identity on that server over another healthy account", () => {
+    const snapshot: RegistrySnapshot = {
+      activeIdentityId: "ia",
+      connections: [
+        connection({ identityId: "ia", origin: "https://srv.example", status: "connecting" }),
+        connection({ identityId: "ib", origin: "https://srv.example", status: "healthy" }),
+      ],
+    };
+    const envelope = JSON.stringify({ kind: "url", url: `https://srv.example/m/${UUID}` });
+    expect(resolveDeepLink(envelope, snapshot)).toMatchObject({ kind: "switch", identityId: "ia" });
   });
 });

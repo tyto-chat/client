@@ -1,6 +1,7 @@
 import type { BridgeBadgeState, BridgeTrayLabels, PlatformBridge } from "@/platform/PlatformBridge";
 import type { TFunction } from "i18next";
 import { hostFromOrigin } from "@/utils/serverDisplay";
+import { connectionAnswersTo, pickConnection } from "@/utils/serverOrigins";
 import type { RegistrySnapshot } from "./connections/ConnectionRegistry";
 import type { SwitchTarget } from "./switchIdentity";
 
@@ -178,10 +179,12 @@ export function resolveDeepLink(
     return null;
   }
 
-  const onServer = (snapshot?.connections ?? []).filter((c) => c.origin === target.origin);
+  const onServer = (snapshot?.connections ?? []).filter((c) =>
+    connectionAnswersTo(c, target.origin),
+  );
   const match =
     onServer.find((c) => c.identityId === snapshot?.activeIdentityId) ??
-    onServer.find((c) => c.kind !== "guest") ??
+    pickConnection(onServer, target.origin, null) ??
     onServer[0];
   if (!match) return { kind: "add-server", serverUrl: target.origin };
 
