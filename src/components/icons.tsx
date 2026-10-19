@@ -47,6 +47,7 @@ import {
   Send,
   Search,
   Link,
+  Copy,
   Download,
   FileText,
   UserPlus,
@@ -148,6 +149,7 @@ export const QuoteIcon = make(Quote, 16);
 export const AtSignIcon = make(AtSign, 16);
 export const SearchIcon = make(Search, 14);
 export const LinkIcon = make(Link, 14);
+export const CopyIcon = make(Copy, 14);
 export const DownloadIcon = make(Download, 14);
 export const UsersGroupIcon = make(UserPlus, 14);
 export const WrenchIcon = make(Wrench, 18);

@@ -197,5 +197,6 @@
   "play_video": "Reproducir vídeo",
   "image": "Imagen",
   "previous": "Anterior",
-  "next": "Siguiente"
+  "next": "Siguiente",
+  "copy_message": "Copiar mensaje"
 }

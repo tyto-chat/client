@@ -6,6 +6,9 @@ import { MessageEditor } from "@/components/chat/MessageEditor";
 import { MessageContent } from "@/components/chat/MessageContent";
 import { MessageReactions } from "@/components/chat/MessageReactions";
 import { MessageActions } from "@/components/chat/MessageActions";
+import { MessageContextMenu } from "@/components/chat/MessageContextMenu";
+import { stripToPlaintext } from "@/utils/embedSnippet";
+import { wantsNativeContextMenu } from "@/utils/messageContextMenu";
 import { RoleBadge } from "@/components/chat/RoleBadge";
 import { TrashIcon, PinIcon, ReplyIcon, SmileIcon, MoreVerticalIcon } from "@/components/icons";
 import { QuickReactionPicker } from "@/components/chat/QuickReactionPicker";
@@ -99,6 +102,9 @@ export function MessageGroup({
     useMessagePopover();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sysPickerOpen, setSysPickerOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ key: string; x: number; y: number } | null>(
+    null,
+  );
   const sysClampRef = useViewportClamp(sysPickerOpen);
   const sysTouchClampRef = useViewportClamp(sysPickerOpen);
   const isTouch = useIsTouch();
@@ -351,6 +357,38 @@ export function MessageGroup({
           // changes @id, which would silently drop the open state mid-interaction.
           const isTouchActive = isTouch && touchOwner === stableMessageKey(msg["@id"]);
           const hasTouchActions = !!user || !msg.isDeleted;
+          const interactive = !readOnly && !isOptimisticMessage(msg["@id"]);
+          const flags = {
+            canReact: allowReactions && !!user && !frozen,
+            canEdit: canEdit && !msg.isDeleted && !frozen,
+            canDelete: canDelete && !msg.isDeleted && !frozen,
+            canViewHistory: (isAdmin || canModerate) && (msg.edited || msg.isDeleted),
+            canPin: canPin && !msg.isDeleted && !frozen,
+            isPinned: !!msg.pinned,
+            canReply: canReply && !frozen,
+            canEmbed: canEmbed && !msg.isDeleted,
+            canReport: canReport && !!user && !msg.isDeleted && msg.createdBy?.id !== user?.id,
+          };
+          const after = (action: () => void) => () => {
+            action();
+            setTouchOwner(null);
+          };
+          const handlers = {
+            onReaction: (emoji: string) => {
+              const myEntry = msg.reactions?.[emoji]?.find((e) => e.userId === (user?.id ?? 0));
+              onToggleReaction(msg["@id"], emoji, myEntry?.id);
+              setTouchOwner(null);
+            },
+            onEdit: after(() => setEditingId(msg["@id"])),
+            onDelete: after(() => onDeleteMessage(msg["@id"])),
+            onViewHistory: after(() => onViewHistory(msg["@id"])),
+            onCopyLink: after(() => void handleCopyLink(msg["@id"])),
+            onPin: after(() => onPinMessage?.(msg["@id"])),
+            onUnpin: after(() => onUnpinMessage?.(msg["@id"])),
+            onReply: after(() => onOpenThread?.(msg["@id"])),
+            onEmbed: after(() => onEmbedMessage?.(msg["@id"])),
+            onReport: after(() => onReportMessage?.(msg["@id"])),
+          };
 
           return (
             <div
@@ -360,6 +398,13 @@ export function MessageGroup({
               className={`group/msg relative focus:outline-none ${i > 0 ? "animate-message-in pt-2" : ""} ${i === group.msgs.length - 1 ? (compact ? "pb-0.5" : "pb-3") : ""} ${i > 0 && isTouch && !readOnly && hasTouchActions ? "pr-9" : ""}`}
               onMouseEnter={() => setHoverOwner(ownerKey)}
               onMouseLeave={() => releaseHover(ownerKey)}
+              onContextMenu={(event) => {
+                if (!interactive || isTouch) return;
+                if (wantsNativeContextMenu(event.target, window.getSelection()?.toString() ?? ""))
+                  return;
+                event.preventDefault();
+                setContextMenu({ key: ownerKey, x: event.clientX, y: event.clientY });
+              }}
             >
               {i > 0 && (
                 <span
@@ -394,65 +439,27 @@ export function MessageGroup({
                   )}
                 </>
               )}
-              {!readOnly && !isOptimisticMessage(msg["@id"]) && (
+              {interactive && (
                 <MessageActions
                   ownerKey={ownerKey}
                   show={showActions || isTouchActive}
-                  canReact={allowReactions && !!user && !frozen}
-                  canEdit={canEdit && !msg.isDeleted && !frozen}
-                  canDelete={canDelete && !msg.isDeleted && !frozen}
-                  canViewHistory={(isAdmin || canModerate) && (msg.edited || msg.isDeleted)}
                   communityIdentifier={communityId ?? ""}
-                  onReaction={(emoji) => {
-                    const myEntry = msg.reactions?.[emoji]?.find(
-                      (e) => e.userId === (user?.id ?? 0),
-                    );
-                    onToggleReaction(msg["@id"], emoji, myEntry?.id);
-                    setTouchOwner(null);
+                  {...flags}
+                  {...handlers}
+                />
+              )}
+              {interactive && contextMenu?.key === ownerKey && (
+                <MessageContextMenu
+                  x={contextMenu.x}
+                  y={contextMenu.y}
+                  communityIdentifier={communityId ?? ""}
+                  canCopyText={!msg.isDeleted && !!msg.text}
+                  {...flags}
+                  {...handlers}
+                  onCopyMessage={() => {
+                    void navigator.clipboard.writeText(stripToPlaintext(msg.text ?? ""));
                   }}
-                  onEdit={() => {
-                    setEditingId(msg["@id"]);
-                    setTouchOwner(null);
-                  }}
-                  onDelete={() => {
-                    onDeleteMessage(msg["@id"]);
-                    setTouchOwner(null);
-                  }}
-                  onViewHistory={() => {
-                    onViewHistory(msg["@id"]);
-                    setTouchOwner(null);
-                  }}
-                  onCopyLink={() => {
-                    void handleCopyLink(msg["@id"]);
-                    setTouchOwner(null);
-                  }}
-                  canPin={canPin && !msg.isDeleted && !frozen}
-                  isPinned={!!msg.pinned}
-                  onPin={() => {
-                    onPinMessage?.(msg["@id"]);
-                    setTouchOwner(null);
-                  }}
-                  onUnpin={() => {
-                    onUnpinMessage?.(msg["@id"]);
-                    setTouchOwner(null);
-                  }}
-                  canReply={canReply && !frozen}
-                  onReply={() => {
-                    onOpenThread?.(msg["@id"]);
-                    setTouchOwner(null);
-                  }}
-                  canEmbed={canEmbed && !msg.isDeleted}
-                  onEmbed={() => {
-                    onEmbedMessage?.(msg["@id"]);
-                    setTouchOwner(null);
-                  }}
-                  canReport={
-                    canReport && !!user && !msg.isDeleted && msg.createdBy?.id !== user?.id
-                  }
-                  onReport={() => {
-                    onReportMessage?.(msg["@id"]);
-                    setTouchOwner(null);
-                  }}
+                  onClose={() => setContextMenu(null)}
                 />
               )}
               {editingId === msg["@id"] ? (
