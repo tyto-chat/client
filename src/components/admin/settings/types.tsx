@@ -140,7 +140,11 @@ export function ToggleField({
           }`}
         />
       </button>
-      <span className="flex cursor-pointer flex-col" onClick={() => onChange(!value)}>
+      <span
+        role="presentation"
+        className="flex cursor-pointer flex-col"
+        onClick={() => onChange(!value)}
+      >
         <span className="font-medium text-fg">{label}</span>
         {hint && <span className="text-xs text-fg-muted">{hint}</span>}
       </span>

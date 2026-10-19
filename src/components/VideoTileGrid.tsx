@@ -14,7 +14,7 @@ import { selectVoiceLayout, type VoiceTile } from "@/utils/voiceLayout";
 import type { ChannelParticipant } from "@/types/api";
 
 function userIdFromIdentity(identity: string): number {
-  return identity.startsWith("user-") ? parseInt(identity.slice(5), 10) : 0;
+  return identity.startsWith("user-") ? Number.parseInt(identity.slice(5), 10) : 0;
 }
 
 function toTile(ref: TrackReferenceOrPlaceholder): VoiceTile {

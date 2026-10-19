@@ -12,9 +12,13 @@ export function CodeBlockComponent({ node, updateAttributes }: NodeViewProps) {
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
-    navigator.clipboard.writeText(node.textContent);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard.writeText(node.textContent).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      },
+      () => undefined,
+    );
   }
 
   return (

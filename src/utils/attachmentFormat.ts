@@ -10,7 +10,7 @@ export function formatFileSize(bytes: number | null): string | null {
 }
 
 export function formatAudioTime(seconds: number): string {
-  if (!isFinite(seconds)) return "0:00";
+  if (!Number.isFinite(seconds)) return "0:00";
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;

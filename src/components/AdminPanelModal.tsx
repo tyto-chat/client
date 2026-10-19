@@ -154,6 +154,7 @@ export function AdminPanelModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div
+      role="presentation"
       className={`${isClosing ? "animate-backdrop-out" : "animate-backdrop-in"} fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 pt-12`}
       onMouseDown={handleClose}
     >
