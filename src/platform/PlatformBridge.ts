@@ -49,6 +49,11 @@ export interface BridgeWindowTheme {
   symbolColor: string;
 }
 
+export interface BridgeMediaAuth {
+  origin: string;
+  token: string | null;
+}
+
 export interface PlatformBridge {
   bridgeVersion?: number;
   secrets: {
@@ -67,6 +72,7 @@ export interface PlatformBridge {
     setBadge(state: BridgeBadgeState): void;
     setTrayLabels?(labels: BridgeTrayLabels): void;
     setWindowTheme?(theme: BridgeWindowTheme): void;
+    setMediaAuth?(auth: BridgeMediaAuth): void;
   };
   app?: {
     getVersion(): Promise<string>;
