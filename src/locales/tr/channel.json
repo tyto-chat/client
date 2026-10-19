@@ -62,7 +62,7 @@
   "attachments_purged_other": "{{count}} ek kaldırıldı",
   "message_unavailable_title": "Mesaj kullanılamıyor",
   "message_unavailable_body": "Bu mesaj yok ya da erişimin bulunmuyor.",
-  "linked_message_unavailable": "Bağlantılı mesaj kullanılamıyor",
+  "linked_message_unavailable": "Bu mesaj mevcut değil ya da görüntüleme izniniz yok",
   "loading_linked_message": "Bağlantılı mesaj yükleniyor…",
   "pin_message": "Mesajı sabitle",
   "unpin_message": "Sabitlemeyi kaldır",

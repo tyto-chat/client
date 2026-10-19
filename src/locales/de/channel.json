@@ -62,7 +62,7 @@
   "attachments_purged_other": "{{count}} Anhänge entfernt",
   "message_unavailable_title": "Nachricht nicht verfügbar",
   "message_unavailable_body": "Diese Nachricht existiert nicht oder du hast keinen Zugriff darauf.",
-  "linked_message_unavailable": "Verlinkte Nachricht nicht verfügbar",
+  "linked_message_unavailable": "Diese Nachricht existiert nicht oder du hast keine Berechtigung, sie zu sehen",
   "loading_linked_message": "Verlinkte Nachricht wird geladen…",
   "pin_message": "Nachricht anheften",
   "unpin_message": "Lösen",

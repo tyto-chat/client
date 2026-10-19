@@ -62,7 +62,7 @@
   "attachments_purged_other": "{{count}} anexos removidos",
   "message_unavailable_title": "Mensagem indisponível",
   "message_unavailable_body": "Esta mensagem não existe ou você não tem acesso a ela.",
-  "linked_message_unavailable": "Mensagem vinculada indisponível",
+  "linked_message_unavailable": "Esta mensagem não existe ou não tens permissão para a ver",
   "loading_linked_message": "Carregando mensagem vinculada…",
   "pin_message": "Fixar mensagem",
   "unpin_message": "Desafixar",

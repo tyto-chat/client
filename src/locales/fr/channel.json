@@ -62,7 +62,7 @@
   "attachments_purged_other": "{{count}} pièces jointes supprimées",
   "message_unavailable_title": "Message indisponible",
   "message_unavailable_body": "Ce message n'existe pas ou tu n'y as pas accès.",
-  "linked_message_unavailable": "Message lié indisponible",
+  "linked_message_unavailable": "Ce message n'existe pas ou tu n'as pas la permission de le voir",
   "loading_linked_message": "Chargement du message lié…",
   "pin_message": "Épingler le message",
   "unpin_message": "Désépingler",

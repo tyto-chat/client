@@ -62,7 +62,7 @@
   "attachments_purged_other": "{{count}} bijlagen verwijderd",
   "message_unavailable_title": "Bericht niet beschikbaar",
   "message_unavailable_body": "Dit bericht bestaat niet of je hebt er geen toegang toe.",
-  "linked_message_unavailable": "Gekoppeld bericht niet beschikbaar",
+  "linked_message_unavailable": "Dit bericht bestaat niet of je hebt geen toestemming om het te bekijken",
   "loading_linked_message": "Gekoppeld bericht laden…",
   "pin_message": "Bericht vastzetten",
   "unpin_message": "Losmaken",

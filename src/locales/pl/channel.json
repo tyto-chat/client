@@ -64,7 +64,7 @@
   "attachments_purged_other": "{{count}} załącznika zostało usunięte",
   "message_unavailable_title": "Wiadomość niedostępna",
   "message_unavailable_body": "Ta wiadomość nie istnieje lub nie masz do niej dostępu.",
-  "linked_message_unavailable": "Linkowana wiadomość niedostępna",
+  "linked_message_unavailable": "Ta wiadomość nie istnieje lub nie masz uprawnień, aby ją zobaczyć",
   "loading_linked_message": "Ładowanie linkowanej wiadomości…",
   "pin_message": "Przypnij wiadomość",
   "unpin_message": "Odepnij",

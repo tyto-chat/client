@@ -7,6 +7,9 @@ import { getUserTextColor } from "@/utils/userColor";
 import { formatMessageTime, formatMessageTooltip } from "@/utils/dateFormat";
 import { useTimezone } from "@/context/TimezoneContext";
 import { MessageContent } from "./MessageContent";
+import { isImageMime } from "@/utils/attachmentFormat";
+
+const MAX_PREVIEW_IMAGES = 2;
 
 interface Props {
   messageId: string;
@@ -60,6 +63,9 @@ export function MessageQuotePreview({ messageId, selfMessageIri }: Props) {
   }
 
   const author = data.createdBy;
+  const images = (data.attachments ?? [])
+    .filter((a) => isImageMime(a.mimeType) && a.contentUrl)
+    .slice(0, MAX_PREVIEW_IMAGES);
 
   return (
     <div
@@ -101,6 +107,19 @@ export function MessageQuotePreview({ messageId, selfMessageIri }: Props) {
           renderPermalinkPreview={false}
         />
       </div>
+      {images.length > 0 && (
+        <div className="mt-1.5 flex gap-1.5">
+          {images.map((image) => (
+            <img
+              key={image["@id"]}
+              src={image.contentUrl ?? undefined}
+              alt={image.originalName ?? ""}
+              loading="lazy"
+              className="h-16 w-24 rounded border border-line object-cover"
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

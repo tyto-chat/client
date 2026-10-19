@@ -62,7 +62,7 @@
   "attachments_purged_other": "{{count}} allegati rimossi",
   "message_unavailable_title": "Messaggio non disponibile",
   "message_unavailable_body": "Questo messaggio non esiste oppure non hai accesso.",
-  "linked_message_unavailable": "Messaggio collegato non disponibile",
+  "linked_message_unavailable": "Questo messaggio non esiste o non hai il permesso di vederlo",
   "loading_linked_message": "Caricamento del messaggio collegato…",
   "pin_message": "Fissa messaggio",
   "unpin_message": "Rimuovi dai fissati",
