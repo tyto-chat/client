@@ -232,5 +232,15 @@
   "spellcheck_hint": "Błędnie napisane słowa w edytorze są podkreślane; kliknij je prawym przyciskiem, aby zobaczyć podpowiedzi. Słowniki pobierają się przy pierwszym użyciu.",
   "spellcheck_add": "Dodaj język…",
   "spellcheck_remove": "Usuń {{language}}",
-  "spellcheck_off": "Sprawdzanie pisowni jest wyłączone."
+  "spellcheck_off": "Sprawdzanie pisowni jest wyłączone.",
+  "remote_content_title": "Treści zewnętrzne",
+  "remote_content_label": "Ładuj obrazy i podglądy z",
+  "remote_content_hint": "Ładowanie treści zdradza tej stronie, kto ją oglądał. Twój własny serwer jest zawsze dozwolony.",
+  "remote_content_custom": "Tylko dodane przeze mnie",
+  "remote_content_all": "Wszystko",
+  "remote_content_hosts": "Zaufane strony",
+  "remote_content_hosts_hint": "Obrazy i podglądy z tych stron ładują się bez pytania.",
+  "remote_content_add_host": "Dodaj stronę…",
+  "remote_content_add": "Dodaj",
+  "remote_content_remove_host": "Usuń {{host}}"
 }

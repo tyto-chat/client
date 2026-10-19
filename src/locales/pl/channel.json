@@ -206,5 +206,8 @@
   "image": "Obraz",
   "previous": "Poprzedni",
   "next": "Następny",
-  "copy_message": "Kopiuj wiadomość"
+  "copy_message": "Kopiuj wiadomość",
+  "remote_content_load_image": "Załaduj obraz z {{host}}",
+  "remote_content_load_preview": "Załaduj podgląd z {{host}}",
+  "remote_content_always_load": "Zawsze ładuj z {{host}}"
 }

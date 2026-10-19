@@ -230,5 +230,15 @@
   "spellcheck_hint": "Las palabras mal escritas en el editor se subrayan; haz clic derecho para ver sugerencias. Los diccionarios se descargan al usarlos por primera vez.",
   "spellcheck_add": "Añadir idioma…",
   "spellcheck_remove": "Quitar {{language}}",
-  "spellcheck_off": "El corrector ortográfico está desactivado."
+  "spellcheck_off": "El corrector ortográfico está desactivado.",
+  "remote_content_title": "Contenido externo",
+  "remote_content_label": "Cargar imágenes y vistas previas de",
+  "remote_content_hint": "Cargar contenido le dice a ese sitio quién lo vio. Tu propio servidor siempre está permitido.",
+  "remote_content_custom": "Solo los sitios que añadí",
+  "remote_content_all": "Todo",
+  "remote_content_hosts": "Sitios de confianza",
+  "remote_content_hosts_hint": "Las imágenes y vistas previas de estos sitios se cargan sin preguntar.",
+  "remote_content_add_host": "Añadir sitio…",
+  "remote_content_add": "Añadir",
+  "remote_content_remove_host": "Quitar {{host}}"
 }

@@ -198,5 +198,8 @@
   "image": "Afbeelding",
   "previous": "Vorige",
   "next": "Volgende",
-  "copy_message": "Bericht kopiëren"
+  "copy_message": "Bericht kopiëren",
+  "remote_content_load_image": "Afbeelding van {{host}} laden",
+  "remote_content_load_preview": "Voorbeeld van {{host}} laden",
+  "remote_content_always_load": "Altijd laden van {{host}}"
 }

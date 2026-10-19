@@ -230,5 +230,15 @@
   "spellcheck_hint": "Editörde yanlış yazılan sözcüklerin altı çizilir; öneriler için sağ tıklayın. Sözlükler ilk kullanımda indirilir.",
   "spellcheck_add": "Dil ekle…",
   "spellcheck_remove": "{{language}} dilini kaldır",
-  "spellcheck_off": "Yazım denetimi kapalı."
+  "spellcheck_off": "Yazım denetimi kapalı.",
+  "remote_content_title": "Harici içerik",
+  "remote_content_label": "Görselleri ve önizlemeleri şuradan yükle",
+  "remote_content_hint": "İçerik yüklemek o siteye kimin baktığını bildirir. Kendi sunucuna her zaman izin verilir.",
+  "remote_content_custom": "Yalnızca eklediğim siteler",
+  "remote_content_all": "Her şey",
+  "remote_content_hosts": "Güvenilir siteler",
+  "remote_content_hosts_hint": "Bu sitelerden görseller ve önizlemeler sorulmadan yüklenir.",
+  "remote_content_add_host": "Site ekle…",
+  "remote_content_add": "Ekle",
+  "remote_content_remove_host": "{{host}} kaldır"
 }

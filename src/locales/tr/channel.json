@@ -198,5 +198,8 @@
   "image": "Görsel",
   "previous": "Önceki",
   "next": "Sonraki",
-  "copy_message": "Mesajı kopyala"
+  "copy_message": "Mesajı kopyala",
+  "remote_content_load_image": "{{host}} kaynaklı görseli yükle",
+  "remote_content_load_preview": "{{host}} kaynaklı önizlemeyi yükle",
+  "remote_content_always_load": "{{host}} kaynağından her zaman yükle"
 }

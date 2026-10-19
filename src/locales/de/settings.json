@@ -230,5 +230,15 @@
   "spellcheck_hint": "Falsch geschriebene Wörter im Editor werden unterstrichen; ein Rechtsklick zeigt Vorschläge. Wörterbücher werden bei der ersten Verwendung geladen.",
   "spellcheck_add": "Sprache hinzufügen…",
   "spellcheck_remove": "{{language}} entfernen",
-  "spellcheck_off": "Die Rechtschreibprüfung ist aus."
+  "spellcheck_off": "Die Rechtschreibprüfung ist aus.",
+  "remote_content_title": "Externe Inhalte",
+  "remote_content_label": "Bilder und Vorschauen laden von",
+  "remote_content_hint": "Beim Laden erfährt die Seite, wer sie angesehen hat. Dein eigener Server ist immer erlaubt.",
+  "remote_content_custom": "Nur von mir hinzugefügte",
+  "remote_content_all": "Alles",
+  "remote_content_hosts": "Vertrauenswürdige Seiten",
+  "remote_content_hosts_hint": "Bilder und Vorschauen von diesen Seiten werden ohne Nachfrage geladen.",
+  "remote_content_add_host": "Seite hinzufügen…",
+  "remote_content_add": "Hinzufügen",
+  "remote_content_remove_host": "{{host}} entfernen"
 }

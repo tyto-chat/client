@@ -5,6 +5,7 @@ import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { DEVICE_SCOPED_PREF_KEYS, isDeviceScopedPref } from "@/platform/deviceScopedPreferences";
 import { isDeviceSettingsSeeded, seedDeviceSettings } from "@/platform/deviceSettingsSeed";
 import { isManagedIdentityMode } from "@/platform/appMode";
+import { setRemoteContentHosts, setRemoteContentLevel } from "@/utils/remoteContent";
 import type {
   UserLocale,
   UserPreferencesPatch,
@@ -42,6 +43,9 @@ export function PreferenceSyncRoot() {
         data.convertEmoticons ? "true" : "false",
       );
     }
+
+    if (data.remoteContent) setRemoteContentLevel(data.remoteContent);
+    if (data.remoteContentHosts) setRemoteContentHosts(data.remoteContentHosts);
 
     if (data.locale && i18n.resolvedLanguage !== data.locale && !isDeviceScopedPref("locale")) {
       void i18n.changeLanguage(data.locale);

@@ -2,6 +2,7 @@ import { apiClient } from "@/api/client";
 
 export type UserTheme = "system" | "light" | "dark";
 export type UserSubmitKey = "enter" | "shift+enter" | "ctrl+enter" | "none";
+export type RemoteContentLevel = "custom" | "all";
 export type UserLocale = "en" | "pl" | "fr" | "de" | "es" | "it" | "pt" | "uk" | "nl" | "tr";
 
 export interface UserPreferences {
@@ -14,6 +15,8 @@ export interface UserPreferences {
   convertEmoticons: boolean | null;
   resumeLastLocation: boolean | null;
   sectionCollapse: Record<string, boolean> | null;
+  remoteContent: RemoteContentLevel | null;
+  remoteContentHosts: string[] | null;
   updatedAt: string;
 }
 

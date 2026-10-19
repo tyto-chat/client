@@ -14,6 +14,7 @@ import { useUpdateUserPreference, useUserPreferences } from "@/queries/userPrefe
 import { Switch } from "@/components/ui/Switch";
 import { SettingRow } from "@/components/preferences/SettingRow";
 import { SpellCheckSection } from "@/components/preferences/SpellCheckSection";
+import { RemoteContentSection } from "@/components/preferences/RemoteContentSection";
 import {
   segBase,
   segActive,
@@ -129,6 +130,7 @@ export function ChatPanel() {
           )}
         </div>
       </section>
+      <RemoteContentSection />
       <SpellCheckSection />
     </div>
   );

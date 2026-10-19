@@ -1,14 +1,24 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { allowHostForSession, useRemoteContentPolicy } from "@/utils/remoteContent";
+import { useAllowRemoteHost } from "@/hooks/useAllowRemoteHost";
+
+const YOUTUBE_HOST = "youtube.com";
+const YOUTUBE_URL = `https://www.${YOUTUBE_HOST}/`;
 
 interface Props {
   videoId: string;
 }
 
 export function YoutubeEmbed({ videoId }: Props) {
+  const { t } = useTranslation("channel");
   const [playing, setPlaying] = useState(false);
   const [title, setTitle] = useState<string | null>(null);
+  const revealed = useRemoteContentPolicy().canAutoLoad(YOUTUBE_URL);
+  const allowAlways = useAllowRemoteHost();
 
   useEffect(() => {
+    if (!revealed) return undefined;
     let cancelled = false;
     fetch(
       `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
@@ -21,7 +31,30 @@ export function YoutubeEmbed({ videoId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [videoId]);
+  }, [videoId, revealed]);
+
+  if (!revealed) {
+    return (
+      <span className="remote-image-gate mt-2">
+        <button
+          type="button"
+          data-testid="remote-youtube-placeholder"
+          onClick={() => allowHostForSession("www.youtube.com")}
+          className="remote-image-placeholder"
+        >
+          {t("remote_content_load_preview", { host: YOUTUBE_HOST })}
+        </button>
+        <button
+          type="button"
+          data-testid="remote-youtube-always"
+          onClick={() => allowAlways(YOUTUBE_HOST)}
+          className="remote-image-placeholder"
+        >
+          {t("remote_content_always_load", { host: YOUTUBE_HOST })}
+        </button>
+      </span>
+    );
+  }
 
   return (
     <div className="mt-2 w-full max-w-md overflow-hidden rounded-xl border border-line shadow-soft">

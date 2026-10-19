@@ -198,5 +198,8 @@
   "image": "Image",
   "previous": "Précédent",
   "next": "Suivant",
-  "copy_message": "Copier le message"
+  "copy_message": "Copier le message",
+  "remote_content_load_image": "Charger l'image depuis {{host}}",
+  "remote_content_load_preview": "Charger l'aperçu depuis {{host}}",
+  "remote_content_always_load": "Toujours charger depuis {{host}}"
 }
