@@ -132,9 +132,11 @@ export function MessageGroup({
     return (
       <div
         data-message-id={first["@id"]}
-        className="group/sys animate-message-in relative flex flex-col items-center gap-1 px-4 py-1.5 text-xs text-fg-muted"
+        className={`group/sys animate-message-in relative flex flex-col items-center gap-1 py-1.5 text-xs text-fg-muted ${
+          isTouch ? "" : "px-4"
+        }`}
       >
-        <div className="relative flex w-full items-center gap-3">
+        <div className={`relative flex w-full items-center gap-3 ${isTouch ? "px-11" : ""}`}>
           <span aria-hidden className="h-px flex-1 bg-line" />
           <span className="inline-flex max-w-[80%] items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-center max-md:max-w-[94%]">
             <span className="min-w-0 break-words">
