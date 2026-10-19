@@ -373,8 +373,8 @@ function MessageComposer({
 
         <div className={`flex items-center gap-2 pr-2 ${expanded ? "" : "min-h-[3.5rem]"}`}>
           <div
-            className={`relative min-w-0 flex-1 cap-trim overflow-y-auto px-3.5 text-sm text-fg ${
-              expanded ? "py-2.5" : "py-3.5"
+            className={`relative min-w-0 flex-1 overflow-y-auto px-3.5 text-sm text-fg ${
+              expanded ? "py-2.5" : "cap-trim py-3.5"
             }`}
             style={{ maxHeight: "6rem" }}
           >
@@ -382,8 +382,8 @@ function MessageComposer({
             {isEmpty && placeholder && (
               <span
                 aria-hidden
-                className={`composer-placeholder absolute inset-x-3.5 cap-trim ${
-                  expanded ? "top-2.5" : "top-3.5"
+                className={`composer-placeholder absolute inset-x-3.5 ${
+                  expanded ? "top-2.5" : "cap-trim top-3.5"
                 }`}
               >
                 {placeholder}
