@@ -50,6 +50,7 @@ import { AuthModalProvider } from "@/context/AuthModalContext";
 import { LoginModal } from "@/components/LoginModal";
 import { RegisterModal } from "@/components/RegisterModal";
 import { SetupAttentionBanner } from "@/components/SetupAttentionBanner";
+import { TransportWarningBanner } from "@/components/TransportWarningBanner";
 import { MenuItem } from "@/components/MenuItem";
 import { MobileNavProvider, useMobileNav } from "@/context/MobileNavContext";
 import { MessagePopoverProvider } from "@/context/MessagePopoverContext";
@@ -311,6 +312,7 @@ function AppShell() {
                   {tCommon("skip_to_content")}
                 </a>
                 <SetupAttentionBanner isAdmin={isAdmin} />
+                <TransportWarningBanner />
                 <div className="flex min-h-0 flex-1">
                   <NavScrim />
                   <CommunityRailNav>

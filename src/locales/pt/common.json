@@ -74,5 +74,9 @@
   },
   "you": "você",
   "message": "Mensagem",
-  "skip_to_content": "Pular para o conteúdo"
+  "skip_to_content": "Pular para o conteúdo",
+  "request_timeout": "O servidor não respondeu. Tente novamente.",
+  "http1_banner_title": "Problema de ligação",
+  "http1_banner_text": "O proxy reverso deste servidor só fala HTTP/1.1, por isso a aplicação vai bloquear após alguns minutos de utilização. O administrador do servidor precisa de ativar HTTP/2 no proxy.",
+  "http1_banner_docs": "Saber mais"
 }

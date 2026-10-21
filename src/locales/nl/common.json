@@ -74,5 +74,9 @@
   },
   "you": "jij",
   "message": "Bericht",
-  "skip_to_content": "Naar inhoud"
+  "skip_to_content": "Naar inhoud",
+  "request_timeout": "De server reageerde niet. Probeer het opnieuw.",
+  "http1_banner_title": "Verbindingsprobleem",
+  "http1_banner_text": "De reverse proxy van deze server spreekt alleen HTTP/1.1, waardoor de app na een paar minuten gebruik vastloopt. De serverbeheerder moet HTTP/2 inschakelen op de proxy.",
+  "http1_banner_docs": "Meer informatie"
 }

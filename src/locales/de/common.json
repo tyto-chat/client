@@ -74,5 +74,9 @@
   },
   "you": "du",
   "message": "Nachricht",
-  "skip_to_content": "Zum Inhalt springen"
+  "skip_to_content": "Zum Inhalt springen",
+  "request_timeout": "Der Server hat nicht geantwortet. Bitte versuche es erneut.",
+  "http1_banner_title": "Verbindungsproblem",
+  "http1_banner_text": "Der Reverse-Proxy dieses Servers spricht nur HTTP/1.1, daher bleibt die App nach wenigen Minuten hängen. Der Serveradministrator muss HTTP/2 auf dem Proxy aktivieren.",
+  "http1_banner_docs": "Mehr erfahren"
 }

@@ -1,7 +1,14 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { http, HttpResponse } from "msw";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { delay, http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
-import { apiClient, ApiError, configureApiClient, getApiErrorMessage } from "@/api/client";
+import {
+  apiClient,
+  ApiError,
+  ApiTimeoutError,
+  configureApiClient,
+  getApiErrorMessage,
+  __setRequestTimeoutForTests,
+} from "@/api/client";
 import { __resetRefreshStateForTests } from "@/api/auth";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { TEST_BASE_URL as BASE } from "../../fixtures";
@@ -10,6 +17,10 @@ beforeEach(() => {
   configureApiClient(BASE);
   setAccessToken(null);
   __resetRefreshStateForTests();
+});
+
+afterEach(() => {
+  __setRequestTimeoutForTests(null);
 });
 
 describe("apiClient.get", () => {
@@ -294,5 +305,30 @@ describe("getApiErrorMessage", () => {
 
   it("returns null for ApiError with no body", () => {
     expect(getApiErrorMessage(new ApiError(500, null))).toBeNull();
+  });
+});
+
+describe("request timeout", () => {
+  it("rejects with ApiTimeoutError when the server never answers", async () => {
+    __setRequestTimeoutForTests(20);
+    server.use(http.get(`${BASE}/api/v1/stalled`, async () => delay("infinite")));
+
+    await expect(apiClient.get("/api/stalled")).rejects.toBeInstanceOf(ApiTimeoutError);
+  });
+
+  it("carries a translated message for the UI", async () => {
+    __setRequestTimeoutForTests(20);
+    server.use(http.get(`${BASE}/api/v1/stalled`, async () => delay("infinite")));
+
+    await expect(apiClient.get("/api/stalled")).rejects.toThrow(
+      "The server did not respond. Please try again.",
+    );
+  });
+
+  it("does not fire for a response that arrives in time", async () => {
+    __setRequestTimeoutForTests(500);
+    server.use(http.get(`${BASE}/api/v1/quick`, () => HttpResponse.json({ ok: true })));
+
+    await expect(apiClient.get("/api/quick")).resolves.toEqual({ ok: true });
   });
 });

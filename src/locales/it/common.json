@@ -74,5 +74,9 @@
   },
   "you": "tu",
   "message": "Messaggio",
-  "skip_to_content": "Salta al contenuto"
+  "skip_to_content": "Salta al contenuto",
+  "request_timeout": "Il server non ha risposto. Riprova.",
+  "http1_banner_title": "Problema di connessione",
+  "http1_banner_text": "Il reverse proxy di questo server parla solo HTTP/1.1, quindi l'app si bloccherà dopo pochi minuti di utilizzo. L'amministratore del server deve abilitare HTTP/2 sul proxy.",
+  "http1_banner_docs": "Scopri di più"
 }
