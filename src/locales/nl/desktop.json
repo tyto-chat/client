@@ -103,5 +103,7 @@
   "context_copy_link": "Link kopiëren",
   "context_copy_image": "Afbeelding kopiëren",
   "context_copy_image_address": "Afbeeldingsadres kopiëren",
-  "context_add_to_dictionary": "Toevoegen aan woordenboek"
+  "context_add_to_dictionary": "Toevoegen aan woordenboek",
+  "tray_snoozed_until": "Meldingen gepauzeerd tot {{time}}",
+  "tray_snoozed_indefinitely": "Meldingen gepauzeerd tot je ze weer inschakelt"
 }

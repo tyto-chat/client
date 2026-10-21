@@ -4,6 +4,8 @@ import {
   badgeTooltip,
   buildTrayLabels,
   computeBadgeState,
+  describeSnooze,
+  getNotificationSnooze,
   isNotificationSnoozed,
   resetNativeShellForTests,
   resolveDeepLink,
@@ -61,6 +63,45 @@ describe("notification snooze", () => {
     setNotificationSnooze(null, NOW);
     setNotificationSnooze(0, NOW);
     expect(isNotificationSnoozed(NOW)).toBe(false);
+  });
+
+  it("reports the chosen length and its end, and nothing once it has passed", () => {
+    expect(getNotificationSnooze(NOW)).toBeNull();
+    setNotificationSnooze(30, NOW);
+    expect(getNotificationSnooze(NOW)).toEqual({ minutes: 30, until: NOW + 30 * 60_000 });
+    expect(getNotificationSnooze(NOW + 30 * 60_000)).toBeNull();
+    setNotificationSnooze(null, NOW);
+    expect(getNotificationSnooze(NOW + 365 * 24 * 60 * 60_000)).toEqual({
+      minutes: null,
+      until: null,
+    });
+  });
+});
+
+describe("describeSnooze", () => {
+  const t = ((key: string, options?: { time?: string }) =>
+    key === "tray_snoozed_until"
+      ? `until ${options?.time}`
+      : key) as unknown as TFunction<"desktop">;
+
+  it("is absent when nothing is snoozed", () => {
+    expect(describeSnooze(null, t, "en")).toBeUndefined();
+  });
+
+  it("names the end time in the app language", () => {
+    const until = Date.UTC(2026, 9, 21, 14, 32);
+    const expected = new Intl.DateTimeFormat("pl", { timeStyle: "short" }).format(until);
+    expect(describeSnooze({ minutes: 60, until }, t, "pl")).toEqual({
+      minutes: 60,
+      label: `until ${expected}`,
+    });
+  });
+
+  it("uses the open-ended wording when there is no end", () => {
+    expect(describeSnooze({ minutes: null, until: null }, t, "en")).toEqual({
+      minutes: null,
+      label: "tray_snoozed_indefinitely",
+    });
   });
 });
 

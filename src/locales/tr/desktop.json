@@ -103,5 +103,7 @@
   "context_copy_link": "Bağlantıyı kopyala",
   "context_copy_image": "Görseli kopyala",
   "context_copy_image_address": "Görsel adresini kopyala",
-  "context_add_to_dictionary": "Sözlüğe ekle"
+  "context_add_to_dictionary": "Sözlüğe ekle",
+  "tray_snoozed_until": "Bildirimler {{time}} saatine kadar ertelendi",
+  "tray_snoozed_indefinitely": "Bildirimler siz tekrar açana kadar ertelendi"
 }

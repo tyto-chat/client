@@ -103,5 +103,7 @@
   "context_copy_link": "Copy link",
   "context_copy_image": "Copy image",
   "context_copy_image_address": "Copy image address",
-  "context_add_to_dictionary": "Add to dictionary"
+  "context_add_to_dictionary": "Add to dictionary",
+  "tray_snoozed_until": "Notifications snoozed until {{time}}",
+  "tray_snoozed_indefinitely": "Notifications snoozed until you turn them back on"
 }
