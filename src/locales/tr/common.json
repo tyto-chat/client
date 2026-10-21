@@ -74,5 +74,9 @@
   },
   "you": "sen",
   "message": "Mesaj",
-  "skip_to_content": "İçeriğe atla"
+  "skip_to_content": "İçeriğe atla",
+  "request_timeout": "Sunucu yanıt vermedi. Lütfen tekrar deneyin.",
+  "http1_banner_title": "Bağlantı sorunu",
+  "http1_banner_text": "Bu sunucunun ters proxy'si yalnızca HTTP/1.1 konuşuyor, bu yüzden uygulama birkaç dakika kullanımdan sonra takılacak. Sunucu yöneticisinin proxy'de HTTP/2'yi etkinleştirmesi gerekiyor.",
+  "http1_banner_docs": "Daha fazla bilgi"
 }

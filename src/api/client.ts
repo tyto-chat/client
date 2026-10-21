@@ -43,6 +43,19 @@ export class ApiError extends Error {
   }
 }
 
+export class ApiTimeoutError extends Error {
+  constructor() {
+    super(i18n.t("request_timeout"));
+    this.name = "ApiTimeoutError";
+  }
+}
+
+const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+let _requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS;
+export function __setRequestTimeoutForTests(ms: number | null): void {
+  _requestTimeoutMs = ms ?? DEFAULT_REQUEST_TIMEOUT_MS;
+}
+
 type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 async function request<T>(
@@ -71,10 +84,46 @@ async function request<T>(
       contentType ?? (method === "PATCH" ? "application/merge-patch+json" : "application/ld+json");
   }
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), _requestTimeoutMs);
+  try {
+    return await send<T>(
+      url,
+      method,
+      body,
+      isRetry,
+      accept,
+      contentType,
+      headers,
+      token,
+      requestBaseUrl,
+      controller.signal,
+    );
+  } catch (err) {
+    if (controller.signal.aborted) throw new ApiTimeoutError();
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function send<T>(
+  url: string,
+  method: Method,
+  body: unknown,
+  isRetry: boolean,
+  accept: string,
+  contentType: string | undefined,
+  headers: Record<string, string>,
+  token: string | null,
+  requestBaseUrl: string,
+  signal: AbortSignal,
+): Promise<T> {
   const response = await fetch(_baseUrl + versionedPath(url), {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
   });
 
   if (!response.ok) {
