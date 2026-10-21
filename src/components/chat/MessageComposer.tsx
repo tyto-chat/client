@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import { htmlToMarkdown, markdownToHtml } from "@/utils/markdownConverter";
+import { isPristineDoc } from "@/utils/isPristineDoc";
 import { UnifiedEmojiPicker } from "@/components/chat/UnifiedEmojiPicker";
 import StarterKit from "@tiptap/starter-kit";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
@@ -32,7 +33,14 @@ import { usePresenceSubscription } from "@/queries/presenceQueries";
 import { useTypingPing } from "@/hooks/useTypingPing";
 import { usePendingAttachments } from "@/hooks/usePendingAttachments";
 import { Avatar } from "@/components/Avatar";
-import { MegaphoneIcon, PaperclipIcon, SendIcon, SmileIcon } from "@/components/icons";
+import {
+  CheckIcon,
+  MegaphoneIcon,
+  PaperclipIcon,
+  SendIcon,
+  SmileIcon,
+  XIcon,
+} from "@/components/icons";
 import { ToolbarButton } from "./editor/ToolbarButton";
 import { SuggestionDropdown } from "./editor/SuggestionDropdown";
 import { EditorFormatToolbar } from "./editor/EditorFormatToolbar";
@@ -85,10 +93,12 @@ function MessageComposer({
     [],
   );
   const [isEmpty, setIsEmpty] = useState(!initialContent);
+  const [pristine, setPristine] = useState(!initialContent);
   const [focused, setFocused] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [showMore, setShowMore] = useState(false);
-  const expanded = focused || !isEmpty || isEditMode || showPicker || pendingAttachments.length > 0;
+  const expanded =
+    focused || !pristine || isEditMode || showPicker || pendingAttachments.length > 0;
   const [channelSuggestion, setChannelSuggestion] =
     useState<SuggestionState<{ name: string; identifier: string }>>(emptySuggestionState());
   const [userSuggestion, setUserSuggestion] =
@@ -156,6 +166,7 @@ function MessageComposer({
     content: initialHtml,
     onUpdate: ({ editor }) => {
       setIsEmpty(editor.isEmpty);
+      setPristine(isPristineDoc(editor.state.doc));
       if (!editor.isEmpty) notifyTyping();
     },
     onFocus: () => setFocused(true),
@@ -380,7 +391,7 @@ function MessageComposer({
             style={{ maxHeight: "6rem" }}
           >
             <EditorContent editor={editor} />
-            {isEmpty && placeholder && (
+            {pristine && placeholder && (
               <span
                 aria-hidden
                 className={`composer-placeholder absolute inset-x-3.5 ${
@@ -456,34 +467,35 @@ function MessageComposer({
               </button>
             )}
             {isEditMode && (
-              <p className="ml-auto pr-1 text-xs text-fg-subtle">
-                Esc to cancel · Ctrl+Enter to save
-              </p>
+              <>
+                <p className="ml-auto hidden pr-2 text-xs text-fg-subtle sm:block">
+                  Esc to cancel · Ctrl+Enter to save
+                </p>
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  aria-label={t("common:cancel")}
+                  title={`${t("common:cancel")} (Esc)`}
+                  className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-fg-muted transition hover:bg-raised sm:ml-0"
+                >
+                  <XIcon size={18} />
+                </button>
+                <button
+                  type="button"
+                  data-testid="msg-edit-save-btn"
+                  onClick={() => sendRef.current()}
+                  aria-label={t("common:save")}
+                  title={`${t("common:save")} (Ctrl+Enter)`}
+                  disabled={isEmpty || isPending}
+                  className="ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-gradient text-on-accent shadow-glow transition hover:opacity-90 disabled:opacity-40 disabled:shadow-none"
+                >
+                  <CheckIcon size={18} />
+                </button>
+              </>
             )}
           </div>
         )}
       </div>
-
-      {isEditMode && (
-        <div className="flex flex-col gap-1.5">
-          <button
-            type="button"
-            data-testid="msg-edit-save-btn"
-            onClick={() => sendRef.current()}
-            disabled={isEmpty || isPending}
-            className="rounded-lg bg-accent-gradient px-4 py-2 text-sm font-semibold text-on-accent shadow-glow hover:opacity-90 disabled:opacity-40 disabled:shadow-none"
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-fg-muted hover:bg-raised"
-          >
-            {t("common:cancel")}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
