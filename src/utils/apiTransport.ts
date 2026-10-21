@@ -23,7 +23,9 @@ export function observeApiTransport(
   apiOrigin: string,
   onResult: (transport: Exclude<ApiTransport, "unknown">) => void,
 ): () => void {
-  if (!apiOrigin || typeof PerformanceObserver === "undefined") return () => {};
+  if (!apiOrigin.startsWith("https:") || typeof PerformanceObserver === "undefined") {
+    return () => {};
+  }
 
   const settle = (entries: readonly PerformanceResourceTiming[]): boolean => {
     const transport = transportFromEntries(entries, apiOrigin);
