@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import { connectIdentity, resolveServerQuiet } from "@/desktop/connectIdentity";
 import { secretKey } from "@/desktop/desktopConfig";
@@ -7,6 +7,7 @@ import { createFakePlatformBridge } from "@/platform/fakePlatformBridge";
 import { setRefreshExecutor } from "@/api/auth";
 import { getServerInfo } from "@/api/serverInfo";
 import { _resetNegotiationForTests, negotiateApiVersion, supportsFeature } from "@/api/apiVersion";
+import { __setRequestTimeoutsForTests } from "@/api/fetchWithDeadline";
 
 const ORIGIN = "https://srv.example";
 const identity = { id: "i1", serverUrl: ORIGIN, email: "a@b.c", userId: null, displayName: null };
@@ -24,7 +25,10 @@ beforeEach(() => {
   localStorage.clear();
   _resetNegotiationForTests();
 });
-afterEach(() => setRefreshExecutor(null));
+afterEach(() => {
+  setRefreshExecutor(null);
+  __setRequestTimeoutsForTests(null);
+});
 
 describe("connectIdentity", () => {
   it("returns version-mismatch when the server only offers unsupported versions", async () => {
@@ -36,6 +40,23 @@ describe("connectIdentity", () => {
   it("returns unreachable when version negotiation fails", async () => {
     server.use(http.get(`${ORIGIN}/api/versions`, () => HttpResponse.error()));
     const outcome = await connectIdentity(createFakePlatformBridge(), "p1", identity);
+    expect(outcome.status).toBe("unreachable");
+  });
+
+  it("returns unreachable when the server accepts the connection but never answers", async () => {
+    __setRequestTimeoutsForTests({ boot: 20 });
+    server.use(http.get(`${ORIGIN}/api/versions`, async () => delay("infinite")));
+    const outcome = await connectIdentity(createFakePlatformBridge(), "p1", identity);
+    expect(outcome.status).toBe("unreachable");
+  });
+
+  it("returns unreachable when the token refresh never answers", async () => {
+    __setRequestTimeoutsForTests({ boot: 20 });
+    stubServer();
+    server.use(http.post(`${ORIGIN}/api/token/refresh`, async () => delay("infinite")));
+    const bridge = createFakePlatformBridge();
+    await bridge.secrets.set(secretKey("p1", identity.id, "refreshToken"), "stale");
+    const outcome = await connectIdentity(bridge, "p1", identity);
     expect(outcome.status).toBe("unreachable");
   });
 

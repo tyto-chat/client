@@ -7,8 +7,8 @@ import {
   ApiTimeoutError,
   configureApiClient,
   getApiErrorMessage,
-  __setRequestTimeoutForTests,
 } from "@/api/client";
+import { __setRequestTimeoutsForTests } from "@/api/fetchWithDeadline";
 import { __resetRefreshStateForTests } from "@/api/auth";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { TEST_BASE_URL as BASE } from "../../fixtures";
@@ -20,7 +20,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  __setRequestTimeoutForTests(null);
+  __setRequestTimeoutsForTests(null);
 });
 
 describe("apiClient.get", () => {
@@ -310,14 +310,14 @@ describe("getApiErrorMessage", () => {
 
 describe("request timeout", () => {
   it("rejects with ApiTimeoutError when the server never answers", async () => {
-    __setRequestTimeoutForTests(20);
+    __setRequestTimeoutsForTests({ request: 20 });
     server.use(http.get(`${BASE}/api/v1/stalled`, async () => delay("infinite")));
 
     await expect(apiClient.get("/api/stalled")).rejects.toBeInstanceOf(ApiTimeoutError);
   });
 
   it("carries a translated message for the UI", async () => {
-    __setRequestTimeoutForTests(20);
+    __setRequestTimeoutsForTests({ request: 20 });
     server.use(http.get(`${BASE}/api/v1/stalled`, async () => delay("infinite")));
 
     await expect(apiClient.get("/api/stalled")).rejects.toThrow(
@@ -326,7 +326,7 @@ describe("request timeout", () => {
   });
 
   it("does not fire for a response that arrives in time", async () => {
-    __setRequestTimeoutForTests(500);
+    __setRequestTimeoutsForTests({ request: 500 });
     server.use(http.get(`${BASE}/api/v1/quick`, () => HttpResponse.json({ ok: true })));
 
     await expect(apiClient.get("/api/quick")).resolves.toEqual({ ok: true });

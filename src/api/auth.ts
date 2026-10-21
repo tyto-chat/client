@@ -1,3 +1,4 @@
+import { bootRequestTimeoutMs, fetchWithDeadline } from "@/api/fetchWithDeadline";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { getBaseUrl, ApiError } from "@/api/client";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
@@ -113,11 +114,15 @@ export async function refreshWithToken(
   baseUrl: string,
   refreshToken: string,
 ): Promise<{ token: string; refreshToken: string | null }> {
-  const response = await fetch(baseUrl + "/token/refresh", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...transportHeaders() },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
+  const response = await fetchWithDeadline(
+    baseUrl + "/token/refresh",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...transportHeaders() },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    },
+    bootRequestTimeoutMs(),
+  );
 
   if (!response.ok) {
     throw new ApiError(response.status, await response.json().catch(() => null));

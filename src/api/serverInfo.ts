@@ -1,4 +1,5 @@
 import type { ServerInfo } from "@/types/api";
+import { bootRequestTimeoutMs, fetchWithDeadline } from "@/api/fetchWithDeadline";
 
 let _serverInfo: ServerInfo | null = null;
 const listeners = new Set<() => void>();
@@ -8,7 +9,7 @@ function emit() {
 }
 
 async function parseServerInfo(url: string): Promise<ServerInfo> {
-  const res = await fetch(url);
+  const res = await fetchWithDeadline(url, {}, bootRequestTimeoutMs());
   if (!res.ok) throw new Error(`Server info fetch failed: ${res.status}`);
   return (await res.json()) as ServerInfo;
 }

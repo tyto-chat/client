@@ -2,6 +2,7 @@ import i18n from "@/i18n";
 import { authRestored, getAccessToken } from "@/api/tokenStore";
 import type { AvatarMediaObject, LogoMediaObject } from "@/types/api";
 import { getApiVersion } from "@/api/apiVersion";
+import { fetchWithDeadline, RequestDeadlineError, requestTimeoutMs } from "@/api/fetchWithDeadline";
 
 const UNVERSIONED = /^\/api\/(versions|health|livekit\/|http-cache\/)/;
 
@@ -50,12 +51,6 @@ export class ApiTimeoutError extends Error {
   }
 }
 
-const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
-let _requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS;
-export function __setRequestTimeoutForTests(ms: number | null): void {
-  _requestTimeoutMs = ms ?? DEFAULT_REQUEST_TIMEOUT_MS;
-}
-
 type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 async function request<T>(
@@ -84,8 +79,6 @@ async function request<T>(
       contentType ?? (method === "PATCH" ? "application/merge-patch+json" : "application/ld+json");
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), _requestTimeoutMs);
   try {
     return await send<T>(
       url,
@@ -97,13 +90,10 @@ async function request<T>(
       headers,
       token,
       requestBaseUrl,
-      controller.signal,
     );
   } catch (err) {
-    if (controller.signal.aborted) throw new ApiTimeoutError();
+    if (err instanceof RequestDeadlineError) throw new ApiTimeoutError();
     throw err;
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -117,14 +107,12 @@ async function send<T>(
   headers: Record<string, string>,
   token: string | null,
   requestBaseUrl: string,
-  signal: AbortSignal,
 ): Promise<T> {
-  const response = await fetch(_baseUrl + versionedPath(url), {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-    signal,
-  });
+  const response = await fetchWithDeadline(
+    _baseUrl + versionedPath(url),
+    { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined },
+    requestTimeoutMs(),
+  );
 
   if (!response.ok) {
     let errorBody: unknown;
