@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { classifyProtocol, transportFromEntries } from "@/utils/apiTransport";
+import { describe, it, expect, vi } from "vitest";
+import { classifyProtocol, observeApiTransport, transportFromEntries } from "@/utils/apiTransport";
 
 const API = "https://chat.example.com";
 
@@ -43,5 +43,30 @@ describe("transportFromEntries", () => {
   it("does not match a look-alike origin by prefix", () => {
     const entries = [entry("https://chat.example.com.evil/api", "http/1.1")];
     expect(transportFromEntries(entries, API)).toBe("unknown");
+  });
+});
+
+describe("observeApiTransport", () => {
+  it("never reports for a plain-HTTP origin, where browsers cannot negotiate HTTP/2", () => {
+    const onResult = vi.fn();
+    const entries = [entry("http://localhost:8000/api/v1/me", "http/1.1")];
+    vi.spyOn(performance, "getEntriesByType").mockReturnValue(entries);
+
+    const stop = observeApiTransport("http://localhost:8000", onResult);
+    stop();
+
+    expect(onResult).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it("reports a legacy https origin from buffered entries", () => {
+    const onResult = vi.fn();
+    const entries = [entry(`${API}/api/v1/me`, "http/1.1")];
+    vi.spyOn(performance, "getEntriesByType").mockReturnValue(entries);
+
+    observeApiTransport(API, onResult)();
+
+    expect(onResult).toHaveBeenCalledWith("legacy");
+    vi.restoreAllMocks();
   });
 });
