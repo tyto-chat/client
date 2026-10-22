@@ -1,3 +1,4 @@
+import { userNotificationsTopic, conversationActivityTopic } from "@/api/topics";
 import { resolveServerQuiet, VersionMismatchError } from "@/desktop/connectIdentity";
 import { getApiVersionForOrigin } from "@/api/apiVersion";
 import { refreshWithToken, loginAt, LoginRequestError } from "@/api/auth";
@@ -603,10 +604,7 @@ export class IdentityConnection {
   private subscribeRealtime(myId: number, userId: number, token: string, expiresAt: number): void {
     if (this.stopped || this.connectionId !== myId) return;
     this.closeRealtimeSubscription();
-    const topics = [
-      `/api/users/${userId}/notifications`,
-      `/api/users/${userId}/conversation-activity`,
-    ];
+    const topics = [userNotificationsTopic(userId), conversationActivityTopic(userId)];
     const handlers: MercureHandlers = {
       onReconnect: () => void this.refetchUnreadCounts(myId),
       onStaleToken: () => void this.remintRealtimeToken(myId, userId),

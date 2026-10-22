@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "@tanstack/react-router";
+import { userEventsTopic } from "@/api/topics";
 import { queryKeys } from "@/queries/queryKeys";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotification } from "@/context/NotificationContext";
@@ -24,7 +25,7 @@ export function useUserEventsMercure() {
     communityId?: string;
     channelId?: string;
   };
-  const topic = user?.id ? `/api/users/${user.id}/events` : null;
+  const topic = user?.id ? userEventsTopic(user.id) : null;
 
   useMercureSubscription(
     topic,

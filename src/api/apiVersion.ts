@@ -1,3 +1,4 @@
+import { bootRequestTimeoutMs, fetchWithDeadline } from "@/api/fetchWithDeadline";
 export const SUPPORTED_API_VERSIONS = ["v1"] as const;
 
 export type Negotiation =
@@ -21,9 +22,11 @@ async function negotiate(origin: string): Promise<Negotiation> {
   const cached = byOrigin.get(origin);
   if (cached?.ok) return cached;
 
-  const response = await fetch(`${origin}/api/versions`, {
-    headers: { Accept: "application/json" },
-  });
+  const response = await fetchWithDeadline(
+    `${origin}/api/versions`,
+    { headers: { Accept: "application/json" } },
+    bootRequestTimeoutMs(),
+  );
   if (!response.ok) throw new Error(`versions endpoint returned ${response.status}`);
   const payload = (await response.json()) as VersionsPayload;
 

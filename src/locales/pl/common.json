@@ -80,5 +80,14 @@
   "request_timeout": "Serwer nie odpowiedział. Spróbuj ponownie.",
   "http1_banner_title": "Problem z połączeniem",
   "http1_banner_text": "Reverse proxy tego serwera obsługuje tylko HTTP/1.1, więc aplikacja będzie się zawieszać po kilku minutach pracy. Administrator serwera musi włączyć HTTP/2 na proxy.",
-  "http1_banner_docs": "Dowiedz się więcej"
+  "http1_banner_docs": "Dowiedz się więcej",
+  "recovery_title": "Coś poszło nie tak",
+  "recovery_network": "Nie można połączyć się z serwerem. Sprawdź połączenie i spróbuj ponownie.",
+  "recovery_generic": "Nie udało się wczytać tej strony. Spróbuj ponownie albo przejdź gdzie indziej.",
+  "recovery_retry": "Spróbuj ponownie",
+  "recovery_go_home": "Przejdź do strony głównej",
+  "recovery_switch_server": "Albo przełącz się na inny serwer",
+  "recovery_sign_out": "Wyloguj się",
+  "recovery_details": "Szczegóły techniczne",
+  "recovery_retry_failed": "Nadal nie działa. Spróbuj ponownie za chwilę."
 }

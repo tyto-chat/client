@@ -78,5 +78,14 @@
   "request_timeout": "Der Server hat nicht geantwortet. Bitte versuche es erneut.",
   "http1_banner_title": "Verbindungsproblem",
   "http1_banner_text": "Der Reverse-Proxy dieses Servers spricht nur HTTP/1.1, daher bleibt die App nach wenigen Minuten hängen. Der Serveradministrator muss HTTP/2 auf dem Proxy aktivieren.",
-  "http1_banner_docs": "Mehr erfahren"
+  "http1_banner_docs": "Mehr erfahren",
+  "recovery_title": "Etwas ist schiefgelaufen",
+  "recovery_network": "Der Server ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.",
+  "recovery_generic": "Diese Seite konnte nicht geladen werden. Versuche es erneut oder gehe woandershin.",
+  "recovery_retry": "Erneut versuchen",
+  "recovery_go_home": "Zur Startseite",
+  "recovery_switch_server": "Oder zu einem anderen Server wechseln",
+  "recovery_sign_out": "Abmelden",
+  "recovery_details": "Technische Details",
+  "recovery_retry_failed": "Funktioniert immer noch nicht. Versuche es gleich noch einmal."
 }

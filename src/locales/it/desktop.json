@@ -103,5 +103,7 @@
   "context_copy_link": "Copia link",
   "context_copy_image": "Copia immagine",
   "context_copy_image_address": "Copia indirizzo immagine",
-  "context_add_to_dictionary": "Aggiungi al dizionario"
+  "context_add_to_dictionary": "Aggiungi al dizionario",
+  "tray_snoozed_until": "Notifiche in pausa fino alle {{time}}",
+  "tray_snoozed_indefinitely": "Notifiche in pausa finché non le riattivi"
 }

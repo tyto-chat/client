@@ -105,5 +105,7 @@
   "context_copy_link": "Kopiuj link",
   "context_copy_image": "Kopiuj obraz",
   "context_copy_image_address": "Kopiuj adres obrazu",
-  "context_add_to_dictionary": "Dodaj do słownika"
+  "context_add_to_dictionary": "Dodaj do słownika",
+  "tray_snoozed_until": "Powiadomienia wstrzymane do {{time}}",
+  "tray_snoozed_indefinitely": "Powiadomienia wstrzymane do odwołania"
 }

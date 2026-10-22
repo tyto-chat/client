@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createEvent, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { configureApiClient } from "@/api/client";
@@ -40,6 +41,25 @@ describe("MessageComposer edit mode", () => {
       wrapper: makeWrapper(),
     });
     expect(screen.getByTitle("Emoji")).toBeInTheDocument();
+  });
+
+  it("offers icon-only save and cancel actions in the composer row", async () => {
+    const onCancel = vi.fn();
+    render(<MessageComposer initialContent="<p>hello</p>" onSend={vi.fn()} onCancel={onCancel} />, {
+      wrapper: makeWrapper(),
+    });
+
+    const save = screen.getByRole("button", { name: "Save" });
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(save).toHaveAttribute("data-testid", "msg-edit-save-btn");
+    expect(save).toHaveAttribute("title", "Save (Ctrl+Enter)");
+    expect(cancel).toHaveAttribute("title", "Cancel (Esc)");
+    expect(save.textContent).toBe("");
+    expect(cancel.textContent).toBe("");
+    expect(screen.queryByText("Save")).not.toBeInTheDocument();
+
+    await userEvent.click(cancel);
+    expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
   it("does not show the attach button in edit mode even when attachments are allowed", () => {

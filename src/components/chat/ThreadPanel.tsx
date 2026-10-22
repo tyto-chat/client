@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { uuidFromIri } from "@/api/hydra";
+import { channelThreadsTopic, conversationThreadsTopic } from "@/api/topics";
 import { useTranslation } from "react-i18next";
 import { MessageGroup } from "@/components/chat/MessageGroup";
 import { MessageEditor } from "@/components/chat/MessageEditor";
@@ -35,7 +36,9 @@ interface MentionableChannel {
 interface Props {
   communityId?: string;
   channelIdentifier?: string;
+  channelNumericId?: number;
   conversationIdentifier?: string;
+  conversationNumericId?: number;
   rootIri: string;
   members: MemberItem[];
   channels: MentionableChannel[];
@@ -54,7 +57,9 @@ interface Props {
 export function ThreadPanel({
   communityId,
   channelIdentifier,
+  channelNumericId,
   conversationIdentifier,
+  conversationNumericId,
   rootIri,
   members,
   channels,
@@ -74,13 +79,12 @@ export function ThreadPanel({
   const { timezone } = useTimezone();
 
   const rootUuid = uuidFromIri(rootIri);
-  const containerIri =
-    communityId != null && channelIdentifier != null
-      ? `/api/communities/${communityId}/channels/${channelIdentifier}`
-      : conversationIdentifier != null
-        ? `/api/conversations/${conversationIdentifier}`
+  const threadTopic =
+    channelNumericId != null
+      ? channelThreadsTopic(channelNumericId)
+      : conversationNumericId != null
+        ? conversationThreadsTopic(conversationNumericId)
         : null;
-  const threadTopic = containerIri ? `${containerIri}/messages/${rootUuid}/thread` : null;
   const { data: root } = useMessage(rootUuid);
   const { data: replies, isLoading } = useThreadReplies(rootIri);
   useThreadMercure(rootIri, threadTopic);

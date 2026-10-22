@@ -1,20 +1,32 @@
-import type { BridgeBadgeState, BridgeTrayLabels, PlatformBridge } from "@/platform/PlatformBridge";
+import type {
+  BridgeBadgeState,
+  BridgeSnoozeState,
+  BridgeTrayLabels,
+  PlatformBridge,
+} from "@/platform/PlatformBridge";
 import type { TFunction } from "i18next";
 import { hostFromOrigin } from "@/utils/serverDisplay";
 import { connectionAnswersTo, pickConnection } from "@/utils/serverOrigins";
 import type { RegistrySnapshot } from "./connections/ConnectionRegistry";
 import type { SwitchTarget } from "./switchIdentity";
 
+type Translate = TFunction<"desktop">;
+
 const MAX_PENDING_CLICKS = 200;
 const MESSAGE_PATH = /^\/m\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i;
 
-let snoozedUntil: number | null = null;
+export interface NotificationSnooze {
+  minutes: number | null;
+  until: number | null;
+}
+
+let snooze: NotificationSnooze | null = null;
 let clickSequence = 0;
 let clickPrefix = crypto.randomUUID();
 const pendingClicks = new Map<string, () => void>();
 
 export function resetNativeShellForTests(): void {
-  snoozedUntil = null;
+  snooze = null;
   clickSequence = 0;
   clickPrefix = crypto.randomUUID();
   pendingClicks.clear();
@@ -22,14 +34,32 @@ export function resetNativeShellForTests(): void {
 
 export function setNotificationSnooze(minutes: number | null, now: number): void {
   if (minutes === null) {
-    snoozedUntil = Number.POSITIVE_INFINITY;
+    snooze = { minutes: null, until: null };
     return;
   }
-  snoozedUntil = minutes > 0 ? now + minutes * 60_000 : null;
+  snooze = minutes > 0 ? { minutes, until: now + minutes * 60_000 } : null;
+}
+
+export function getNotificationSnooze(now: number): NotificationSnooze | null {
+  if (snooze === null || (snooze.until !== null && now >= snooze.until)) return null;
+  return snooze;
 }
 
 export function isNotificationSnoozed(now: number): boolean {
-  return snoozedUntil !== null && now < snoozedUntil;
+  return getNotificationSnooze(now) !== null;
+}
+
+export function describeSnooze(
+  current: NotificationSnooze | null,
+  t: Translate,
+  language: string,
+): BridgeSnoozeState | undefined {
+  if (!current) return undefined;
+  if (current.until === null) {
+    return { minutes: null, label: t("tray_snoozed_indefinitely") };
+  }
+  const time = new Intl.DateTimeFormat(language, { timeStyle: "short" }).format(current.until);
+  return { minutes: current.minutes, label: t("tray_snoozed_until", { time }) };
 }
 
 export interface NativeNotificationOptions {
@@ -100,8 +130,6 @@ export function computeBadgeState(
     callLabel: place ? `#${call.channelName} @ ${place}` : `#${call.channelName}`,
   };
 }
-
-type Translate = TFunction<"desktop">;
 
 export function buildTrayLabels(t: Translate): BridgeTrayLabels {
   return {

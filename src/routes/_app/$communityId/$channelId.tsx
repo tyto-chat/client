@@ -1,4 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { channelTopic } from "@/api/topics";
 import { useNewMessageCounter } from "@/hooks/useNewMessageCounter";
 import { ChannelHeader } from "@/components/chat/ChannelHeader";
 import { ChannelModals } from "@/components/chat/ChannelModals";
@@ -245,9 +246,7 @@ function ChannelPage() {
   const { data: rawMembers } = useCommunityMembers(communityId);
   useCommunityEmojis(communityId);
   const currentChannel = community?.channels.find((c) => c.identifier === channelId);
-  const channelTopic = currentChannel
-    ? `/api/communities/${communityId}/channels/${channelId}`
-    : "";
+  const channelTopicName = currentChannel ? channelTopic(currentChannel.id) : "";
 
   useEffect(() => {
     if (community && !currentChannel) {
@@ -383,7 +382,7 @@ function ChannelPage() {
     resetNewMessagesCount,
     triggerScrollToBottom,
   } = useNewMessageCounter(hasNextPage);
-  useChannelMercure(channelTopic, communityId, channelId, {
+  useChannelMercure(channelTopicName, communityId, channelId, {
     isLatestLoaded,
     onNewMessageWhileHistorical: bumpNewMessagesCount,
   });
@@ -848,6 +847,7 @@ function ChannelPage() {
           key={threadRootIri}
           communityId={communityId}
           channelIdentifier={channelId}
+          channelNumericId={currentChannel?.id}
           rootIri={threadRootIri}
           members={memberItems}
           channels={community?.channels ?? []}

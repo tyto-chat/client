@@ -1,14 +1,18 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { communityActivityTopic } from "@/api/topics";
 import { queryKeys } from "@/queries/queryKeys";
 import { useMercureSubscription } from "@/hooks/useMercureSubscription";
 import { parseMercureEvent } from "@/utils/parseMercureEvent";
 import type { ChannelActivityMercureEvent, Community } from "@/types/api";
 
-export function useCommunityActivityMercure(communityIdentifier: string) {
+export function useCommunityActivityMercure(
+  communityIdentifier: string,
+  communityId: number | undefined,
+) {
   const queryClient = useQueryClient();
   const { t } = useTranslation("channel");
-  const topic = communityIdentifier ? `/api/communities/${communityIdentifier}/activity` : null;
+  const topic = communityId != null ? communityActivityTopic(communityId) : null;
 
   useMercureSubscription(
     topic,

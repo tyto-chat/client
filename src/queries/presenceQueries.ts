@@ -18,6 +18,7 @@ import { getServerInfo } from "@/api/serverInfo";
 import { getAccessToken, useHasAccessToken } from "@/api/tokenStore";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotification } from "@/context/NotificationContext";
+import { userPresenceTopic } from "@/api/topics";
 import { queryKeys } from "@/queries/queryKeys";
 import type { ManualPresenceStatus, PresenceMercureEvent, PresenceState } from "@/types/api";
 
@@ -76,7 +77,7 @@ export function usePresenceSubscription(userIds: readonly number[]): void {
 
   useEffect(() => {
     if (stableIds.length === 0 || !mercureToken) return;
-    const topics = stableIds.map((id) => `/api/users/${id}/presence`);
+    const topics = stableIds.map((id) => userPresenceTopic(id));
 
     return subscribeMercure(
       topics,

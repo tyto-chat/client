@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
+import { userNotificationsTopic } from "@/api/topics";
 import { queryKeys } from "@/queries/queryKeys";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotification } from "@/context/NotificationContext";
@@ -18,7 +19,7 @@ export function useUserNotificationsMercure() {
   const { notify } = useNotification();
   const { t } = useTranslation("notifications");
   const navigate = useNavigate();
-  const topic = user?.id ? `/api/users/${user.id}/notifications` : null;
+  const topic = user?.id ? userNotificationsTopic(user.id) : null;
 
   useMercureSubscription(
     topic,

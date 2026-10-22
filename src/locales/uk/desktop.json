@@ -105,5 +105,7 @@
   "context_copy_link": "Копіювати посилання",
   "context_copy_image": "Копіювати зображення",
   "context_copy_image_address": "Копіювати адресу зображення",
-  "context_add_to_dictionary": "Додати до словника"
+  "context_add_to_dictionary": "Додати до словника",
+  "tray_snoozed_until": "Сповіщення призупинено до {{time}}",
+  "tray_snoozed_indefinitely": "Сповіщення призупинено, доки ви їх не увімкнете"
 }

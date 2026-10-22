@@ -1,3 +1,5 @@
+import { getActiveIdentityKey } from "@/platform/activeIdentity";
+
 const STORAGE_KEY = "tyto:last-location";
 
 export type LastLocation =
@@ -6,7 +8,10 @@ export type LastLocation =
 
 export function writeLastLocation(userId: number, location: LastLocation) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ userId, ...location }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ userId, identity: getActiveIdentityKey(), ...location }),
+    );
   } catch {
     /* storage unavailable */
   }
@@ -20,6 +25,7 @@ export function readLastLocation(userId: number): LastLocation | null {
     if (typeof parsed !== "object" || parsed === null) return null;
     const value = parsed as Record<string, unknown>;
     if (value.userId !== userId) return null;
+    if ((value.identity ?? null) !== getActiveIdentityKey()) return null;
     if (
       value.kind === "channel" &&
       typeof value.communityId === "string" &&

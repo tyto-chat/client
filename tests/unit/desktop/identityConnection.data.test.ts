@@ -271,8 +271,8 @@ describe("IdentityConnection data sync", () => {
 
     await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBeGreaterThan(0));
     const es = getLastFakeEventSource()!;
-    expect(es.url).toContain(encodeURIComponent("/api/users/42/notifications"));
-    expect(es.url).toContain(encodeURIComponent("/api/users/42/conversation-activity"));
+    expect(es.url).toContain(encodeURIComponent("u/42/n"));
+    expect(es.url).toContain(encodeURIComponent("u/42/d"));
     expect(es.url).toContain("rt-token");
 
     connection.stop();

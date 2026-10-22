@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { fetchChannelParticipants } from "@/api/channels";
+import { channelParticipantsTopic } from "@/api/topics";
 import { queryKeys } from "@/queries/queryKeys";
 import { useMercureSubscription } from "@/hooks/useMercureSubscription";
 import { parseMercureEvent } from "@/utils/parseMercureEvent";
@@ -25,11 +26,16 @@ export function useChannelParticipantsQuery(
   });
 }
 
-export function useChannelParticipants(communityId: string, channelId: string, enabled = true) {
+export function useChannelParticipants(
+  communityId: string,
+  channelId: string,
+  channelNumericId: number | undefined,
+  enabled = true,
+) {
   const queryClient = useQueryClient();
   const { t } = useTranslation("channel");
   const hasToken = useHasAccessToken();
-  const topic = `/api/communities/${communityId}/channels/${channelId}/participants`;
+  const topic = channelNumericId != null ? channelParticipantsTopic(channelNumericId) : null;
   const lastGeneratedAt = useRef(0);
 
   const query = useQuery({

@@ -9,9 +9,11 @@ import { PreferenceSyncRoot } from "@/context/PreferenceSyncRoot";
 import { useServerInfo } from "@/hooks/useServerInfo";
 import { AppSkeleton } from "@/components/ui/Skeleton";
 import { FadeOutOverlay } from "@/components/ui/FadeOutOverlay";
+import { RouteRecoveryScreen } from "@/components/RouteRecoveryScreen";
 
 export const router = createRouter({
   routeTree,
+  defaultErrorComponent: RouteRecoveryScreen,
   context: {
     queryClient: undefined!,
     auth: undefined!,

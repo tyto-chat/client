@@ -37,6 +37,7 @@ import { useWebPush } from "@/hooks/useWebPush";
 import { ChatBubbleIcon } from "@/components/icons";
 import { AudioCallProvider, useAudioCall } from "@/context/AudioCallContext";
 import { PersistentAudioRoom } from "@/components/PersistentAudioRoom";
+import { ServerUnreachableOverlay } from "@/components/ServerUnreachableOverlay";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import {
   MicrophoneIcon,
@@ -253,10 +254,15 @@ function NavScrim() {
   );
 }
 
+function routeParam(matches: { params: unknown }[], name: string): string | undefined {
+  const value = (matches.at(-1)?.params as Record<string, unknown> | undefined)?.[name];
+  return typeof value === "string" ? value : undefined;
+}
+
 function AppShell() {
   const { t: tConv } = useTranslation("conversation");
   const { t: tCommon } = useTranslation("common");
-  const { user, token } = useAuth();
+  const { user, token, setRealtimeScope } = useAuth();
   const isAdmin = user?.roles?.includes("ROLE_ADMIN") ?? false;
   const serverInfo = useServerInfo();
 
@@ -269,6 +275,14 @@ function AppShell() {
   const isPendingDeletion = deletionStatus?.pending === true;
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const scopeCommunity = useRouterState({ select: (s) => routeParam(s.matches, "communityId") });
+  const scopeConversation = useRouterState({
+    select: (s) => routeParam(s.matches, "conversationId"),
+  });
+  useEffect(() => {
+    setRealtimeScope({ community: scopeCommunity, conversation: scopeConversation });
+  }, [scopeCommunity, scopeConversation, setRealtimeScope]);
+
   useEffect(() => {
     const el = document.getElementById("main-content");
     const active = document.activeElement as HTMLElement | null;
@@ -371,6 +385,7 @@ function AppShell() {
                     className="relative flex min-w-0 flex-1 overflow-hidden focus:outline-none"
                   >
                     <PersistentAudioRoom voiceEnabled={serverInfo?.voiceEnabled ?? false} />
+                    <ServerUnreachableOverlay />
                   </div>
                 </div>
               </div>

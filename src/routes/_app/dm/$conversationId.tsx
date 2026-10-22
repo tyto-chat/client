@@ -143,7 +143,7 @@ function ConversationPage() {
   const { conversationId } = Route.useParams();
   const { latestPageNumber, focusMessageId, initialPageNumber } = Route.useLoaderData();
   const navigate = useNavigate();
-  const { user, ensureMercureTopic } = useAuth();
+  const { user } = useAuth();
   const { notify } = useNotification();
   const { timezone } = useTimezone();
 
@@ -198,11 +198,7 @@ function ConversationPage() {
   const deleteMessage = useDeleteConversationMessage(conversationId);
   const deleteAttachmentMutation = useDeleteConversationAttachment(conversationId);
   const toggleReaction = useToggleConversationReaction(conversationId, user?.id ?? 0);
-  useConversationMercure(isMember ? conversationId : "");
-
-  useEffect(() => {
-    if (isMember) ensureMercureTopic(`/api/conversations/${conversationId}`);
-  }, [isMember, conversationId, ensureMercureTopic]);
+  useConversationMercure(conversationId, isMember ? conversation?.id : undefined);
 
   const {
     data: pagesData,
@@ -441,6 +437,7 @@ function ConversationPage() {
         <ThreadPanel
           key={threadRootIri}
           conversationIdentifier={conversationId}
+          conversationNumericId={isMember ? conversation?.id : undefined}
           rootIri={threadRootIri}
           members={memberItems}
           channels={[]}

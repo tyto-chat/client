@@ -13,8 +13,11 @@ import { ConnectionsContext } from "./connections/ConnectionsContext";
 import type { RegistrySnapshot } from "./connections/ConnectionRegistry";
 import { AddServerModal } from "./DesktopRail";
 import {
+  type NotificationSnooze,
   badgeTooltip,
   computeBadgeState,
+  describeSnooze,
+  getNotificationSnooze,
   resolveDeepLink,
   setNotificationSnooze,
   takeNotificationClick,
@@ -38,7 +41,9 @@ function sameBadge(a: BridgeBadgeState | null, b: BridgeBadgeState): boolean {
     a.unreadCount === b.unreadCount &&
     a.callState === b.callState &&
     a.callLabel === b.callLabel &&
-    a.tooltip === b.tooltip
+    a.tooltip === b.tooltip &&
+    a.snooze?.minutes === b.snooze?.minutes &&
+    a.snooze?.label === b.snooze?.label
   );
 }
 
@@ -50,8 +55,14 @@ export function NativeShellRelay() {
 function ActiveRelay({ bridge }: { bridge: PlatformBridge }) {
   const connections = useContext(ConnectionsContext);
   const { activeCall, isMuted, toggleMute, leave } = useAudioCall();
-  const { t } = useTranslation("desktop");
+  const { t, i18n } = useTranslation("desktop");
   const { notify } = useNotification();
+  const [snooze, setSnooze] = useState<NotificationSnooze | null>(null);
+  useEffect(() => {
+    if (!snooze || snooze.until === null) return undefined;
+    const timer = setTimeout(() => setSnooze(null), Math.max(0, snooze.until - Date.now()) + 1);
+    return () => clearTimeout(timer);
+  }, [snooze]);
   const { confirm, confirmDialog } = useConfirm();
   const [addServerUrl, setAddServerUrl] = useState<string | null>(null);
   const askingRef = useRef(false);
@@ -110,8 +121,13 @@ function ActiveRelay({ bridge }: { bridge: PlatformBridge }) {
       channelName === null ? null : { channelName, identityKey, muted: isMuted },
     );
     const tooltip = badgeTooltip(state, t);
-    return tooltip === undefined ? state : { ...state, tooltip };
-  }, [snapshot, channelName, identityKey, isMuted, t]);
+    const snoozeState = describeSnooze(snooze, t, i18n.language);
+    return {
+      ...state,
+      ...(tooltip === undefined ? {} : { tooltip }),
+      ...(snoozeState === undefined ? {} : { snooze: snoozeState }),
+    };
+  }, [snapshot, channelName, identityKey, isMuted, t, i18n.language, snooze]);
 
   const lastBadgeRef = useRef<BridgeBadgeState | null>(null);
   useEffect(() => {
@@ -141,9 +157,12 @@ function ActiveRelay({ bridge }: { bridge: PlatformBridge }) {
         case "leave-call":
           callActionsRef.current.leave();
           return;
-        case "snooze":
-          setNotificationSnooze(command.minutes, Date.now());
+        case "snooze": {
+          const now = Date.now();
+          setNotificationSnooze(command.minutes, now);
+          setSnooze(getNotificationSnooze(now));
           return;
+        }
         case "presence":
           void setManualPresence(command.value === "online" ? null : command.value).catch(
             () => undefined,

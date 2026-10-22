@@ -12,7 +12,7 @@ import {
   loadDesktopConfig,
   type DesktopIdentity,
 } from "./desktopConfig";
-import { removeServer, signOutIdentity } from "./identityLifecycle";
+import { continueAfterRemovingActive, removeServer, signOutIdentity } from "./identityLifecycle";
 import { IdentityAvatar } from "./IdentityAvatar";
 import { ReloginModal } from "./ReloginModal";
 import { ServerTile } from "./ServerTile";
@@ -141,13 +141,8 @@ export function IdentityManagerModal({ onClose }: { onClose: () => void }) {
       await removeServer(getPlatformBridge(), registry, profileId, row.identity);
       setGeneration((n) => n + 1);
       if (!wasActive) return;
-      const next = registry.getSnapshot().connections[0];
-      if (next) {
-        close();
-        void switchTo(next.identityId).catch(() => undefined);
-      } else {
-        window.location.replace("/");
-      }
+      close();
+      continueAfterRemovingActive(registry, switchTo);
     } finally {
       setBusyId(null);
     }

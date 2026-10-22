@@ -78,5 +78,14 @@
   "request_timeout": "Le serveur n'a pas répondu. Réessaie.",
   "http1_banner_title": "Problème de connexion",
   "http1_banner_text": "Le reverse proxy de ce serveur ne parle que HTTP/1.1, l'application va donc se bloquer après quelques minutes d'utilisation. L'administrateur du serveur doit activer HTTP/2 sur le proxy.",
-  "http1_banner_docs": "En savoir plus"
+  "http1_banner_docs": "En savoir plus",
+  "recovery_title": "Un problème est survenu",
+  "recovery_network": "Impossible de joindre le serveur. Vérifie ta connexion et réessaie.",
+  "recovery_generic": "Cette page n'a pas pu être chargée. Réessaie ou va ailleurs.",
+  "recovery_retry": "Réessayer",
+  "recovery_go_home": "Aller à l'accueil",
+  "recovery_switch_server": "Ou passe à un autre serveur",
+  "recovery_sign_out": "Se déconnecter",
+  "recovery_details": "Détails techniques",
+  "recovery_retry_failed": "Ça ne fonctionne toujours pas. Réessaie dans un instant."
 }

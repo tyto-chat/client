@@ -1,5 +1,6 @@
 import type { PlatformBridge } from "@/platform/PlatformBridge";
 import type { ConnectionRegistry } from "./connections/ConnectionRegistry";
+import { bootRequestTimeoutMs, fetchWithDeadline } from "@/api/fetchWithDeadline";
 import {
   getServerOrder,
   loadDesktopConfig,
@@ -22,12 +23,16 @@ export async function revokeAndWipeSecrets(
   try {
     const refreshToken = await bridge.secrets.get(refreshTokenKey);
     if (refreshToken) {
-      await fetch(`${apiBase}/logout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "omit",
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      }).catch(() => {});
+      await fetchWithDeadline(
+        `${apiBase}/logout`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "omit",
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        },
+        bootRequestTimeoutMs(),
+      ).catch(() => {});
     }
   } catch {
     /* best-effort: the wipe below must still run */
@@ -68,4 +73,27 @@ export async function removeServer(
   }
   await saveDesktopConfig(bridge, next);
   registry.remove(identity.id);
+}
+
+export async function removeServerById(
+  bridge: PlatformBridge,
+  registry: ConnectionRegistry,
+  identityId: string,
+): Promise<boolean> {
+  const config = await loadDesktopConfig(bridge);
+  const profileId = config.lastActiveProfileId ?? config.profiles[0]?.id ?? null;
+  const profile = config.profiles.find((p) => p.id === profileId);
+  const identity = profile?.identities.find((i) => i.id === identityId);
+  if (!profile || !identity) return false;
+  await removeServer(bridge, registry, profile.id, identity);
+  return true;
+}
+
+export function continueAfterRemovingActive(
+  registry: ConnectionRegistry,
+  switchTo: (identityId: string) => Promise<void>,
+): void {
+  const next = registry.getSnapshot().connections[0];
+  if (next) void switchTo(next.identityId).catch(() => undefined);
+  else window.location.replace("/");
 }

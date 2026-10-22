@@ -1,3 +1,5 @@
+import { fetchWithDeadline, requestTimeoutMs } from "@/api/fetchWithDeadline";
+
 export interface ServerContext {
   origin: string;
   apiVersion: string;
@@ -43,11 +45,11 @@ async function send<T>(ctx: ServerContext, path: string, init: RequestInit): Pro
   const token = ctx.getToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(buildUrl(ctx, path), {
-    ...init,
-    headers,
-    credentials: "omit",
-  });
+  const response = await fetchWithDeadline(
+    buildUrl(ctx, path),
+    { ...init, headers, credentials: "omit" },
+    requestTimeoutMs(),
+  );
 
   const body = await parseBody(response);
   if (!response.ok) throw new IdentityFetchError(response.status, body);
