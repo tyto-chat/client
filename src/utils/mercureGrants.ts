@@ -19,16 +19,20 @@ function grantMatches(grant: string, topic: string): boolean {
   });
 }
 
-export function tokenCovers(token: string, topics: string[]): boolean | null {
+function topicCoverage(token: string, topics: string[]): boolean[] | null {
   const grants = decodeJwtPayload<MercurePayload>(token)?.mercure?.subscribe;
   if (!Array.isArray(grants) || !grants.every((g) => typeof g === "string")) return null;
-  return topics.every((topic) => grants.some((grant) => grantMatches(grant, topic)));
+  return topics.map((topic) => grants.some((grant) => grantMatches(grant, topic)));
+}
+
+export function tokenCovers(token: string, topics: string[]): boolean | null {
+  return topicCoverage(token, topics)?.every(Boolean) ?? null;
 }
 
 export function needsReconnect(connectedWith: string, latest: string, topics: string[]): boolean {
   if (connectedWith === latest) return false;
-  const before = tokenCovers(connectedWith, topics);
-  const after = tokenCovers(latest, topics);
+  const before = topicCoverage(connectedWith, topics);
+  const after = topicCoverage(latest, topics);
   if (before === null || after === null) return true;
-  return before !== after;
+  return before.some((covered, i) => covered !== after[i]);
 }

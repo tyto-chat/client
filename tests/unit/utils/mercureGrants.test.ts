@@ -52,6 +52,13 @@ describe("needsReconnect", () => {
     expect(needsReconnect(scopedA, scopedB, ["c/12"])).toBe(true);
   });
 
+  it("compares coverage per topic for multi-topic subscriptions", () => {
+    const oldToken = token(["c/12"]);
+    const newToken = token(["c/30"]);
+    expect(needsReconnect(oldToken, newToken, ["c/12", "c/30"])).toBe(true);
+    expect(needsReconnect(oldToken, token(["c/12", "k/9"]), ["c/12", "c/30"])).toBe(false);
+  });
+
   it("reconnects when grants are unreadable", () => {
     expect(needsReconnect("opaque-1", "opaque-2", ["c/12"])).toBe(true);
   });
