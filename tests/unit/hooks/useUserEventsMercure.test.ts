@@ -6,6 +6,7 @@ import { createElement, type ReactNode } from "react";
 let captured: ((e: MessageEvent) => void) | null = null;
 const navigate = vi.fn();
 const notify = vi.fn();
+const refreshMercureToken = vi.fn().mockResolvedValue(undefined);
 let params: Record<string, string | undefined> = {};
 
 vi.mock("@/hooks/useMercureSubscription", () => ({
@@ -18,7 +19,9 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigate,
   useParams: () => params,
 }));
-vi.mock("@/context/AuthContext", () => ({ useAuthContext: () => ({ user: { id: 7 } }) }));
+vi.mock("@/context/AuthContext", () => ({
+  useAuthContext: () => ({ user: { id: 7 }, refreshMercureToken }),
+}));
 vi.mock("@/context/NotificationContext", () => ({ useNotification: () => ({ notify }) }));
 
 import { useUserEventsMercure } from "@/hooks/useUserEventsMercure";
@@ -38,10 +41,27 @@ describe("useUserEventsMercure", () => {
     captured = null;
     navigate.mockClear();
     notify.mockClear();
+    refreshMercureToken.mockClear();
     params = {};
     qc = new QueryClient();
     inval = vi.spyOn(qc, "invalidateQueries").mockResolvedValue(undefined as never);
     renderHook(() => useUserEventsMercure(), { wrapper });
+  });
+
+  it.each([
+    "community.removed",
+    "channel.access.revoked",
+    "channel.access.granted",
+    "role.changed",
+  ])("%s re-mints the realtime token so grants follow access", (event) => {
+    fire({ type: "user.event", event, communityIdentifier: "c1" });
+    expect(refreshMercureToken).toHaveBeenCalledTimes(1);
+  });
+
+  it("other events leave the realtime token alone", () => {
+    fire({ type: "user.event", event: "something.else" });
+    fire({ type: "presence", event: "role.changed" });
+    expect(refreshMercureToken).not.toHaveBeenCalled();
   });
 
   it("server.banned dispatches session:expired", () => {

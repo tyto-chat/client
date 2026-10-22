@@ -8,6 +8,13 @@ import { useNotification } from "@/context/NotificationContext";
 import { useMercureSubscription } from "@/hooks/useMercureSubscription";
 import { parseMercureEvent } from "@/utils/parseMercureEvent";
 
+const GRANT_CHANGING_EVENTS = new Set([
+  "community.removed",
+  "channel.access.revoked",
+  "channel.access.granted",
+  "role.changed",
+]);
+
 interface UserControlEvent {
   type?: string;
   event?: string;
@@ -17,7 +24,7 @@ interface UserControlEvent {
 
 export function useUserEventsMercure() {
   const queryClient = useQueryClient();
-  const { user } = useAuthContext();
+  const { user, refreshMercureToken } = useAuthContext();
   const { notify } = useNotification();
   const { t } = useTranslation("community");
   const navigate = useNavigate();
@@ -32,6 +39,7 @@ export function useUserEventsMercure() {
     (event) => {
       const data = parseMercureEvent<UserControlEvent>(event);
       if (!data || data.type !== "user.event") return;
+      if (data.event && GRANT_CHANGING_EVENTS.has(data.event)) void refreshMercureToken();
 
       const onThisCommunity =
         !!data.communityIdentifier && params.communityId === data.communityIdentifier;

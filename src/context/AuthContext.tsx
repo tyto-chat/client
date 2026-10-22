@@ -22,6 +22,7 @@ import { finishAuthRestore, getAccessToken, setAccessToken } from "@/api/tokenSt
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { decodeJwtPayload } from "@/utils/jwtPayload";
 import type { RealtimeScope } from "@/api/realtimeToken";
+import { realtimeRefreshDelay, realtimeRetryDelay } from "@/utils/realtimeSchedule";
 import { unsubscribeFromPush } from "@/utils/webPush";
 import { isManagedIdentityMode } from "@/platform/appMode";
 import { getActiveIdentityKey, subscribeActiveIdentity } from "@/platform/activeIdentity";
@@ -100,39 +101,105 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const doMercureFetch = useCallback(async () => {
-    const request = ++mercureRequestRef.current;
-    try {
-      const { fetchRealtimeToken } = await import("@/api/realtimeToken");
-      const { token: mToken, expiresAt } = await fetchRealtimeToken(realtimeScopeRef.current);
-      if (request !== mercureRequestRef.current) return;
-      setMercureToken(mToken);
-      clearMercureTimer();
-      const rawDelay = expiresAt ? expiresAt * 1000 - Date.now() - 5 * 60 * 1000 : 55 * 60 * 1000;
-      const delay = Math.max(rawDelay, 30_000);
-      mercureRefreshTimerRef.current = setTimeout(() => void mercureScheduleRef.current(), delay);
-    } catch {
-      if (request === mercureRequestRef.current) setMercureToken(null);
-    }
-  }, [clearMercureTimer]);
+  const mercureFailuresRef = useRef(0);
+  const mercureDueAtRef = useRef<number | null>(null);
 
-  const doPublicMercureFetch = useCallback(async () => {
-    const request = ++mercureRequestRef.current;
-    try {
-      const { fetchPublicRealtimeToken } = await import("@/api/realtimeToken");
-      const { token: mToken, expiresAt } = await fetchPublicRealtimeToken(realtimeScopeRef.current);
-      if (request !== mercureRequestRef.current) return;
-      setMercureToken(mToken);
-      clearMercureTimer();
-      if (mToken) {
-        const rawDelay = expiresAt ? expiresAt * 1000 - Date.now() - 5 * 60 * 1000 : 55 * 60 * 1000;
-        const delay = Math.max(rawDelay, 30_000);
+  const mintMercureToken = useCallback(
+    async (
+      mint: (scope: RealtimeScope) => Promise<{ token: string | null; expiresAt: number | null }>,
+    ) => {
+      const request = ++mercureRequestRef.current;
+      try {
+        const { token: mToken, expiresAt } = await mint(realtimeScopeRef.current);
+        if (request !== mercureRequestRef.current) return;
+        mercureFailuresRef.current = 0;
+        setMercureToken(mToken);
+        clearMercureTimer();
+        if (!mToken) {
+          mercureDueAtRef.current = null;
+          return;
+        }
+        const delay = realtimeRefreshDelay(expiresAt);
+        mercureDueAtRef.current = Date.now() + delay;
+        mercureRefreshTimerRef.current = setTimeout(() => void mercureScheduleRef.current(), delay);
+      } catch (err) {
+        if (request !== mercureRequestRef.current) return;
+        clearMercureTimer();
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+          const scope = realtimeScopeRef.current;
+          if (err.status === 403 && (scope.community || scope.conversation)) {
+            realtimeScopeRef.current = {};
+            void mercureScheduleRef.current();
+            return;
+          }
+          mercureFailuresRef.current = 0;
+          mercureDueAtRef.current = null;
+          setMercureToken(null);
+          return;
+        }
+        const delay = realtimeRetryDelay(mercureFailuresRef.current);
+        mercureFailuresRef.current += 1;
         mercureRefreshTimerRef.current = setTimeout(() => void mercureScheduleRef.current(), delay);
       }
-    } catch {
-      if (request === mercureRequestRef.current) setMercureToken(null);
+    },
+    [clearMercureTimer],
+  );
+
+  const doMercureFetch = useCallback(
+    () =>
+      mintMercureToken(async (scope) => {
+        const { fetchRealtimeToken } = await import("@/api/realtimeToken");
+        return fetchRealtimeToken(scope);
+      }),
+    [mintMercureToken],
+  );
+
+  const doPublicMercureFetch = useCallback(
+    () =>
+      mintMercureToken(async (scope) => {
+        const { fetchPublicRealtimeToken } = await import("@/api/realtimeToken");
+        return fetchPublicRealtimeToken(scope);
+      }),
+    [mintMercureToken],
+  );
+
+  useEffect(() => {
+    const remintIfDue = () => {
+      const dueAt = mercureDueAtRef.current;
+      if (dueAt === null || Date.now() < dueAt) return;
+      void mercureScheduleRef.current();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") remintIfDue();
+    };
+    window.addEventListener("online", remintIfDue);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("online", remintIfDue);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
+  const mercureRefreshInFlightRef = useRef<Promise<void> | null>(null);
+  const mercureRefreshAgainRef = useRef(false);
+
+  const refreshMercureToken = useCallback((): Promise<void> => {
+    if (mercureRefreshInFlightRef.current) {
+      mercureRefreshAgainRef.current = true;
+      return mercureRefreshInFlightRef.current;
     }
-  }, [clearMercureTimer]);
+    const run = async () => {
+      do {
+        mercureRefreshAgainRef.current = false;
+        await mercureScheduleRef.current();
+      } while (mercureRefreshAgainRef.current);
+    };
+    const inFlight = run().finally(() => {
+      mercureRefreshInFlightRef.current = null;
+    });
+    mercureRefreshInFlightRef.current = inFlight;
+    return inFlight;
+  }, []);
 
   const setRealtimeScope = useCallback((scope: RealtimeScope) => {
     const current = realtimeScopeRef.current;
@@ -280,6 +347,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearMercureTimer();
       setSessionExpired(false);
       setMercureToken(null);
+      mercureDueAtRef.current = null;
       const switched = getAccessToken();
       setTokenState(switched);
       if (switched) {
@@ -342,6 +410,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearRefreshTimer();
     clearMercureTimer();
     setMercureToken(null);
+    mercureDueAtRef.current = null;
     setToken(null);
     setUser(null);
     setSessionExpired(false);
@@ -367,6 +436,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearRefreshTimer();
       clearMercureTimer();
       setMercureToken(null);
+      mercureDueAtRef.current = null;
       setToken(null);
       setUser(null);
       queryClient.clear();
@@ -398,7 +468,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshUser,
         sessionExpired,
         mercureToken,
-        refreshMercureToken: token ? doMercureFetch : doPublicMercureFetch,
+        refreshMercureToken,
         setRealtimeScope,
       }}
     >

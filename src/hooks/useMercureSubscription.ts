@@ -1,14 +1,13 @@
 import { useEffect, useRef } from "react";
-import { subscribeMercure } from "@/api/mercure";
+import { subscribeMercure, type MercureSubscription } from "@/api/mercure";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotification } from "@/context/NotificationContext";
 import { getServerInfo } from "@/api/serverInfo";
-import { needsReconnect } from "@/utils/mercureGrants";
 
 interface Connection {
   key: string;
   token: string;
-  close: () => void;
+  subscription: MercureSubscription;
 }
 
 export function useMercureSubscription(
@@ -46,24 +45,23 @@ export function useMercureSubscription(
   useEffect(() => {
     const current = connection.current;
     if (key === "" || !mercureToken) {
-      current?.close();
+      current?.subscription.close();
       connection.current = null;
       return;
     }
-    const subscribed = key.split("\n");
-    if (
-      current &&
-      current.key === key &&
-      !needsReconnect(current.token, mercureToken, subscribed)
-    ) {
+    if (current && current.key === key) {
+      if (current.token !== mercureToken) {
+        current.token = mercureToken;
+        current.subscription.rollover();
+      }
       return;
     }
-    current?.close();
+    current?.subscription.close();
     connection.current = {
       key,
       token: mercureToken,
-      close: subscribeMercure(
-        subscribed,
+      subscription: subscribeMercure(
+        key.split("\n"),
         (e) => latest.current.onMessage(e),
         () => latest.current.mercureToken,
         {
@@ -78,7 +76,7 @@ export function useMercureSubscription(
 
   useEffect(
     () => () => {
-      connection.current?.close();
+      connection.current?.subscription.close();
       connection.current = null;
     },
     [],

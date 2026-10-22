@@ -1,14 +1,3 @@
-/**
- * IdentityConnection data sync + notification stream (Task 4).
- *
- * Reconnect-refetch coverage note: the fake EventSource in tests/mocks/EventSource.ts has
- * no `onopen` (see its header comment), so `subscribeMercure`'s real onopen->onReconnect path
- * can't be exercised end-to-end here. Per the task brief this is an accepted compromise: the
- * "reconnect drift-heal" test below invokes the connection's internal `refetchUnreadCounts` method
- * directly (via a narrow private-access cast) instead of driving it through a simulated
- * reconnect. Full onopen/onReconnect wiring stays covered at the `subscribeMercure`/
- * `useMercureSubscription` layer plus integration/e2e.
- */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
@@ -445,6 +434,42 @@ describe("IdentityConnection data sync", () => {
     connection.stop();
 
     expect(closeSpy).toHaveBeenCalled();
+  });
+
+  it("rolls the realtime stream over to a re-minted token without a gap", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let mints = 0;
+    stubHealthyServer();
+    stubData();
+    server.use(
+      http.get(`${ORIGIN}/api/v1/realtime/token`, () => {
+        mints += 1;
+        return HttpResponse.json({
+          token: `rt-${mints}`,
+          expiresAt: Math.floor(Date.now() / 1000) + 600,
+        });
+      }),
+    );
+    const bridge = createFakePlatformBridge();
+    await bridge.secrets.set(secretKey(PROFILE_ID, IDENTITY_ID, "refreshToken"), "old");
+    const connection = new IdentityConnection(bridge, PROFILE_ID, makeIdentity(), makeCallbacks());
+    connection.start();
+    await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBe(1));
+    const first = getLastFakeEventSource()!;
+    first.triggerOpen();
+
+    await vi.advanceTimersByTimeAsync(300_000);
+    await vi.waitFor(() => expect(getFakeEventSourceInstances().length).toBe(2));
+
+    const second = getLastFakeEventSource()!;
+    expect(second.url).toContain("authorization=rt-2");
+    expect(first.closed).toBe(false);
+    second.triggerOpen();
+    expect(first.closed).toBe(true);
+    expect(getFakeEventSourceInstances().filter((es) => !es.closed)).toEqual([second]);
+
+    connection.stop();
+    expect(second.closed).toBe(true);
   });
 
   it("stop() cancels the realtime token re-mint timer", async () => {
