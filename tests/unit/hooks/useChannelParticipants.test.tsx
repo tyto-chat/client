@@ -78,7 +78,7 @@ describe("useChannelParticipants — Mercure avatar mapping", () => {
   it("maps a string avatarUrl from Mercure to { sm, md, lg } contentUrl", async () => {
     const queryClient = makeQueryClient();
 
-    renderHook(() => useChannelParticipants(COMMUNITY, CHANNEL), {
+    renderHook(() => useChannelParticipants(COMMUNITY, CHANNEL, 9), {
       wrapper: makeWrapper(queryClient),
     });
 
@@ -118,7 +118,7 @@ describe("useChannelParticipants — Mercure avatar mapping", () => {
   it("sets avatar to null when Mercure event has avatarUrl: null", async () => {
     const queryClient = makeQueryClient();
 
-    renderHook(() => useChannelParticipants(COMMUNITY, CHANNEL), {
+    renderHook(() => useChannelParticipants(COMMUNITY, CHANNEL, 9), {
       wrapper: makeWrapper(queryClient),
     });
 
@@ -152,7 +152,7 @@ describe("useChannelParticipants — Mercure avatar mapping", () => {
   it("preserves userId, name, and joinedAt from Mercure event", async () => {
     const queryClient = makeQueryClient();
 
-    renderHook(() => useChannelParticipants(COMMUNITY, CHANNEL), {
+    renderHook(() => useChannelParticipants(COMMUNITY, CHANNEL, 9), {
       wrapper: makeWrapper(queryClient),
     });
 
@@ -186,7 +186,7 @@ describe("useChannelParticipants — Mercure avatar mapping", () => {
   it("replaces cache with all participants from the event", async () => {
     const queryClient = makeQueryClient();
 
-    renderHook(() => useChannelParticipants(COMMUNITY, CHANNEL), {
+    renderHook(() => useChannelParticipants(COMMUNITY, CHANNEL, 9), {
       wrapper: makeWrapper(queryClient),
     });
 
@@ -219,7 +219,7 @@ describe("useChannelParticipants — Mercure avatar mapping", () => {
   it("ignores events with a type other than 'channel.participants'", async () => {
     const queryClient = makeQueryClient();
 
-    renderHook(() => useChannelParticipants(COMMUNITY, CHANNEL), {
+    renderHook(() => useChannelParticipants(COMMUNITY, CHANNEL, 9), {
       wrapper: makeWrapper(queryClient),
     });
 

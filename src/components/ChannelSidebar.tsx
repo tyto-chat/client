@@ -108,9 +108,9 @@ export function ChannelSidebar({ communityId }: Props) {
   const unreadCount =
     communityNumericId !== undefined ? (unreadData?.counts?.[String(communityNumericId)] ?? 0) : 0;
 
-  useCommunityActivityMercure(communityId);
-  useCommunityEmojiMercure(communityId);
-  useCommunityMercure(communityId);
+  useCommunityActivityMercure(communityId, communityNumericId);
+  useCommunityEmojiMercure(communityId, communityNumericId);
+  useCommunityMercure(communityId, communityNumericId);
   const { data: snapshot } = useNotificationPreferences();
   const isCommunityMuted = useIsCommunityMuted(communityNumericId);
   const hasJoined = membership?.hasMembership ?? false;
@@ -714,6 +714,7 @@ function AudioChannelSidebarItem({
   const { data: participants = [] } = useChannelParticipants(
     communityId,
     channel.identifier,
+    channel.id,
     canSeeParticipants,
   );
   const pinState = useChannelPinState(channel.id);

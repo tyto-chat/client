@@ -29,7 +29,7 @@ export const defaultAuthState: AuthState = {
   sessionExpired: false,
   mercureToken: "mock-mercure-token",
   refreshMercureToken: vi.fn().mockResolvedValue(undefined),
-  ensureMercureTopic: vi.fn(),
+  setRealtimeScope: vi.fn(),
 };
 
 const MockNotificationContext = createContext<NotificationContextValue | null>(null);

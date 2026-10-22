@@ -28,7 +28,7 @@ describe("useCommunityMercure", () => {
     captured = null;
     qc = new QueryClient();
     spy = vi.spyOn(qc, "invalidateQueries").mockResolvedValue(undefined as never);
-    renderHook(() => useCommunityMercure("my-com"), { wrapper });
+    renderHook(() => useCommunityMercure("my-com", 5), { wrapper });
   });
 
   it("invalidates community-scoped keys on community.structure", () => {
@@ -44,9 +44,9 @@ describe("useCommunityMercure", () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: queryKeys.myMemberships() });
   });
 
-  it("invalidates on raw Channel entity events", () => {
+  it("ignores raw Channel entity events", () => {
     fire({ "@type": "Channel", "@id": "/api/channels/1" });
-    expect(spy).toHaveBeenCalledWith({ queryKey: queryKeys.community("my-com") });
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it("ignores unrelated payloads", () => {

@@ -1,0 +1,12 @@
+export const userNotificationsTopic = (id: number): string => `u/${id}/n`;
+export const userEventsTopic = (id: number): string => `u/${id}/e`;
+export const conversationActivityTopic = (id: number): string => `u/${id}/d`;
+export const userPresenceTopic = (id: number): string => `u/${id}/p`;
+export const communityTopic = (id: number): string => `k/${id}`;
+export const communityActivityTopic = (id: number): string => `k/${id}/a`;
+export const communityEmojisTopic = (id: number): string => `k/${id}/e`;
+export const channelTopic = (id: number): string => `c/${id}`;
+export const channelThreadsTopic = (id: number): string => `c/${id}/t`;
+export const channelParticipantsTopic = (id: number): string => `c/${id}/p`;
+export const conversationTopic = (id: number): string => `m/${id}`;
+export const conversationThreadsTopic = (id: number): string => `m/${id}/t`;

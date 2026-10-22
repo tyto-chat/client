@@ -35,7 +35,7 @@ vi.mock("@/api/serverInfo", () => ({
 
 const COMMUNITY_ID = "c1";
 const CHANNEL_ID = "general";
-const TOPIC = `/api/communities/${COMMUNITY_ID}/channels/${CHANNEL_ID}`;
+const TOPIC = "c/12";
 
 function makeWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {

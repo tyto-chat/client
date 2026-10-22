@@ -1,6 +1,7 @@
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { conversationActivityTopic, conversationTopic } from "@/api/topics";
 import { queryKeys } from "@/queries/queryKeys";
 import { patchMessageInPages } from "@/queries/messageQueries";
 import { stripPendingReactionRemovals } from "@/queries/reactionQueries";
@@ -190,10 +191,13 @@ export function useChannelMercure(
   );
 }
 
-export function useConversationMercure(conversationIdentifier: string) {
+export function useConversationMercure(
+  conversationIdentifier: string,
+  conversationId: number | undefined,
+) {
   const queryClient = useQueryClient();
   const { t } = useTranslation("channel");
-  const topic = conversationIdentifier ? `/api/conversations/${conversationIdentifier}` : null;
+  const topic = conversationId != null ? conversationTopic(conversationId) : null;
 
   useMercureSubscription(
     topic,
@@ -252,6 +256,12 @@ export function useConversationMercure(conversationIdentifier: string) {
   );
 }
 
+function parentIri(msg: Message): string | null {
+  const parent = msg.parent as Message | string | null | undefined;
+  if (!parent) return null;
+  return typeof parent === "string" ? parent : (parent["@id"] ?? null);
+}
+
 export function useThreadMercure(rootIri: string | null, topic: string | null) {
   const queryClient = useQueryClient();
   const { t } = useTranslation("channel");
@@ -271,6 +281,7 @@ export function useThreadMercure(rootIri: string | null, topic: string | null) {
           return list.map((m) => (m["@id"] === data["@id"] ? { ...m, ...patch } : m));
         }
         const msg = data as Message;
+        if (parentIri(msg) !== rootIri) return list;
         if (list.some((m) => m["@id"] === msg["@id"])) return list;
         const optIdx = list.findIndex(
           (m) => isOptimisticMessage(m["@id"]) && m.createdBy?.id === msg.createdBy?.id,
@@ -290,7 +301,7 @@ export function useThreadMercure(rootIri: string | null, topic: string | null) {
 export function useConversationActivityMercure(userId: number | undefined) {
   const queryClient = useQueryClient();
   const { t } = useTranslation("channel");
-  const topic = userId ? `/api/users/${userId}/conversation-activity` : null;
+  const topic = userId ? conversationActivityTopic(userId) : null;
 
   useMercureSubscription(
     topic,
