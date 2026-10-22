@@ -121,7 +121,7 @@ function MessageComposer({
         : [],
     [userSuggestion.visible, userSuggestion.items],
   );
-  usePresenceSubscription(mentionPresenceIds);
+  usePresenceSubscription(mentionPresenceIds, communityId);
   const notifyTyping = useTypingPing({ communityId, channelIdentifier, conversationIdentifier });
   const { data: communityEmojis } = useCommunityEmojis(communityId);
   const { data: userPrefs } = useUserPreferences();

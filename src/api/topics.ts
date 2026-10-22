@@ -5,6 +5,7 @@ export const userPresenceTopic = (id: number): string => `u/${id}/p`;
 export const communityTopic = (id: number): string => `k/${id}`;
 export const communityActivityTopic = (id: number): string => `k/${id}/a`;
 export const communityEmojisTopic = (id: number): string => `k/${id}/e`;
+export const communityPresenceTopic = (id: number): string => `k/${id}/p`;
 export const channelTopic = (id: number): string => `c/${id}`;
 export const channelThreadsTopic = (id: number): string => `c/${id}/t`;
 export const channelParticipantsTopic = (id: number): string => `c/${id}/p`;

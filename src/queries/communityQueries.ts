@@ -29,10 +29,11 @@ export function useCommunities() {
   });
 }
 
-export function useCommunity(identifier: string) {
+export function useCommunity(identifier: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.community(identifier),
-    queryFn: () => fetchCommunity(identifier),
+    queryKey: queryKeys.community(identifier ?? ""),
+    queryFn: () => fetchCommunity(identifier!),
+    enabled: !!identifier,
   });
 }
 

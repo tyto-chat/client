@@ -170,7 +170,7 @@ export function MessagePane({
     }
     return Array.from(ids);
   }, [messages]);
-  usePresenceSubscription(presenceUserIds);
+  usePresenceSubscription(presenceUserIds, communityId);
 
   return (
     <div className="relative flex-1 overflow-hidden">

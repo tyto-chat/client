@@ -2,10 +2,22 @@ import { apiClient, getBaseUrl, versionedPath } from "@/api/client";
 import { getAccessToken } from "@/api/tokenStore";
 import type { ManualPresenceStatus, PresenceBatchResponse, PresenceState } from "@/types/api";
 
+export const PRESENCE_BATCH_SIZE = 200;
+
 export async function fetchPresence(userIds: readonly number[]): Promise<PresenceBatchResponse> {
   if (userIds.length === 0) return { presences: [] };
-  const query = userIds.map((id) => `userIds[]=${id}`).join("&");
-  return apiClient.getJson<PresenceBatchResponse>(`/api/presence?${query}`);
+  const batches: number[][] = [];
+  for (let i = 0; i < userIds.length; i += PRESENCE_BATCH_SIZE) {
+    batches.push(userIds.slice(i, i + PRESENCE_BATCH_SIZE));
+  }
+  const responses = await Promise.all(
+    batches.map((batch) =>
+      apiClient.getJson<PresenceBatchResponse>(
+        `/api/presence?${batch.map((id) => `userIds[]=${id}`).join("&")}`,
+      ),
+    ),
+  );
+  return { presences: responses.flatMap((r) => r.presences) };
 }
 
 export interface CommunityPresenceSummary {
