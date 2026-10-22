@@ -37,6 +37,7 @@ import { useWebPush } from "@/hooks/useWebPush";
 import { ChatBubbleIcon } from "@/components/icons";
 import { AudioCallProvider, useAudioCall } from "@/context/AudioCallContext";
 import { PersistentAudioRoom } from "@/components/PersistentAudioRoom";
+import { ServerUnreachableOverlay } from "@/components/ServerUnreachableOverlay";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import {
   MicrophoneIcon,
@@ -371,6 +372,7 @@ function AppShell() {
                     className="relative flex min-w-0 flex-1 overflow-hidden focus:outline-none"
                   >
                     <PersistentAudioRoom voiceEnabled={serverInfo?.voiceEnabled ?? false} />
+                    <ServerUnreachableOverlay />
                   </div>
                 </div>
               </div>

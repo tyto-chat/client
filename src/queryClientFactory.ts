@@ -1,6 +1,7 @@
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import type { AnyRouter } from "@tanstack/react-router";
-import { ApiError } from "@/api/client";
+import { ApiError, isNetworkError } from "@/api/client";
+import { isServerUnreachable } from "@/api/reachability";
 import { StaleTime } from "@/queries/staleTimes";
 
 export function createAppQueryClient(router: AnyRouter): QueryClient {
@@ -15,6 +16,8 @@ export function createAppQueryClient(router: AnyRouter): QueryClient {
     defaultOptions: {
       queries: {
         staleTime: StaleTime.medium,
+        retry: (failureCount, error) =>
+          isNetworkError(error) ? !isServerUnreachable() && failureCount < 1 : failureCount < 3,
       },
     },
   });

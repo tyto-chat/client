@@ -26,7 +26,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         queryFn: fetchAccountDeletionStatus,
       });
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) return;
+      if (!(err instanceof ApiError) || err.status === 401) return;
       throw err;
     }
 

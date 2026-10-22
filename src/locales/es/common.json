@@ -78,5 +78,14 @@
   "request_timeout": "El servidor no respondió. Inténtalo de nuevo.",
   "http1_banner_title": "Problema de conexión",
   "http1_banner_text": "El proxy inverso de este servidor solo habla HTTP/1.1, por lo que la aplicación se bloqueará tras unos minutos de uso. El administrador del servidor debe activar HTTP/2 en el proxy.",
-  "http1_banner_docs": "Más información"
+  "http1_banner_docs": "Más información",
+  "recovery_title": "Algo salió mal",
+  "recovery_network": "No se puede conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
+  "recovery_generic": "No se pudo cargar esta página. Inténtalo de nuevo o ve a otro sitio.",
+  "recovery_retry": "Reintentar",
+  "recovery_go_home": "Ir al inicio",
+  "recovery_switch_server": "O cambia a otro servidor",
+  "recovery_sign_out": "Cerrar sesión",
+  "recovery_details": "Detalles técnicos",
+  "recovery_retry_failed": "Sigue sin funcionar. Inténtalo de nuevo en un momento."
 }

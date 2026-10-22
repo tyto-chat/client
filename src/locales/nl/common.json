@@ -78,5 +78,14 @@
   "request_timeout": "De server reageerde niet. Probeer het opnieuw.",
   "http1_banner_title": "Verbindingsprobleem",
   "http1_banner_text": "De reverse proxy van deze server spreekt alleen HTTP/1.1, waardoor de app na een paar minuten gebruik vastloopt. De serverbeheerder moet HTTP/2 inschakelen op de proxy.",
-  "http1_banner_docs": "Meer informatie"
+  "http1_banner_docs": "Meer informatie",
+  "recovery_title": "Er is iets misgegaan",
+  "recovery_network": "De server is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
+  "recovery_generic": "Deze pagina kon niet worden geladen. Probeer het opnieuw of ga ergens anders heen.",
+  "recovery_retry": "Opnieuw proberen",
+  "recovery_go_home": "Naar de startpagina",
+  "recovery_switch_server": "Of schakel over naar een andere server",
+  "recovery_sign_out": "Afmelden",
+  "recovery_details": "Technische details",
+  "recovery_retry_failed": "Werkt nog steeds niet. Probeer het zo meteen opnieuw."
 }

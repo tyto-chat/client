@@ -78,5 +78,14 @@
   "request_timeout": "Sunucu yanıt vermedi. Lütfen tekrar deneyin.",
   "http1_banner_title": "Bağlantı sorunu",
   "http1_banner_text": "Bu sunucunun ters proxy'si yalnızca HTTP/1.1 konuşuyor, bu yüzden uygulama birkaç dakika kullanımdan sonra takılacak. Sunucu yöneticisinin proxy'de HTTP/2'yi etkinleştirmesi gerekiyor.",
-  "http1_banner_docs": "Daha fazla bilgi"
+  "http1_banner_docs": "Daha fazla bilgi",
+  "recovery_title": "Bir şeyler ters gitti",
+  "recovery_network": "Sunucuya ulaşılamıyor. Bağlantını kontrol edip tekrar dene.",
+  "recovery_generic": "Bu sayfa yüklenemedi. Tekrar dene ya da başka bir yere git.",
+  "recovery_retry": "Tekrar dene",
+  "recovery_go_home": "Ana sayfaya git",
+  "recovery_switch_server": "Ya da başka bir sunucuya geç",
+  "recovery_sign_out": "Çıkış yap",
+  "recovery_details": "Teknik ayrıntılar",
+  "recovery_retry_failed": "Hâlâ çalışmıyor. Birazdan tekrar dene."
 }

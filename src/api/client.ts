@@ -2,7 +2,13 @@ import i18n from "@/i18n";
 import { authRestored, getAccessToken } from "@/api/tokenStore";
 import type { AvatarMediaObject, LogoMediaObject } from "@/types/api";
 import { getApiVersion } from "@/api/apiVersion";
-import { fetchWithDeadline, RequestDeadlineError, requestTimeoutMs } from "@/api/fetchWithDeadline";
+import {
+  bootRequestTimeoutMs,
+  fetchWithDeadline,
+  RequestDeadlineError,
+  requestTimeoutMs,
+} from "@/api/fetchWithDeadline";
+import { recordNetworkFailure, recordNetworkSuccess } from "@/api/reachability";
 
 const UNVERSIONED = /^\/api\/(versions|health|livekit\/|http-cache\/)/;
 
@@ -13,7 +19,9 @@ export function versionedPath(path: string): string {
 
 let _baseUrl = "";
 export function configureApiClient(url: string): void {
-  _baseUrl = url.replace(/\/$/, "");
+  const next = url.replace(/\/$/, "");
+  if (next !== _baseUrl) recordNetworkSuccess();
+  _baseUrl = next;
 }
 export function getBaseUrl(): string {
   return _baseUrl;
@@ -60,6 +68,7 @@ async function request<T>(
   isRetry = false,
   accept = "application/ld+json",
   contentType?: string,
+  timeoutMs = requestTimeoutMs(),
 ): Promise<T> {
   const requestBaseUrl = _baseUrl;
   await authRestored();
@@ -80,7 +89,7 @@ async function request<T>(
   }
 
   try {
-    return await send<T>(
+    const result = await send<T>(
       url,
       method,
       body,
@@ -90,11 +99,40 @@ async function request<T>(
       headers,
       token,
       requestBaseUrl,
+      timeoutMs,
     );
-  } catch (err) {
-    if (err instanceof RequestDeadlineError) throw new ApiTimeoutError();
+    if (requestBaseUrl === _baseUrl) recordNetworkSuccess();
+    return result;
+  } catch (caught) {
+    const err = caught instanceof RequestDeadlineError ? new ApiTimeoutError() : caught;
+    if (requestBaseUrl === _baseUrl) {
+      if (isNetworkError(err)) recordNetworkFailure();
+      else if (err instanceof ApiError) recordNetworkSuccess();
+    }
     throw err;
   }
+}
+
+export async function probeServer(): Promise<void> {
+  await request(
+    "/api/server-info",
+    "GET",
+    undefined,
+    false,
+    "application/json",
+    undefined,
+    bootRequestTimeoutMs(),
+  );
+}
+
+const GATEWAY_STATUSES = new Set([502, 503, 504]);
+
+export function isNetworkError(error: unknown): boolean {
+  return (
+    error instanceof TypeError ||
+    error instanceof ApiTimeoutError ||
+    (error instanceof ApiError && GATEWAY_STATUSES.has(error.status))
+  );
 }
 
 async function send<T>(
@@ -107,11 +145,12 @@ async function send<T>(
   headers: Record<string, string>,
   token: string | null,
   requestBaseUrl: string,
+  timeoutMs: number,
 ): Promise<T> {
   const response = await fetchWithDeadline(
     _baseUrl + versionedPath(url),
     { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined },
-    requestTimeoutMs(),
+    timeoutMs,
   );
 
   if (!response.ok) {
