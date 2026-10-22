@@ -281,7 +281,8 @@ export function useThreadMercure(rootIri: string | null, topic: string | null) {
           return list.map((m) => (m["@id"] === data["@id"] ? { ...m, ...patch } : m));
         }
         const msg = data as Message;
-        if (parentIri(msg) !== rootIri) return list;
+        const parent = parentIri(msg);
+        if (!parent || !rootIri || uuidFromIri(parent) !== uuidFromIri(rootIri)) return list;
         if (list.some((m) => m["@id"] === msg["@id"])) return list;
         const optIdx = list.findIndex(
           (m) => isOptimisticMessage(m["@id"]) && m.createdBy?.id === msg.createdBy?.id,

@@ -175,4 +175,93 @@ describe("useMercureSubscription", () => {
 
     expect(getLastFakeEventSource()).toBe(firstEs);
   });
+
+  describe("when the realtime token changes", () => {
+    function jwt(subscribe: string[]): string {
+      const body = btoa(JSON.stringify({ mercure: { subscribe } }))
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+      return `h.${body}.s`;
+    }
+    const scopedA = jwt(["u/42/n", "u/{userId}/p", "k/5", "c/12"]);
+    const scopedB = jwt(["u/42/n", "u/{userId}/p", "k/9", "c/30"]);
+
+    function renderWithToken(subscribeTo: string | string[], initial: string) {
+      const auth: StubAuthState = { mercureToken: initial, refreshMercureToken: vi.fn() };
+      function Wrapper({ children }: { children: ReactNode }) {
+        return (
+          <MockAuthContext.Provider value={{ ...auth }}>
+            <MockNotificationContext.Provider value={{ notify: vi.fn() }}>
+              {children}
+            </MockNotificationContext.Provider>
+          </MockAuthContext.Provider>
+        );
+      }
+      const view = renderHook(() => useMercureSubscription(subscribeTo, onMessage, errorMessage), {
+        wrapper: Wrapper,
+      });
+      return {
+        setToken: (next: string) => {
+          auth.mercureToken = next;
+          view.rerender();
+        },
+      };
+    }
+
+    it("keeps a connection the previous token already covered", () => {
+      const { setToken } = renderWithToken("u/42/n", scopedA);
+      const first = getLastFakeEventSource();
+
+      setToken(scopedB);
+
+      expect(getLastFakeEventSource()).toBe(first);
+    });
+
+    it("keeps presence connections, which the template always covers", () => {
+      const { setToken } = renderWithToken(["u/7/p", "u/8/p"], scopedA);
+      const first = getLastFakeEventSource();
+
+      setToken(scopedB);
+
+      expect(getLastFakeEventSource()).toBe(first);
+    });
+
+    it("reconnects with the new token when only it grants the topic", () => {
+      const { setToken } = renderWithToken("c/30", scopedA);
+      const first = getLastFakeEventSource()!;
+      const closeSpy = vi.spyOn(first, "close");
+
+      setToken(scopedB);
+
+      const second = getLastFakeEventSource()!;
+      expect(second).not.toBe(first);
+      expect(closeSpy).toHaveBeenCalled();
+      expect(second.url).toContain(`authorization=${scopedB}`);
+    });
+
+    it("reconnects when the new token revokes the topic, so the hub refuses it", () => {
+      const { setToken } = renderWithToken("c/12", scopedA);
+      const first = getLastFakeEventSource()!;
+
+      setToken(scopedB);
+
+      expect(getLastFakeEventSource()).not.toBe(first);
+      expect(getLastFakeEventSource()!.url).toContain(`authorization=${scopedB}`);
+    });
+
+    it("retries after an error with the latest token, not the one it connected with", () => {
+      vi.useFakeTimers();
+      const { setToken } = renderWithToken("u/42/n", scopedA);
+      const first = getLastFakeEventSource()!;
+      setToken(scopedB);
+      expect(getLastFakeEventSource()).toBe(first);
+
+      act(() => first.triggerError());
+      act(() => vi.advanceTimersByTime(5000));
+
+      expect(getLastFakeEventSource()!.url).toContain(`authorization=${scopedB}`);
+      vi.useRealTimers();
+    });
+  });
 });
