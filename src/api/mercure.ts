@@ -7,20 +7,24 @@ export interface MercureHandlers {
 export function subscribeMercure(
   topics: string[],
   onMessage: (event: MessageEvent) => void,
-  mercureToken: string | null | undefined,
+  mercureToken: string | null | undefined | (() => string | null | undefined),
   handlers: MercureHandlers = {},
   hubUrl?: string,
 ): () => void {
   if (!hubUrl) return () => {};
 
-  const base = new URL(hubUrl);
-  for (const topic of topics) {
-    base.searchParams.append("topic", topic);
-  }
-  if (mercureToken) {
-    base.searchParams.set("authorization", mercureToken);
-  }
-  const url = base.toString();
+  const currentToken = typeof mercureToken === "function" ? mercureToken : () => mercureToken;
+  const buildUrl = () => {
+    const base = new URL(hubUrl);
+    for (const topic of topics) {
+      base.searchParams.append("topic", topic);
+    }
+    const token = currentToken();
+    if (token) {
+      base.searchParams.set("authorization", token);
+    }
+    return base.toString();
+  };
 
   let eventSource: EventSource | null = null;
   let closed = false;
@@ -31,7 +35,7 @@ export function subscribeMercure(
 
   const connect = () => {
     if (closed) return;
-    const es = new EventSource(url);
+    const es = new EventSource(buildUrl());
     eventSource = es;
 
     es.onopen = () => {

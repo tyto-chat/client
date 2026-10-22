@@ -3,9 +3,16 @@ import { subscribeMercure } from "@/api/mercure";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotification } from "@/context/NotificationContext";
 import { getServerInfo } from "@/api/serverInfo";
+import { needsReconnect } from "@/utils/mercureGrants";
+
+interface Connection {
+  key: string;
+  token: string;
+  close: () => void;
+}
 
 export function useMercureSubscription(
-  topic: string | null,
+  topic: string | string[] | null,
   onMessage: (e: MessageEvent) => void,
   errorMessage: string,
   onReconnect?: () => void,
@@ -13,26 +20,67 @@ export function useMercureSubscription(
   const { mercureToken, refreshMercureToken } = useAuthContext();
   const { notify } = useNotification();
 
-  const onMessageRef = useRef(onMessage);
-  const onReconnectRef = useRef(onReconnect);
+  const latest = useRef({
+    onMessage,
+    onReconnect,
+    refreshMercureToken,
+    notify,
+    errorMessage,
+    mercureToken,
+  });
   useEffect(() => {
-    onMessageRef.current = onMessage;
-    onReconnectRef.current = onReconnect;
+    latest.current = {
+      onMessage,
+      onReconnect,
+      refreshMercureToken,
+      notify,
+      errorMessage,
+      mercureToken,
+    };
   });
 
-  useEffect(() => {
-    if (!topic || !mercureToken) return;
+  const topics = topic === null ? [] : Array.isArray(topic) ? topic : [topic];
+  const key = topics.join("\n");
+  const connection = useRef<Connection | null>(null);
 
-    return subscribeMercure(
-      [topic],
-      (e) => onMessageRef.current(e),
-      mercureToken,
-      {
-        onReconnect: () => onReconnectRef.current?.(),
-        onStaleToken: () => void refreshMercureToken(),
-        onSustainedFailure: () => notify(errorMessage, "error"),
-      },
-      getServerInfo()?.mercureUrl,
-    );
-  }, [topic, mercureToken, refreshMercureToken, notify, errorMessage]);
+  useEffect(() => {
+    const current = connection.current;
+    if (key === "" || !mercureToken) {
+      current?.close();
+      connection.current = null;
+      return;
+    }
+    const subscribed = key.split("\n");
+    if (
+      current &&
+      current.key === key &&
+      !needsReconnect(current.token, mercureToken, subscribed)
+    ) {
+      return;
+    }
+    current?.close();
+    connection.current = {
+      key,
+      token: mercureToken,
+      close: subscribeMercure(
+        subscribed,
+        (e) => latest.current.onMessage(e),
+        () => latest.current.mercureToken,
+        {
+          onReconnect: () => latest.current.onReconnect?.(),
+          onStaleToken: () => void latest.current.refreshMercureToken(),
+          onSustainedFailure: () => latest.current.notify(latest.current.errorMessage, "error"),
+        },
+        getServerInfo()?.mercureUrl,
+      ),
+    };
+  }, [key, mercureToken]);
+
+  useEffect(
+    () => () => {
+      connection.current?.close();
+      connection.current = null;
+    },
+    [],
+  );
 }

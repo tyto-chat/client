@@ -13,11 +13,9 @@ import {
   type CommunityPresenceSummary,
   type PresenceHistoryPoint,
 } from "@/api/presence";
-import { subscribeMercure } from "@/api/mercure";
-import { getServerInfo } from "@/api/serverInfo";
 import { getAccessToken, useHasAccessToken } from "@/api/tokenStore";
 import { useAuthContext } from "@/context/AuthContext";
-import { useNotification } from "@/context/NotificationContext";
+import { useMercureSubscription } from "@/hooks/useMercureSubscription";
 import { userPresenceTopic } from "@/api/topics";
 import { queryKeys } from "@/queries/queryKeys";
 import type { ManualPresenceStatus, PresenceMercureEvent, PresenceState } from "@/types/api";
@@ -37,8 +35,6 @@ export function useUserPresence(userId: number | null | undefined): PresenceStat
 export function usePresenceSubscription(userIds: readonly number[]): void {
   const queryClient = useQueryClient();
   const { t } = useTranslation("common");
-  const { notify } = useNotification();
-  const { mercureToken, refreshMercureToken } = useAuthContext();
 
   const idsKey = useMemo(() => {
     const unique = Array.from(new Set(userIds.filter((id) => Number.isInteger(id) && id > 0)));
@@ -75,27 +71,18 @@ export function usePresenceSubscription(userIds: readonly number[]): void {
     loadPresenceRef.current = loadPresence;
   });
 
-  useEffect(() => {
-    if (stableIds.length === 0 || !mercureToken) return;
-    const topics = stableIds.map((id) => userPresenceTopic(id));
-
-    return subscribeMercure(
-      topics,
-      (event) => {
-        const payload = parseMercureEvent<PresenceMercureEvent>(event);
-        if (payload?.type === "presence") {
-          queryClient.setQueryData(queryKeys.userPresence(payload.userId), payload.state);
-        }
-      },
-      mercureToken,
-      {
-        onReconnect: () => loadPresenceRef.current(),
-        onStaleToken: () => void refreshMercureToken(),
-        onSustainedFailure: () => notify(t("presence.subscription_error"), "error"),
-      },
-      getServerInfo()?.mercureUrl,
-    );
-  }, [idsKey, stableIds, mercureToken, queryClient, refreshMercureToken, notify, t]);
+  const topics = useMemo(() => stableIds.map((id) => userPresenceTopic(id)), [stableIds]);
+  useMercureSubscription(
+    topics.length > 0 ? topics : null,
+    (event) => {
+      const payload = parseMercureEvent<PresenceMercureEvent>(event);
+      if (payload?.type === "presence") {
+        queryClient.setQueryData(queryKeys.userPresence(payload.userId), payload.state);
+      }
+    },
+    t("presence.subscription_error"),
+    () => loadPresenceRef.current(),
+  );
 }
 
 export function useCommunityPresenceSummary(communityIdentifier: string | null | undefined) {
