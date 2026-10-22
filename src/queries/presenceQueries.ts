@@ -16,7 +16,8 @@ import {
 import { getAccessToken, useHasAccessToken } from "@/api/tokenStore";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMercureSubscription } from "@/hooks/useMercureSubscription";
-import { userPresenceTopic } from "@/api/topics";
+import { communityPresenceTopic, userPresenceTopic } from "@/api/topics";
+import { useCommunity } from "@/queries/communityQueries";
 import { queryKeys } from "@/queries/queryKeys";
 import type { ManualPresenceStatus, PresenceMercureEvent, PresenceState } from "@/types/api";
 
@@ -32,9 +33,16 @@ export function useUserPresence(userId: number | null | undefined): PresenceStat
   return data ?? "offline";
 }
 
-export function usePresenceSubscription(userIds: readonly number[]): void {
+const MAX_USER_TOPICS = 150;
+
+export function usePresenceSubscription(
+  userIds: readonly number[],
+  communityIdentifier?: string,
+): void {
   const queryClient = useQueryClient();
   const { t } = useTranslation("common");
+  const { data: community } = useCommunity(communityIdentifier);
+  const communityId = communityIdentifier ? community?.id : undefined;
 
   const idsKey = useMemo(() => {
     const unique = Array.from(new Set(userIds.filter((id) => Number.isInteger(id) && id > 0)));
@@ -71,9 +79,13 @@ export function usePresenceSubscription(userIds: readonly number[]): void {
     loadPresenceRef.current = loadPresence;
   });
 
-  const topics = useMemo(() => stableIds.map((id) => userPresenceTopic(id)), [stableIds]);
+  const topics = useMemo(() => {
+    if (communityIdentifier)
+      return communityId != null ? [communityPresenceTopic(communityId)] : [];
+    return stableIds.slice(0, MAX_USER_TOPICS).map((id) => userPresenceTopic(id));
+  }, [communityIdentifier, communityId, stableIds]);
   useMercureSubscription(
-    topics.length > 0 ? topics : null,
+    topics.length > 0 && stableIds.length > 0 ? topics : null,
     (event) => {
       const payload = parseMercureEvent<PresenceMercureEvent>(event);
       if (payload?.type === "presence") {

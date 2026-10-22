@@ -29,6 +29,11 @@ vi.mock("@/api/tokenStore", async (orig) => ({
   ...(await orig<typeof import("@/api/tokenStore")>()),
   getAccessToken: () => "access",
 }));
+const fetchCommunity = vi.hoisted(() => vi.fn());
+vi.mock("@/api/communities", async (orig) => ({
+  ...(await orig<typeof import("@/api/communities")>()),
+  fetchCommunity,
+}));
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
 
 import { usePresenceSubscription } from "@/queries/presenceQueries";
@@ -48,6 +53,25 @@ describe("usePresenceSubscription", () => {
   it("subscribes to one presence topic per unique valid user id, sorted", () => {
     renderHook(() => usePresenceSubscription([8, 3, 3, 0, -1, 1.5]), { wrapper });
     expect(sub.topics).toEqual(["u/3/p", "u/8/p"]);
+  });
+
+  it("uses one community presence topic instead of one topic per user in a community", () => {
+    qc.setQueryData(queryKeys.community("acme"), { id: 5, identifier: "acme" });
+    const ids = Array.from({ length: 500 }, (_, i) => i + 1);
+    renderHook(() => usePresenceSubscription(ids, "acme"), { wrapper });
+    expect(sub.topics).toEqual(["k/5/p"]);
+  });
+
+  it("waits for the community id before subscribing in a community", () => {
+    fetchCommunity.mockReturnValue(new Promise(() => {}));
+    renderHook(() => usePresenceSubscription([3], "unknown"), { wrapper });
+    expect(sub.topics).toBeNull();
+  });
+
+  it("caps per-user topics outside a community", () => {
+    const ids = Array.from({ length: 400 }, (_, i) => i + 1);
+    renderHook(() => usePresenceSubscription(ids), { wrapper });
+    expect((sub.topics as string[]).length).toBe(150);
   });
 
   it("does not subscribe without users", () => {

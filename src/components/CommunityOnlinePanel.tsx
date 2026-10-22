@@ -25,7 +25,7 @@ export function CommunityOnlinePanel({
   const { data: online = [] } = useCommunityOnlineUsers(communityIdentifier);
 
   const onlineUserIds = useMemo(() => online.map((o) => o.userId), [online]);
-  usePresenceSubscription(onlineUserIds);
+  usePresenceSubscription(onlineUserIds, communityIdentifier);
 
   const onlineSet = useMemo(() => new Set(onlineUserIds), [onlineUserIds]);
   const rows = useMemo(
