@@ -240,6 +240,16 @@ describe("useMercureSubscription", () => {
       expect(second.url).toContain(`authorization=${scopedB}`);
     });
 
+    it("reconnects when the new token revokes the topic, so the hub refuses it", () => {
+      const { setToken } = renderWithToken("c/12", scopedA);
+      const first = getLastFakeEventSource()!;
+
+      setToken(scopedB);
+
+      expect(getLastFakeEventSource()).not.toBe(first);
+      expect(getLastFakeEventSource()!.url).toContain(`authorization=${scopedB}`);
+    });
+
     it("retries after an error with the latest token, not the one it connected with", () => {
       vi.useFakeTimers();
       const { setToken } = renderWithToken("u/42/n", scopedA);

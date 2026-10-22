@@ -19,8 +19,10 @@ describe("tokenCovers", () => {
     expect(tokenCovers(t, ["u/7/p/x"])).toBe(false);
   });
 
-  it("does not let template punctuation act as a regex", () => {
+  it("treats a template only as a whole path segment", () => {
     expect(tokenCovers(token(["c.{id}"]), ["cX5"])).toBe(false);
+    expect(tokenCovers(token(["u/{userId}/p"]), ["u//p"])).toBe(false);
+    expect(tokenCovers(token(["u/{userId}/p"]), ["u/7/p"])).toBe(true);
   });
 
   it("returns null when the grants cannot be read", () => {
@@ -44,6 +46,10 @@ describe("needsReconnect", () => {
 
   it("keeps the connection when neither token grants it", () => {
     expect(needsReconnect(scopedA, scopedB, ["c/99"])).toBe(false);
+  });
+
+  it("reconnects when the new token no longer grants a topic the old one did", () => {
+    expect(needsReconnect(scopedA, scopedB, ["c/12"])).toBe(true);
   });
 
   it("reconnects when grants are unreadable", () => {
