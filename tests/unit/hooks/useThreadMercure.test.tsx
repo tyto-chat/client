@@ -74,4 +74,17 @@ describe("useThreadMercure on a shared container thread topic", () => {
     fire(real);
     expect(qc.getQueryData(queryKeys.threadReplies(ROOT_A))).toEqual([real]);
   });
+
+  it("matches the root by uuid when the pushed IRI carries an API version prefix", () => {
+    qc.setQueryData<Message[]>(queryKeys.threadReplies(ROOT_A), []);
+    const real = reply("/api/v1/messages/r5", "/api/v1/messages/aaaa", 5);
+    fire(real);
+    expect(qc.getQueryData(queryKeys.threadReplies(ROOT_A))).toEqual([real]);
+  });
+
+  it("ignores a reply with no parent", () => {
+    qc.setQueryData<Message[]>(queryKeys.threadReplies(ROOT_A), []);
+    fire(reply("/api/messages/r6", null, 5));
+    expect(qc.getQueryData(queryKeys.threadReplies(ROOT_A))).toEqual([]);
+  });
 });
