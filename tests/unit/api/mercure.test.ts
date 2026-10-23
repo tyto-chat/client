@@ -53,6 +53,40 @@ describe("subscribeMercure", () => {
     sub.close();
   });
 
+  it("delivers each event once when the rollover overlap exceeds the dedup window", () => {
+    const token = { value: "tok-a" };
+    const { sub, first, onMessage } = open(token);
+    sub.rollover();
+    const second = getLastFakeEventSource()!;
+    const overlap = Array.from({ length: 501 }, (_, i) => `id-${i}`);
+
+    for (const id of overlap) first.dispatch(id, id);
+    second.triggerOpen();
+    for (const id of overlap) second.dispatch(id, id);
+    second.dispatch("new", "id-new");
+
+    const delivered = onMessage.mock.calls.map(([e]) => (e as MessageEvent).data);
+    expect(delivered).toEqual([...overlap, "new"]);
+    sub.close();
+  });
+
+  it("returns to the normal dedup window once the replay has caught up", () => {
+    const token = { value: "tok-a" };
+    const { sub, first, onMessage } = open(token);
+    sub.rollover();
+    const second = getLastFakeEventSource()!;
+    for (let i = 0; i < 600; i++) first.dispatch(`a${i}`, `a-${i}`);
+    second.triggerOpen();
+    second.dispatch("fresh", "b-0");
+    second.dispatch("again", "a-0");
+
+    expect(onMessage.mock.calls.map(([e]) => (e as MessageEvent).data).slice(-2)).toEqual([
+      "fresh",
+      "again",
+    ]);
+    sub.close();
+  });
+
   it("delivers a duplicated id once during the overlap", () => {
     const token = { value: "tok-a" };
     const { sub, first, onMessage } = open(token);
@@ -222,7 +256,7 @@ describe("subscribeMercure", () => {
     expect(active()).toEqual([third]);
     sub.close();
   });
-  it("resumes from the last delivered id after an error", () => {
+  it("does not resume after an error, so the reconnect refetch is not doubled by a replay", () => {
     vi.useFakeTimers();
     const token = { value: "tok-a" };
     const { sub, first } = open(token);
@@ -233,7 +267,7 @@ describe("subscribeMercure", () => {
     first.triggerError();
     vi.advanceTimersByTime(5000);
 
-    expect(lastEventIdOf(getLastFakeEventSource()!)).toBe("urn:uuid:1");
+    expect(lastEventIdOf(getLastFakeEventSource()!)).toBeNull();
     sub.close();
   });
 
@@ -245,6 +279,31 @@ describe("subscribeMercure", () => {
     sub.rollover();
 
     expect(lastEventIdOf(getLastFakeEventSource()!)).toBe("urn:uuid:7");
+    sub.close();
+  });
+
+  it("does not resume a rollover that starts while main is erroring", () => {
+    vi.useFakeTimers();
+    const token = { value: "tok-a" };
+    const { sub, first } = open(token);
+    first.dispatch("a", "urn:uuid:7");
+    first.triggerError();
+    sub.rollover();
+
+    expect(lastEventIdOf(getLastFakeEventSource()!)).toBeNull();
+    sub.close();
+  });
+
+  it("does not resume a rollover after the device slept", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2000-01-01T00:00:00Z"));
+    const token = { value: "tok-a" };
+    const { sub, first } = open(token);
+    first.dispatch("a", "urn:uuid:7");
+    vi.setSystemTime(new Date("2000-01-01T00:10:00Z"));
+    sub.rollover();
+
+    expect(lastEventIdOf(getLastFakeEventSource()!)).toBeNull();
     sub.close();
   });
 

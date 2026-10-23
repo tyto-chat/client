@@ -125,7 +125,7 @@ export function subscribeMercure(
   if (!hubUrl) return { close: () => {}, rollover: () => {} };
 
   const currentToken = typeof mercureToken === "function" ? mercureToken : () => mercureToken;
-  const buildUrl = () => {
+  const buildUrl = (resume: boolean) => {
     const base = new URL(hubUrl);
     for (const topic of topics) {
       base.searchParams.append("topic", topic);
@@ -134,7 +134,7 @@ export function subscribeMercure(
     if (token) {
       base.searchParams.set("authorization", token);
     }
-    if (lastDeliveredId) {
+    if (resume && lastDeliveredId) {
       base.searchParams.set("lastEventID", lastDeliveredId);
     }
     return base.toString();
@@ -142,6 +142,7 @@ export function subscribeMercure(
 
   let main = newSlot();
   let pending: Slot | null = null;
+  let replaying: Slot | null = null;
   let ticket: RolloverTicket | null = null;
   let lastDeliveredId: string | null = null;
   let closed = false;
@@ -150,16 +151,23 @@ export function subscribeMercure(
   let notifiedFailure = false;
   const seenIds = new Set<string>();
 
-  const deliver = (event: MessageEvent) => {
+  const trimSeen = () => {
+    if (pending || replaying) return;
+    while (seenIds.size > SEEN_ID_LIMIT) {
+      const oldest = seenIds.values().next().value;
+      if (oldest === undefined) return;
+      seenIds.delete(oldest);
+    }
+  };
+
+  const deliver = (event: MessageEvent, slot: Slot) => {
     const id = event.lastEventId;
     if (id) {
       if (seenIds.has(id)) return;
       seenIds.add(id);
       lastDeliveredId = id;
-      if (seenIds.size > SEEN_ID_LIMIT) {
-        const oldest = seenIds.values().next().value;
-        if (oldest !== undefined) seenIds.delete(oldest);
-      }
+      if (slot === replaying) replaying = null;
+      trimSeen();
     }
     onMessage(event);
   };
@@ -171,6 +179,7 @@ export function subscribeMercure(
     pending = null;
     if (ticket) finishRollover(ticket);
     ticket = null;
+    trimSeen();
   };
 
   const promote = (slot: Slot) => {
@@ -180,6 +189,7 @@ export function subscribeMercure(
     main = slot;
     main.errors = 0;
     pending = null;
+    replaying = slot;
     notifiedFailure = false;
     everOpened = true;
     activeSince = Date.now();
@@ -237,7 +247,8 @@ export function subscribeMercure(
   const connect = (slot: Slot) => {
     slot.timer = null;
     if (!isLive(slot)) return;
-    const es = new EventSource(buildUrl());
+    const recovering = !everOpened || main.errors > 0 || sleptSince(activeSince);
+    const es = new EventSource(buildUrl(slot === pending && !recovering));
     slot.source = es;
     if (slot === pending) {
       slot.deadline = setTimeout(() => {
@@ -252,7 +263,7 @@ export function subscribeMercure(
       else markMainOpen();
     };
     es.onmessage = (event) => {
-      if (isLive(slot) && slot.source === es) deliver(event);
+      if (isLive(slot) && slot.source === es) deliver(event, slot);
     };
     es.onerror = () => fail(slot, es);
   };

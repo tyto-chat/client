@@ -351,6 +351,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearRefreshTimer();
       clearMercureTimer();
       setSessionExpired(false);
+      mercureRequestRef.current += 1;
       setMercureToken(null);
       mercureDueAtRef.current = null;
       const switched = getAccessToken();
@@ -414,6 +415,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     clearRefreshTimer();
     clearMercureTimer();
+    mercureRequestRef.current += 1;
     setMercureToken(null);
     mercureDueAtRef.current = null;
     setToken(null);
@@ -440,6 +442,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     function handleSessionExpired() {
       clearRefreshTimer();
       clearMercureTimer();
+      mercureRequestRef.current += 1;
       setMercureToken(null);
       mercureDueAtRef.current = null;
       setToken(null);

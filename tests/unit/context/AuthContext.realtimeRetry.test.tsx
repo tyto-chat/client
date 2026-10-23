@@ -123,6 +123,34 @@ describe("AuthContext realtime re-mint resilience", () => {
     await waitFor(() => expect(result.current.mercureToken).toBe("rt-2"));
   });
 
+  it("ignores a token reply that lands after the session expired", async () => {
+    const { result } = await mountAuthed([{ token: "rt-1" }]);
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get(`${BASE}/api/v1/realtime/token`, async () => {
+        await gate;
+        return HttpResponse.json({
+          token: "rt-late",
+          expiresAt: Math.floor(Date.now() / 1000) + 1800,
+          expiresIn: 1800,
+        });
+      }),
+    );
+    act(() => {
+      void result.current.refreshMercureToken();
+    });
+    act(() => {
+      window.dispatchEvent(new Event("session:expired"));
+    });
+    release();
+    await advance(1000);
+
+    expect(result.current.mercureToken).toBeNull();
+  });
+
   it("drops the token on a definitive 403 and does not retry", async () => {
     const { result, hits } = await mountAuthed([{ token: "rt-1" }, { status: 403 }]);
 
