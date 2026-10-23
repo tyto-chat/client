@@ -177,6 +177,20 @@ describe("subscribeMercure", () => {
     sub.close();
   });
 
+  it("calls onReconnect for a rollover after the sleep detector saw a gap", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2000-01-01T00:00:00Z"));
+    const token = { value: "tok-a" };
+    const { sub, onReconnect } = open(token);
+    vi.setSystemTime(new Date("2000-01-01T00:10:00Z"));
+    vi.advanceTimersByTime(30_000);
+    sub.rollover();
+    getLastFakeEventSource()!.triggerOpen();
+
+    expect(onReconnect).toHaveBeenCalledOnce();
+    sub.close();
+  });
+
   it("calls onReconnect after an error and a reopen", () => {
     vi.useFakeTimers();
     const token = { value: "tok-a" };
@@ -422,7 +436,7 @@ describe("subscribeMercure", () => {
   });
 
   describe("recovery detection after a long pause", () => {
-    it("reports a rollover as a recovery when the stream was active past the normal cadence", () => {
+    it("reports a rollover as a recovery when the clock jumped before the sleep detector ticked", () => {
       vi.useFakeTimers();
       const token = { value: "tok-a" };
       const { sub, onReconnect } = open(token);
@@ -435,13 +449,13 @@ describe("subscribeMercure", () => {
       sub.close();
     });
 
-    it("does not report a rollover within the normal cadence", () => {
+    it("does not report rollovers while timers keep running, however long the stream lived", () => {
       vi.useFakeTimers();
       const token = { value: "tok-a" };
       const { sub, onReconnect } = open(token);
 
       for (let i = 0; i < 3; i++) {
-        vi.setSystemTime(Date.now() + 5 * 60_000);
+        vi.advanceTimersByTime(28 * 60_000);
         sub.rollover();
         getLastFakeEventSource()!.triggerOpen();
       }

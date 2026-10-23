@@ -12,7 +12,8 @@ export interface MercureSubscription {
 const SEEN_ID_LIMIT = 500;
 const PENDING_MAX_ERRORS = 3;
 const PENDING_OPEN_TIMEOUT_MS = 15_000;
-const RECOVERY_GAP_MS = 6.5 * 60_000;
+const SLEEP_TICK_MS = 30_000;
+const SLEEP_GAP_MS = 2 * 60_000;
 
 interface RolloverTicket {
   lane: string;
@@ -25,6 +26,35 @@ interface RolloverLane {
 }
 
 const rolloverLanes = new Map<string, RolloverLane>();
+
+let lastSleepAt = 0;
+let lastTick = 0;
+let sleepWatchers = 0;
+let sleepTimer: ReturnType<typeof setInterval> | null = null;
+
+function sleptSince(since: number): boolean {
+  return lastSleepAt > since || Date.now() - lastTick > SLEEP_GAP_MS;
+}
+
+function watchSleep(): () => void {
+  if (sleepWatchers++ === 0) {
+    lastTick = Date.now();
+    sleepTimer = setInterval(() => {
+      const now = Date.now();
+      if (now - lastTick > SLEEP_GAP_MS) lastSleepAt = now;
+      lastTick = now;
+    }, SLEEP_TICK_MS);
+  }
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    if (--sleepWatchers === 0 && sleepTimer) {
+      clearInterval(sleepTimer);
+      sleepTimer = null;
+    }
+  };
+}
 
 function laneFor(key: string): RolloverLane {
   let lane = rolloverLanes.get(key);
@@ -144,7 +174,7 @@ export function subscribeMercure(
   };
 
   const promote = (slot: Slot) => {
-    const recovered = everOpened && (main.errors > 0 || Date.now() - activeSince > RECOVERY_GAP_MS);
+    const recovered = everOpened && (main.errors > 0 || sleptSince(activeSince));
     clearDeadline(slot);
     disposeSlot(main);
     main = slot;
@@ -227,11 +257,13 @@ export function subscribeMercure(
     es.onerror = () => fail(slot, es);
   };
 
+  const releaseSleepWatch = watchSleep();
   connect(main);
 
   return {
     close: () => {
       closed = true;
+      releaseSleepWatch();
       disposeSlot(main);
       endRollover();
     },

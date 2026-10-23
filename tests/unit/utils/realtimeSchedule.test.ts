@@ -18,15 +18,15 @@ describe("realtimeRefreshDelay", () => {
     expect(realtimeRefreshDelay({ expiresIn: 60 }, now)).toBe(30_000);
   });
 
-  it("falls back to the capped expiresAt schedule for servers without expiresIn", () => {
+  it("keeps the released expiresAt schedule for servers without expiresIn", () => {
+    expect(realtimeRefreshDelay({ expiresAt: at(3600) }, now)).toBe(3_300_000);
     expect(realtimeRefreshDelay({ expiresAt: at(600) }, now)).toBe(300_000);
-    expect(realtimeRefreshDelay({ expiresAt: at(3600) }, now)).toBe(300_000);
     expect(realtimeRefreshDelay({ expiresAt: at(60) }, now)).toBe(30_000);
   });
 
-  it("falls back to five minutes without any expiry", () => {
-    expect(realtimeRefreshDelay(null, now)).toBe(300_000);
-    expect(realtimeRefreshDelay({ expiresAt: null }, now)).toBe(300_000);
+  it("falls back to 55 minutes without any expiry", () => {
+    expect(realtimeRefreshDelay(null, now)).toBe(3_300_000);
+    expect(realtimeRefreshDelay({ expiresAt: null }, now)).toBe(3_300_000);
   });
 });
 
