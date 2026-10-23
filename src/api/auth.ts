@@ -148,8 +148,27 @@ export class RefreshRateLimitedError extends Error {
   }
 }
 
+export class RefreshUnavailableError extends Error {
+  constructor() {
+    super("refresh_unavailable");
+    this.name = "RefreshUnavailableError";
+  }
+}
+
 export function isRefreshTransient(error: unknown): boolean {
-  return error instanceof RefreshRateLimitedError || error instanceof RequestDeadlineError;
+  return (
+    error instanceof RefreshRateLimitedError ||
+    error instanceof RequestDeadlineError ||
+    error instanceof RefreshUnavailableError
+  );
+}
+
+function isServerUnavailable(error: unknown): boolean {
+  return (
+    error instanceof TypeError ||
+    (error instanceof ApiError && error.status >= 500) ||
+    (error instanceof LoginRequestError && error.kind === "unreachable")
+  );
 }
 
 let activeRefresh: Promise<string> | null = null;
@@ -170,11 +189,20 @@ function withDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
 }
 
 async function refreshViaCookie(): Promise<{ ok: true; newToken: string } | { ok: false }> {
-  const res = await fetchWithDeadline(
-    getBaseUrl() + "/token/refresh",
-    { method: "POST", credentials: "include" },
-    requestTimeoutMs(),
-  );
+  let res: Response;
+  try {
+    res = await fetchWithDeadline(
+      getBaseUrl() + "/token/refresh",
+      { method: "POST", credentials: "include" },
+      requestTimeoutMs(),
+    );
+  } catch (err) {
+    if (err instanceof TypeError) throw new RefreshUnavailableError();
+    throw err;
+  }
+  if (res.status >= 500) {
+    throw new RefreshUnavailableError();
+  }
   // A rate-limited refresh says "ask again shortly", not "your session is
   // gone" — callers must keep the session and retry rather than sign out.
   if (res.status === 429) {
@@ -204,12 +232,8 @@ export function refreshAccessToken(): Promise<string> {
             if (err instanceof ApiError && err.status === 429) {
               throw new RefreshRateLimitedError();
             }
-            if (
-              err instanceof RequestDeadlineError ||
-              (err instanceof LoginRequestError && err.kind === "unreachable")
-            ) {
-              throw new RequestDeadlineError();
-            }
+            if (err instanceof RequestDeadlineError) throw err;
+            if (isServerUnavailable(err)) throw new RefreshUnavailableError();
             return { ok: false } as const;
           })
       : refreshViaCookie()

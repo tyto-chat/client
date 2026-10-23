@@ -141,6 +141,35 @@ describe("refreshAccessToken deadline", () => {
   });
 });
 
+describe("refresh outages are transient", () => {
+  it.each([
+    ["a 503 from the cookie refresh", () => new HttpResponse(null, { status: 503 })],
+    ["a network error on the cookie refresh", () => HttpResponse.error()],
+  ])("%s keeps the session", async (_label, reply) => {
+    setAccessToken("still-valid");
+    localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
+    server.use(http.post(`${BASE}/token/refresh`, reply));
+
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
+    expect(getAccessToken()).toBe("still-valid");
+    expect(localStorage.getItem(STORAGE_KEYS.HAD_SESSION)).toBe("1");
+  });
+
+  it.each([
+    ["a 503", new ApiError(503, null)],
+    ["a network error", new TypeError("Failed to fetch")],
+  ])("%s from the desktop executor keeps the session", async (_label, error) => {
+    setAccessToken("still-valid");
+    localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
+    setRefreshExecutor(async () => {
+      throw error;
+    });
+
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
+    expect(localStorage.getItem(STORAGE_KEYS.HAD_SESSION)).toBe("1");
+  });
+});
+
 describe("loginAt deadline", () => {
   it("reports a stalled login as unreachable instead of hanging", async () => {
     __setRequestTimeoutsForTests({ request: 30 });

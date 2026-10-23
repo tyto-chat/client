@@ -152,4 +152,53 @@ describe("AuthContext silent refresh retries", () => {
     expect(result.current.token).toBe(newer);
     expect(getAccessToken()).toBe(newer);
   });
+
+  it("ends the session when a retried refresh then fails for good", async () => {
+    const replies = [429, 401];
+    server.use(
+      http.post(
+        `${BASE}/token/refresh`,
+        () => new HttpResponse(null, { status: replies.shift() ?? 401 }),
+      ),
+    );
+    setAccessToken(tokenExpiringIn(120, "old"));
+
+    const { result } = renderHook(() => useAuthContext(), { wrapper });
+    await waitFor(() => expect(result.current.user).not.toBeNull());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61_000);
+    });
+
+    await waitFor(() => expect(result.current.token).toBeNull());
+    expect(result.current.sessionExpired).toBe(true);
+  });
+
+  it("drops a scheduled refresh that finishes after the user logged in", async () => {
+    const stale = tokenExpiringIn(3600, "stale");
+    const newer = tokenExpiringIn(3600, "newer");
+    let release: () => void = () => {};
+    let calls = 0;
+    server.use(
+      http.post(`${BASE}/token/refresh`, async () => {
+        calls += 1;
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        return HttpResponse.json({ token: stale });
+      }),
+    );
+    setAccessToken(tokenExpiringIn(120, "old"));
+
+    const { result } = renderHook(() => useAuthContext(), { wrapper });
+    await waitFor(() => expect(calls).toBe(1));
+
+    act(() => result.current.login(newer));
+    await act(async () => {
+      release();
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    expect(result.current.token).toBe(newer);
+    expect(getAccessToken()).toBe(newer);
+  });
 });

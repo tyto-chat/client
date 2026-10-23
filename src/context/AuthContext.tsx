@@ -269,7 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           } else if (transientRefreshRef.current) {
             // Try again shortly instead of ending the session.
-            refreshTimerRef.current = setTimeout(() => scheduleRefreshRef.current(tok), 60_000);
+            refreshTimerRef.current = setTimeout(() => refresh(true), 60_000);
           } else if (endSessionOnFailure) {
             setToken(null);
             setUser(null);
