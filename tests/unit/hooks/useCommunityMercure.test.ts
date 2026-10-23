@@ -4,9 +4,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createElement, type ReactNode } from "react";
 
 let captured: ((e: MessageEvent) => void) | null = null;
+let capturedReconnect: (() => void) | undefined;
 vi.mock("@/hooks/useMercureSubscription", () => ({
-  useMercureSubscription: (_topic: string | null, onMessage: (e: MessageEvent) => void) => {
+  useMercureSubscription: (
+    _topic: string | null,
+    onMessage: (e: MessageEvent) => void,
+    _error?: string,
+    onReconnect?: () => void,
+  ) => {
     captured = onMessage;
+    capturedReconnect = onReconnect;
   },
 }));
 const refreshMercureToken = vi.fn();
@@ -34,6 +41,13 @@ describe("useCommunityMercure", () => {
     qc = new QueryClient();
     spy = vi.spyOn(qc, "invalidateQueries").mockResolvedValue(undefined as never);
     renderHook(() => useCommunityMercure("my-com", 5), { wrapper });
+  });
+
+  it("refreshes the community structure after a reconnect", () => {
+    capturedReconnect?.();
+    expect(spy).toHaveBeenCalledWith({ queryKey: queryKeys.community("my-com") });
+    expect(spy).toHaveBeenCalledWith({ queryKey: queryKeys.myMemberships() });
+    expect(refreshMercureToken).not.toHaveBeenCalled();
   });
 
   it("invalidates community-scoped keys on community.structure", () => {

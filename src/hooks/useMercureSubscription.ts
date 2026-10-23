@@ -7,6 +7,7 @@ import { getServerInfo } from "@/api/serverInfo";
 interface Connection {
   key: string;
   token: string;
+  suspended: boolean;
   subscription: MercureSubscription;
 }
 
@@ -16,7 +17,8 @@ export function useMercureSubscription(
   errorMessage: string,
   onReconnect?: () => void,
 ): void {
-  const { mercureToken, mercureTokenRevokesGrants, refreshMercureToken } = useAuthContext();
+  const { mercureToken, mercureTokenRevokesGrants, mercureSuspended, refreshMercureToken } =
+    useAuthContext();
   const { notify } = useNotification();
 
   const latest = useRef({
@@ -50,17 +52,30 @@ export function useMercureSubscription(
       return;
     }
     if (current && current.key === key) {
-      if (current.token !== mercureToken) {
+      if (mercureSuspended) {
+        if (!current.suspended) current.subscription.suspend();
+        current.suspended = true;
+        return;
+      }
+      if (current.token !== mercureToken || current.suspended) {
+        const wasSuspended = current.suspended;
         current.token = mercureToken;
-        if (mercureTokenRevokesGrants) current.subscription.reconnect();
+        current.suspended = false;
+        if (mercureTokenRevokesGrants || wasSuspended) current.subscription.reconnect();
         else current.subscription.rollover();
       }
+      return;
+    }
+    if (mercureSuspended) {
+      current?.subscription.close();
+      connection.current = null;
       return;
     }
     current?.subscription.close();
     connection.current = {
       key,
       token: mercureToken,
+      suspended: false,
       subscription: subscribeMercure(
         key.split("\n"),
         (e) => latest.current.onMessage(e),
@@ -73,7 +88,7 @@ export function useMercureSubscription(
         getServerInfo()?.mercureUrl,
       ),
     };
-  }, [key, mercureToken, mercureTokenRevokesGrants]);
+  }, [key, mercureToken, mercureTokenRevokesGrants, mercureSuspended]);
 
   useEffect(
     () => () => {

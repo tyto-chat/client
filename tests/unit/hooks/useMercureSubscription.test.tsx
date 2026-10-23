@@ -14,7 +14,7 @@ type NotificationContextValue = ReturnType<typeof useNotification>;
 
 const MockAuthContext = createContext<
   Pick<AuthState, "mercureToken" | "refreshMercureToken"> &
-    Partial<Pick<AuthState, "mercureTokenRevokesGrants">>
+    Partial<Pick<AuthState, "mercureTokenRevokesGrants" | "mercureSuspended">>
 >({
   mercureToken: null,
   mercureTokenRevokesGrants: false,
@@ -41,7 +41,7 @@ vi.mock("@/api/serverInfo", () => ({
 }));
 
 type StubAuthState = Pick<AuthState, "mercureToken" | "refreshMercureToken"> &
-  Partial<Pick<AuthState, "mercureTokenRevokesGrants">>;
+  Partial<Pick<AuthState, "mercureTokenRevokesGrants" | "mercureSuspended">>;
 
 function makeWrapper(auth: StubAuthState, notify: NotificationContextValue["notify"]) {
   return function Wrapper({ children }: { children: ReactNode }) {
@@ -208,6 +208,11 @@ describe("useMercureSubscription", () => {
         setToken: (next: string, revokesGrants = false) => {
           auth.mercureToken = next;
           auth.mercureTokenRevokesGrants = revokesGrants;
+          auth.mercureSuspended = false;
+          view.rerender();
+        },
+        suspend: () => {
+          auth.mercureSuspended = true;
           view.rerender();
         },
         setTopic: (next: string | string[]) => {
@@ -285,6 +290,27 @@ describe("useMercureSubscription", () => {
       expect(new URL(second.url).searchParams.get("lastEventID")).toBe("urn:uuid:1");
       act(() => second.triggerOpen());
       expect(onReconnect).not.toHaveBeenCalled();
+    });
+
+    it("closes streams while a revocation is pending and resumes them with the new token", () => {
+      const { setToken, suspend } = renderWithToken("c/30", "tok-a");
+      const first = getLastFakeEventSource()!;
+      act(() => first.triggerOpen());
+      act(() => first.dispatch("a", "urn:uuid:1"));
+      const count = getFakeEventSourceInstances().length;
+
+      suspend();
+
+      expect(first.closed).toBe(true);
+      expect(active()).toEqual([]);
+      expect(getFakeEventSourceInstances()).toHaveLength(count);
+
+      setToken("tok-b", true);
+
+      const next = getLastFakeEventSource()!;
+      expect(active()).toEqual([next]);
+      expect(new URL(next.url).searchParams.get("authorization")).toBe("tok-b");
+      expect(new URL(next.url).searchParams.get("lastEventID")).toBe("urn:uuid:1");
     });
 
     it("does not report a rollover as a reconnect", () => {

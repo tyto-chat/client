@@ -42,6 +42,7 @@ interface AuthState {
   sessionExpired: boolean;
   mercureToken: string | null;
   mercureTokenRevokesGrants: boolean;
+  mercureSuspended: boolean;
   refreshMercureToken: (options?: { revoke?: boolean }) => Promise<void>;
   setRealtimeScope: (scope: RealtimeScope) => void;
 }
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [mercureToken, setMercureToken] = useState<string | null>(null);
   const [mercureTokenRevokesGrants, setMercureTokenRevokesGrants] = useState(false);
+  const [mercureSuspended, setMercureSuspended] = useState(false);
   const revokeRequestedAtRef = useRef<number | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mercureRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -122,8 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (request !== mercureRequestRef.current) return;
         mercureFailuresRef.current = 0;
         const revokedAt = revokeRequestedAtRef.current;
+        if (revokedAt !== null && request <= revokedAt) return;
         setMercureTokenRevokesGrants(revokedAt !== null);
-        if (revokedAt !== null && request > revokedAt) revokeRequestedAtRef.current = null;
+        revokeRequestedAtRef.current = null;
+        setMercureSuspended(false);
         setMercureToken(mToken);
         clearMercureTimer();
         if (!mToken) {
@@ -145,6 +149,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           mercureFailuresRef.current = 0;
           mercureDueAtRef.current = null;
+          revokeRequestedAtRef.current = null;
+          setMercureSuspended(false);
           setMercureToken(null);
           return;
         }
@@ -203,7 +209,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const mercureRefreshAgainRef = useRef(false);
 
   const refreshMercureToken = useCallback((options?: { revoke?: boolean }): Promise<void> => {
-    if (options?.revoke) revokeRequestedAtRef.current = mercureRequestRef.current;
+    if (options?.revoke) {
+      revokeRequestedAtRef.current = mercureRequestRef.current;
+      setMercureSuspended(true);
+    }
     if (mercureRefreshInFlightRef.current) {
       mercureRefreshAgainRef.current = true;
       return mercureRefreshInFlightRef.current;
@@ -367,6 +376,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearMercureTimer();
       setSessionExpired(false);
       mercureRequestRef.current += 1;
+      revokeRequestedAtRef.current = null;
+      setMercureSuspended(false);
       setMercureToken(null);
       mercureDueAtRef.current = null;
       const switched = getAccessToken();
@@ -431,6 +442,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearRefreshTimer();
     clearMercureTimer();
     mercureRequestRef.current += 1;
+    revokeRequestedAtRef.current = null;
+    setMercureSuspended(false);
     setMercureToken(null);
     mercureDueAtRef.current = null;
     setToken(null);
@@ -458,6 +471,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearRefreshTimer();
       clearMercureTimer();
       mercureRequestRef.current += 1;
+      revokeRequestedAtRef.current = null;
+      setMercureSuspended(false);
       setMercureToken(null);
       mercureDueAtRef.current = null;
       setToken(null);
@@ -492,6 +507,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionExpired,
         mercureToken,
         mercureTokenRevokesGrants,
+        mercureSuspended,
         refreshMercureToken,
         setRealtimeScope,
       }}

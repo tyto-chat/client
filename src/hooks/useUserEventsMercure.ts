@@ -116,5 +116,17 @@ export function useUserEventsMercure() {
       }
     },
     t("structure_realtime_error"),
+    () => {
+      void refreshMercureToken();
+      void queryClient.invalidateQueries({ queryKey: queryKeys.communities() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.pinnedCommunities() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.myMemberships() });
+      if (params.communityId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.community(params.communityId) });
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.communityMembership(params.communityId),
+        });
+      }
+    },
   );
 }

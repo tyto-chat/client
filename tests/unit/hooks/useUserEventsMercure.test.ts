@@ -4,14 +4,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createElement, type ReactNode } from "react";
 
 let captured: ((e: MessageEvent) => void) | null = null;
+let capturedReconnect: (() => void) | undefined;
 const navigate = vi.fn();
 const notify = vi.fn();
 const refreshMercureToken = vi.fn().mockResolvedValue(undefined);
 let params: Record<string, string | undefined> = {};
 
 vi.mock("@/hooks/useMercureSubscription", () => ({
-  useMercureSubscription: (_t: string | null, onMessage: (e: MessageEvent) => void) => {
+  useMercureSubscription: (
+    _t: string | null,
+    onMessage: (e: MessageEvent) => void,
+    _error?: string,
+    onReconnect?: () => void,
+  ) => {
     captured = onMessage;
+    capturedReconnect = onReconnect;
   },
 }));
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
@@ -46,6 +53,16 @@ describe("useUserEventsMercure", () => {
     qc = new QueryClient();
     inval = vi.spyOn(qc, "invalidateQueries").mockResolvedValue(undefined as never);
     renderHook(() => useUserEventsMercure(), { wrapper });
+  });
+
+  it("reconciles memberships, the current community and grants after a reconnect", () => {
+    params = { communityId: "c1" };
+    renderHook(() => useUserEventsMercure(), { wrapper });
+    capturedReconnect?.();
+    expect(inval).toHaveBeenCalledWith({ queryKey: queryKeys.myMemberships() });
+    expect(inval).toHaveBeenCalledWith({ queryKey: queryKeys.communities() });
+    expect(inval).toHaveBeenCalledWith({ queryKey: queryKeys.community("c1") });
+    expect(refreshMercureToken).toHaveBeenCalledOnce();
   });
 
   it.each([

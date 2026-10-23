@@ -8,6 +8,7 @@ export interface MercureSubscription {
   close(): void;
   rollover(): void;
   reconnect(): void;
+  suspend(): void;
 }
 
 const SEEN_ID_LIMIT = 500;
@@ -15,6 +16,7 @@ const PENDING_MAX_ERRORS = 3;
 const PENDING_OPEN_TIMEOUT_MS = 15_000;
 const SLEEP_TICK_MS = 30_000;
 const SLEEP_GAP_MS = 2 * 60_000;
+const SUSPEND_RESUME_LIMIT_MS = 60_000;
 
 interface RolloverTicket {
   lane: string;
@@ -123,7 +125,8 @@ export function subscribeMercure(
   handlers: MercureHandlers = {},
   hubUrl?: string,
 ): MercureSubscription {
-  if (!hubUrl) return { close: () => {}, rollover: () => {}, reconnect: () => {} };
+  if (!hubUrl)
+    return { close: () => {}, rollover: () => {}, reconnect: () => {}, suspend: () => {} };
 
   const currentToken = typeof mercureToken === "function" ? mercureToken : () => mercureToken;
   const buildUrl = (resume: boolean) => {
@@ -146,6 +149,8 @@ export function subscribeMercure(
   let replaying: Slot | null = null;
   let resumeMain = false;
   let refetchOnOpen = false;
+  let suspendNeedsRecovery = false;
+  let suspendedAt: number | null = null;
   let ticket: RolloverTicket | null = null;
   let lastDeliveredId: string | null = null;
   let closed = false;
@@ -302,10 +307,26 @@ export function subscribeMercure(
       disposeSlot(main);
       endRollover();
     },
+    suspend: () => {
+      if (closed) return;
+      suspendNeedsRecovery = suspendNeedsRecovery || main.errors > 0;
+      suspendedAt ??= Date.now();
+      endRollover();
+      disposeSlot(main);
+      main = newSlot();
+      replaying = null;
+    },
     reconnect: () => {
       if (closed) return;
       endRollover();
-      refetchOnOpen = main.errors > 0 || sleptSince(activeSince) || !lastDeliveredId;
+      refetchOnOpen =
+        main.errors > 0 ||
+        suspendNeedsRecovery ||
+        (suspendedAt !== null && Date.now() - suspendedAt > SUSPEND_RESUME_LIMIT_MS) ||
+        sleptSince(activeSince) ||
+        !lastDeliveredId;
+      suspendNeedsRecovery = false;
+      suspendedAt = null;
       disposeSlot(main);
       main = newSlot();
       replaying = null;

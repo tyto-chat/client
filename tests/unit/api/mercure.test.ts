@@ -465,6 +465,59 @@ describe("subscribeMercure", () => {
     sub.close();
   });
 
+  it("suspend() closes without reconnecting, and reconnect() later resumes from the last event", () => {
+    vi.useFakeTimers();
+    const token = { value: "tok-a" };
+    const { sub, first } = open(token);
+    first.dispatch("a", "urn:uuid:1");
+    const count = getFakeEventSourceInstances().length;
+
+    sub.suspend();
+    vi.advanceTimersByTime(60000);
+
+    expect(first.closed).toBe(true);
+    expect(getFakeEventSourceInstances()).toHaveLength(count);
+    expect(active()).toEqual([]);
+    token.value = "tok-b";
+    sub.reconnect();
+    expect(lastEventIdOf(getLastFakeEventSource()!)).toBe("urn:uuid:1");
+    sub.close();
+  });
+
+  it("refetches after a suspension when the stream had already failed", () => {
+    vi.useFakeTimers();
+    const token = { value: "tok-a" };
+    const { sub, first, onReconnect } = open(token);
+    first.dispatch("a", "urn:uuid:1");
+    first.triggerError();
+
+    sub.suspend();
+    sub.reconnect();
+
+    const next = getLastFakeEventSource()!;
+    expect(lastEventIdOf(next)).toBeNull();
+    next.triggerOpen();
+    expect(onReconnect).toHaveBeenCalledOnce();
+    sub.close();
+  });
+
+  it("refetches after a suspension longer than a minute", () => {
+    vi.useFakeTimers();
+    const token = { value: "tok-a" };
+    const { sub, first, onReconnect } = open(token);
+    first.dispatch("a", "urn:uuid:1");
+
+    sub.suspend();
+    vi.advanceTimersByTime(61_000);
+    sub.reconnect();
+
+    const next = getLastFakeEventSource()!;
+    expect(lastEventIdOf(next)).toBeNull();
+    next.triggerOpen();
+    expect(onReconnect).toHaveBeenCalledOnce();
+    sub.close();
+  });
+
   it("reconnect() cancels a rollover in progress", () => {
     const token = { value: "tok-a" };
     const { sub, first } = open(token);

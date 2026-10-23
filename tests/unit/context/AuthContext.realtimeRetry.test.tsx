@@ -199,6 +199,32 @@ describe("AuthContext realtime re-mint resilience", () => {
     expect(result.current.mercureTokenRevokesGrants).toBe(false);
   });
 
+  it("suspends realtime on a revocation until a later mint succeeds, even through a token outage", async () => {
+    const { result, hits } = await mountAuthed([
+      { token: "rt-1" },
+      { status: 502 },
+      { status: 502 },
+      { token: "rt-2" },
+    ]);
+
+    act(() => {
+      void result.current.refreshMercureToken({ revoke: true });
+    });
+    expect(result.current.mercureSuspended).toBe(true);
+    await waitFor(() => expect(hits.length).toBe(2));
+    expect(result.current.mercureSuspended).toBe(true);
+    expect(result.current.mercureToken).toBe("rt-1");
+
+    await advance(5_000);
+    await waitFor(() => expect(hits.length).toBe(3));
+    expect(result.current.mercureSuspended).toBe(true);
+
+    await advance(15_000);
+    await waitFor(() => expect(result.current.mercureToken).toBe("rt-2"));
+    expect(result.current.mercureSuspended).toBe(false);
+    expect(result.current.mercureTokenRevokesGrants).toBe(true);
+  });
+
   it("drops the token on a definitive 403 and does not retry", async () => {
     const { result, hits } = await mountAuthed([{ token: "rt-1" }, { status: 403 }]);
 
