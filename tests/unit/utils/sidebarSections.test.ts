@@ -153,4 +153,24 @@ describe("buildSidebarSections", () => {
     expect(bySectionId(4).isEmpty).toBe(true);
     expect(bySectionId(1).channels).toEqual([]);
   });
+
+  it("lists channels without a section in an unsectioned group before the real sections", () => {
+    const sections = [section(1, "Text")];
+    const loose: Channel = { ...channel(20, "loose", 1), section: null, position: 1 };
+    const looser: Channel = { ...channel(21, "first", 1), section: null, position: 0 };
+    const result = buildSidebarSections({
+      sections,
+      channels: [channel(10, "alpha", 1), loose, looser],
+      communityId: "c1",
+      pinStateByChannelId: new Map(),
+      collapseMap: {},
+      unreadIdentifiers: new Set(),
+      labels,
+    });
+    expect(result.map((s) => s.kind)).toEqual(["unsectioned", "real"]);
+    expect(result[0]!.channels.map((c) => c.id)).toEqual([21, 20]);
+    expect(result[0]!.collapsed).toBe(false);
+    expect(result[1]!.channels.map((c) => c.id)).toEqual([10]);
+    expect(result[1]!.isEmpty).toBe(false);
+  });
 });

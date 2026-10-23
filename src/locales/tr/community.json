@@ -40,6 +40,7 @@
   "confirm_delete": "Silmeyi onayla",
   "cancel_delete": "Silmeyi iptal et",
   "section": "Bölüm",
+  "no_section": "Bölüm yok",
   "edit_section": "Bölümü düzenle",
   "delete_section": "Bölümü sil",
   "add_channel": "Kanal ekle",

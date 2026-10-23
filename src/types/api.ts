@@ -52,7 +52,7 @@ export interface Channel extends HydraResource {
   identifier: string;
   position: number;
   description?: string;
-  section: ChannelSection;
+  section: ChannelSection | null;
   lastMessageAt?: string | null;
   isPrivate?: boolean | null;
   isReadonly?: boolean | null;

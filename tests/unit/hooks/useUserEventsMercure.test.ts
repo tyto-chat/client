@@ -4,13 +4,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createElement, type ReactNode } from "react";
 
 let captured: ((e: MessageEvent) => void) | null = null;
+let capturedReconnect: (() => void) | undefined;
 const navigate = vi.fn();
 const notify = vi.fn();
+const refreshMercureToken = vi.fn().mockResolvedValue(undefined);
 let params: Record<string, string | undefined> = {};
 
 vi.mock("@/hooks/useMercureSubscription", () => ({
-  useMercureSubscription: (_t: string | null, onMessage: (e: MessageEvent) => void) => {
+  useMercureSubscription: (
+    _t: string | null,
+    onMessage: (e: MessageEvent) => void,
+    _error?: string,
+    onReconnect?: () => void,
+  ) => {
     captured = onMessage;
+    capturedReconnect = onReconnect;
   },
 }));
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
@@ -18,7 +26,9 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigate,
   useParams: () => params,
 }));
-vi.mock("@/context/AuthContext", () => ({ useAuthContext: () => ({ user: { id: 7 } }) }));
+vi.mock("@/context/AuthContext", () => ({
+  useAuthContext: () => ({ user: { id: 7 }, refreshMercureToken }),
+}));
 vi.mock("@/context/NotificationContext", () => ({ useNotification: () => ({ notify }) }));
 
 import { useUserEventsMercure } from "@/hooks/useUserEventsMercure";
@@ -38,10 +48,40 @@ describe("useUserEventsMercure", () => {
     captured = null;
     navigate.mockClear();
     notify.mockClear();
+    refreshMercureToken.mockClear();
     params = {};
     qc = new QueryClient();
     inval = vi.spyOn(qc, "invalidateQueries").mockResolvedValue(undefined as never);
     renderHook(() => useUserEventsMercure(), { wrapper });
+  });
+
+  it("reconciles memberships, the current community and grants after a reconnect", () => {
+    params = { communityId: "c1" };
+    renderHook(() => useUserEventsMercure(), { wrapper });
+    capturedReconnect?.();
+    expect(inval).toHaveBeenCalledWith({ queryKey: queryKeys.myMemberships() });
+    expect(inval).toHaveBeenCalledWith({ queryKey: queryKeys.communities() });
+    expect(inval).toHaveBeenCalledWith({ queryKey: queryKeys.community("c1") });
+    expect(refreshMercureToken).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    "community.removed",
+    "channel.access.revoked",
+    "channel.access.granted",
+    "role.changed",
+  ])("%s re-mints the realtime token so grants follow access", (event) => {
+    fire({ type: "user.event", event, communityIdentifier: "c1" });
+    expect(refreshMercureToken).toHaveBeenCalledTimes(1);
+    expect(refreshMercureToken).toHaveBeenCalledWith({
+      revoke: event !== "channel.access.granted",
+    });
+  });
+
+  it("other events leave the realtime token alone", () => {
+    fire({ type: "user.event", event: "something.else" });
+    fire({ type: "presence", event: "role.changed" });
+    expect(refreshMercureToken).not.toHaveBeenCalled();
   });
 
   it("server.banned dispatches session:expired", () => {

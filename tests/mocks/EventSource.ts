@@ -7,9 +7,12 @@
 export type FakeEventSourceInstance = {
   url: string;
   onmessage: ((e: MessageEvent) => void) | null;
+  onopen: (() => void) | null;
   onerror: (() => void) | null;
+  readonly closed: boolean;
   close: () => void;
-  dispatch: (data: string) => void;
+  dispatch: (data: string, id?: string) => void;
+  triggerOpen: () => void;
   triggerError: () => void;
 };
 
@@ -28,8 +31,13 @@ export function getLastFakeEventSource(): FakeEventSourceInstance | undefined {
 class FakeEventSource {
   readonly url: string;
   onmessage: ((e: MessageEvent) => void) | null = null;
+  onopen: (() => void) | null = null;
   onerror: (() => void) | null = null;
   private _closed = false;
+
+  get closed(): boolean {
+    return this._closed;
+  }
 
   constructor(url: string) {
     this.url = url;
@@ -40,10 +48,15 @@ class FakeEventSource {
     this._closed = true;
   }
 
-  dispatch(data: string) {
+  dispatch(data: string, id = "") {
     if (this._closed) return;
-    const e = new MessageEvent("message", { data });
+    const e = new MessageEvent("message", { data, lastEventId: id });
     this.onmessage?.(e);
+  }
+
+  triggerOpen() {
+    if (this._closed) return;
+    this.onopen?.();
   }
 
   triggerError() {

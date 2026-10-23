@@ -97,4 +97,13 @@ describe("defaultChannelFor", () => {
     });
     expect(result).toBeNull();
   });
+
+  it("lands on a channel without a section instead of crashing", () => {
+    const loose = { ...channel(5, "general", 1, 0), section: null } as Channel;
+    const result = defaultChannelFor({
+      channelSections: [section(1)],
+      channels: [channel(6, "news", 1, 0), loose],
+    });
+    expect(result?.identifier).toBe("general");
+  });
 });

@@ -28,6 +28,8 @@ export const defaultAuthState: AuthState = {
   refreshUser: vi.fn().mockResolvedValue(undefined),
   sessionExpired: false,
   mercureToken: "mock-mercure-token",
+  mercureTokenRevokesGrants: false,
+  mercureSuspended: false,
   refreshMercureToken: vi.fn().mockResolvedValue(undefined),
   setRealtimeScope: vi.fn(),
 };

@@ -4,7 +4,7 @@ import { createContext, useContext, type ReactNode } from "react";
 import { useMercureSubscription } from "@/hooks/useMercureSubscription";
 import type { useAuthContext } from "@/context/AuthContext";
 import type { useNotification } from "@/context/NotificationContext";
-import { getLastFakeEventSource } from "../../mocks/EventSource";
+import { getFakeEventSourceInstances, getLastFakeEventSource } from "../../mocks/EventSource";
 
 // Derive types from source hooks — no re-declaration needed.
 type AuthState = ReturnType<typeof useAuthContext>;
@@ -12,8 +12,12 @@ type NotificationContextValue = ReturnType<typeof useNotification>;
 
 // Minimal context stubs (only the fields the hook under test reads)
 
-const MockAuthContext = createContext<Pick<AuthState, "mercureToken" | "refreshMercureToken">>({
+const MockAuthContext = createContext<
+  Pick<AuthState, "mercureToken" | "refreshMercureToken"> &
+    Partial<Pick<AuthState, "mercureTokenRevokesGrants" | "mercureSuspended">>
+>({
   mercureToken: null,
+  mercureTokenRevokesGrants: false,
   refreshMercureToken: vi.fn(),
 });
 
@@ -36,7 +40,8 @@ vi.mock("@/api/serverInfo", () => ({
   }),
 }));
 
-type StubAuthState = Pick<AuthState, "mercureToken" | "refreshMercureToken">;
+type StubAuthState = Pick<AuthState, "mercureToken" | "refreshMercureToken"> &
+  Partial<Pick<AuthState, "mercureTokenRevokesGrants" | "mercureSuspended">>;
 
 function makeWrapper(auth: StubAuthState, notify: NotificationContextValue["notify"]) {
   return function Wrapper({ children }: { children: ReactNode }) {
@@ -177,18 +182,14 @@ describe("useMercureSubscription", () => {
   });
 
   describe("when the realtime token changes", () => {
-    function jwt(subscribe: string[]): string {
-      const body = btoa(JSON.stringify({ mercure: { subscribe } }))
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
-      return `h.${body}.s`;
-    }
-    const scopedA = jwt(["u/42/n", "u/{userId}/p", "k/5", "c/12"]);
-    const scopedB = jwt(["u/42/n", "u/{userId}/p", "k/9", "c/30"]);
-
-    function renderWithToken(subscribeTo: string | string[], initial: string) {
-      const auth: StubAuthState = { mercureToken: initial, refreshMercureToken: vi.fn() };
+    function renderWithToken(initialTopic: string | string[], initial: string) {
+      const auth: StubAuthState = {
+        mercureToken: initial,
+        mercureTokenRevokesGrants: false,
+        refreshMercureToken: vi.fn(),
+      };
+      let currentTopic = initialTopic;
+      const onReconnect = vi.fn();
       function Wrapper({ children }: { children: ReactNode }) {
         return (
           <MockAuthContext.Provider value={{ ...auth }}>
@@ -198,69 +199,193 @@ describe("useMercureSubscription", () => {
           </MockAuthContext.Provider>
         );
       }
-      const view = renderHook(() => useMercureSubscription(subscribeTo, onMessage, errorMessage), {
-        wrapper: Wrapper,
-      });
+      const view = renderHook(
+        () => useMercureSubscription(currentTopic, onMessage, errorMessage, onReconnect),
+        { wrapper: Wrapper },
+      );
       return {
-        setToken: (next: string) => {
+        onReconnect,
+        setToken: (next: string, revokesGrants = false) => {
           auth.mercureToken = next;
+          auth.mercureTokenRevokesGrants = revokesGrants;
+          auth.mercureSuspended = false;
+          view.rerender();
+        },
+        suspend: () => {
+          auth.mercureSuspended = true;
+          view.rerender();
+        },
+        setTopic: (next: string | string[]) => {
+          currentTopic = next;
           view.rerender();
         },
       };
     }
 
-    it("keeps a connection the previous token already covered", () => {
-      const { setToken } = renderWithToken("u/42/n", scopedA);
-      const first = getLastFakeEventSource();
+    function active() {
+      return getFakeEventSourceInstances().filter((es) => !es.closed);
+    }
 
-      setToken(scopedB);
-
-      expect(getLastFakeEventSource()).toBe(first);
-    });
-
-    it("keeps presence connections, which the template always covers", () => {
-      const { setToken } = renderWithToken(["u/7/p", "u/8/p"], scopedA);
-      const first = getLastFakeEventSource();
-
-      setToken(scopedB);
-
-      expect(getLastFakeEventSource()).toBe(first);
-    });
-
-    it("reconnects with the new token when only it grants the topic", () => {
-      const { setToken } = renderWithToken("c/30", scopedA);
+    it("rolls over to a new source with the new token, closing the old one once it opens", () => {
+      const { setToken } = renderWithToken("c/30", "tok-a");
       const first = getLastFakeEventSource()!;
-      const closeSpy = vi.spyOn(first, "close");
+      act(() => first.triggerOpen());
 
-      setToken(scopedB);
+      setToken("tok-b");
 
       const second = getLastFakeEventSource()!;
       expect(second).not.toBe(first);
-      expect(closeSpy).toHaveBeenCalled();
-      expect(second.url).toContain(`authorization=${scopedB}`);
+      expect(second.url).toContain("authorization=tok-b");
+      expect(first.closed).toBe(false);
+
+      act(() => second.triggerOpen());
+
+      expect(first.closed).toBe(true);
+      expect(active()).toEqual([second]);
     });
 
-    it("reconnects when the new token revokes the topic, so the hub refuses it", () => {
-      const { setToken } = renderWithToken("c/12", scopedA);
+    it("delivers an event seen on both sources during the overlap once", () => {
+      const { setToken } = renderWithToken("c/30", "tok-a");
       const first = getLastFakeEventSource()!;
+      act(() => first.triggerOpen());
+      setToken("tok-b");
+      const second = getLastFakeEventSource()!;
 
-      setToken(scopedB);
+      act(() => {
+        first.dispatch("a", "id-1");
+        second.dispatch("a", "id-1");
+        second.dispatch("b", "id-2");
+        first.dispatch("c");
+        second.dispatch("c");
+      });
 
-      expect(getLastFakeEventSource()).not.toBe(first);
-      expect(getLastFakeEventSource()!.url).toContain(`authorization=${scopedB}`);
+      expect(onMessage).toHaveBeenCalledTimes(4);
     });
 
-    it("retries after an error with the latest token, not the one it connected with", () => {
+    it("keeps the old source when the rollover errors before opening", () => {
       vi.useFakeTimers();
-      const { setToken } = renderWithToken("u/42/n", scopedA);
+      const { setToken } = renderWithToken("c/30", "tok-a");
       const first = getLastFakeEventSource()!;
-      setToken(scopedB);
-      expect(getLastFakeEventSource()).toBe(first);
+      act(() => first.triggerOpen());
+      setToken("tok-b");
 
-      act(() => first.triggerError());
+      act(() => getLastFakeEventSource()!.triggerError());
+
+      expect(active()).toEqual([first]);
+      vi.useRealTimers();
+    });
+
+    it("closes the old source at once when the new token revokes grants", () => {
+      const { setToken, onReconnect } = renderWithToken("c/30", "tok-a");
+      const first = getLastFakeEventSource()!;
+      act(() => first.triggerOpen());
+      act(() => first.dispatch("a", "urn:uuid:1"));
+
+      setToken("tok-b", true);
+
+      expect(first.closed).toBe(true);
+      const second = getLastFakeEventSource()!;
+      expect(active()).toEqual([second]);
+      expect(new URL(second.url).searchParams.get("authorization")).toBe("tok-b");
+      expect(new URL(second.url).searchParams.get("lastEventID")).toBe("urn:uuid:1");
+      act(() => second.triggerOpen());
+      expect(onReconnect).not.toHaveBeenCalled();
+    });
+
+    it("closes streams while a revocation is pending and resumes them with the new token", () => {
+      const { setToken, suspend } = renderWithToken("c/30", "tok-a");
+      const first = getLastFakeEventSource()!;
+      act(() => first.triggerOpen());
+      act(() => first.dispatch("a", "urn:uuid:1"));
+      const count = getFakeEventSourceInstances().length;
+
+      suspend();
+
+      expect(first.closed).toBe(true);
+      expect(active()).toEqual([]);
+      expect(getFakeEventSourceInstances()).toHaveLength(count);
+
+      setToken("tok-b", true);
+
+      const next = getLastFakeEventSource()!;
+      expect(active()).toEqual([next]);
+      expect(new URL(next.url).searchParams.get("authorization")).toBe("tok-b");
+      expect(new URL(next.url).searchParams.get("lastEventID")).toBe("urn:uuid:1");
+    });
+
+    it("refetches once when a view opened during a suspension finally subscribes", () => {
+      const { setToken, setTopic, suspend, onReconnect } = renderWithToken("c/30", "tok-a");
+      act(() => getLastFakeEventSource()!.triggerOpen());
+      suspend();
+      setTopic("c/31");
+      expect(active()).toEqual([]);
+
+      setToken("tok-b", true);
+
+      const next = getLastFakeEventSource()!;
+      expect(new URL(next.url).searchParams.getAll("topic")).toEqual(["c/31"]);
+      act(() => next.triggerOpen());
+      expect(onReconnect).toHaveBeenCalledOnce();
+    });
+
+    it("still refetches when a rollover opens before the waited subscription's first stream", () => {
+      const { setToken, setTopic, suspend, onReconnect } = renderWithToken("c/30", "tok-a");
+      act(() => getLastFakeEventSource()!.triggerOpen());
+      suspend();
+      setTopic("c/31");
+      setToken("tok-b", true);
+      const first = getLastFakeEventSource()!;
+
+      setToken("tok-c");
+      const pending = getLastFakeEventSource()!;
+      expect(pending).not.toBe(first);
+      act(() => pending.triggerOpen());
+
+      expect(onReconnect).toHaveBeenCalledOnce();
+      expect(active()).toEqual([pending]);
+    });
+
+    it("does not refetch on the first open of an ordinary new subscription", () => {
+      const { onReconnect } = renderWithToken("c/30", "tok-a");
+      act(() => getLastFakeEventSource()!.triggerOpen());
+      expect(onReconnect).not.toHaveBeenCalled();
+    });
+
+    it("does not report a rollover as a reconnect", () => {
+      const { setToken, onReconnect } = renderWithToken("c/30", "tok-a");
+      act(() => getLastFakeEventSource()!.triggerOpen());
+      setToken("tok-b");
+      act(() => getLastFakeEventSource()!.triggerOpen());
+
+      expect(onReconnect).not.toHaveBeenCalled();
+    });
+
+    it("closes and resubscribes when the topics change", () => {
+      const { setTopic } = renderWithToken("c/30", "tok-a");
+      const first = getLastFakeEventSource()!;
+      act(() => first.triggerOpen());
+
+      setTopic("c/31");
+
+      const second = getLastFakeEventSource()!;
+      expect(second).not.toBe(first);
+      expect(first.closed).toBe(true);
+      expect(second.url).toContain(encodeURIComponent("c/31"));
+      expect(active()).toEqual([second]);
+    });
+
+    it("retries after an error with the latest token", () => {
+      vi.useFakeTimers();
+      const { setToken } = renderWithToken("c/30", "tok-a");
+      const first = getLastFakeEventSource()!;
+      act(() => first.triggerOpen());
+      setToken("tok-b");
+      act(() => getLastFakeEventSource()!.triggerOpen());
+
+      act(() => getLastFakeEventSource()!.triggerError());
       act(() => vi.advanceTimersByTime(5000));
 
-      expect(getLastFakeEventSource()!.url).toContain(`authorization=${scopedB}`);
+      expect(getLastFakeEventSource()!.url).toContain("authorization=tok-b");
       vi.useRealTimers();
     });
   });

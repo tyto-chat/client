@@ -40,6 +40,7 @@
   "confirm_delete": "Підтвердити видалення",
   "cancel_delete": "Скасувати видалення",
   "section": "Розділ",
+  "no_section": "Без розділу",
   "edit_section": "Редагувати розділ",
   "delete_section": "Видалити розділ",
   "add_channel": "Додати канал",

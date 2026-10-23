@@ -740,10 +740,17 @@ function GroupChannelPermissionsView({
 
   const permByChannelId = Object.fromEntries(permissions.map((p) => [p.channelId, p]));
   const allChannels = community?.channels ?? [];
-  const sections = (community?.channelSections ?? []).map((section) => ({
-    section,
-    channels: allChannels.filter((ch) => ch.section.id === section.id),
-  }));
+  const unsectioned = allChannels.filter((ch) => !ch.section);
+  const sections = [
+    ...(unsectioned.length > 0
+      ? [{ key: "unsectioned", name: t("no_section"), channels: unsectioned }]
+      : []),
+    ...(community?.channelSections ?? []).map((section) => ({
+      key: section["@id"],
+      name: section.name,
+      channels: allChannels.filter((ch) => ch.section?.id === section.id),
+    })),
+  ];
 
   async function handlePermissionChange(channel: Channel, value: string) {
     const isPrivate = channel.isPrivate ?? false;
@@ -782,9 +789,9 @@ function GroupChannelPermissionsView({
         <p className="text-sm text-fg-muted">{t("no_channels")}</p>
       ) : (
         <div className="space-y-4">
-          {sections.map(({ section, channels }) => (
-            <div key={section["@id"]}>
-              <p className={`${sectionHeading} px-2`}>{section.name}</p>
+          {sections.map(({ key, name, channels }) => (
+            <div key={key}>
+              <p className={`${sectionHeading} px-2`}>{name}</p>
               <div className="space-y-0.5">
                 {channels.map((ch) => {
                   const perm = permByChannelId[ch.id];

@@ -9,13 +9,14 @@ import type { Community } from "@/types/api";
 
 const COMMUNITY_ID = "dragon";
 
-const fixtureCommunity = {
+const emptyCommunity = {
   id: 1,
   identifier: COMMUNITY_ID,
   name: "Dragon Community",
   channelSections: [],
   channels: [],
 } as unknown as Community;
+let fixtureCommunity = emptyCommunity;
 
 let mockAuthUser: typeof mockUser | null = null;
 let mockIsAdmin = false;
@@ -100,6 +101,7 @@ vi.mock("@/context/MobileNavContext", () => ({
 
 beforeEach(() => {
   configureApiClient(BASE);
+  fixtureCommunity = emptyCommunity;
   mockAuthUser = null;
   mockIsAdmin = false;
   mockMembership = { role: null, hasMembership: false };
@@ -217,5 +219,32 @@ describe("ChannelSidebar layout", () => {
     expect(scroller.contains(screen.getByRole("navigation"))).toBe(true);
     expect(scroller.contains(heading)).toBe(false);
     expect(heading.closest("aside")?.className).not.toContain("overflow-y-auto");
+  });
+});
+
+describe("ChannelSidebar channels without a section", () => {
+  it("lists them without a section header instead of crashing", () => {
+    fixtureCommunity = {
+      ...emptyCommunity,
+      channels: [
+        {
+          "@id": "/api/v1/communities/dragon/channels/general",
+          "@type": "Channel",
+          id: 5,
+          identifier: "general",
+          name: "general",
+          position: 0,
+          section: null,
+          type: "text",
+        },
+      ],
+    } as unknown as Community;
+
+    render(<ChannelSidebar communityId={COMMUNITY_ID} />);
+
+    const group = screen.getByTestId("sidebar-unsectioned-section");
+    expect(group.textContent).toContain("general");
+    expect(group.querySelector("[aria-expanded]")).toBeNull();
+    expect(screen.queryByText("no_channels_yet")).toBeNull();
   });
 });

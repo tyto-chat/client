@@ -3,7 +3,7 @@ import { resolveServerQuiet, VersionMismatchError } from "@/desktop/connectIdent
 import { getApiVersionForOrigin } from "@/api/apiVersion";
 import { refreshWithToken, loginAt, LoginRequestError } from "@/api/auth";
 import { ApiError, avatarUrl, logoUrl } from "@/api/client";
-import { subscribeMercure, type MercureHandlers } from "@/api/mercure";
+import { subscribeMercure, type MercureHandlers, type MercureSubscription } from "@/api/mercure";
 import {
   loadDesktopConfig,
   saveDesktopConfig,
@@ -22,6 +22,7 @@ import type {
   NotificationMercureEvent,
 } from "@/types/api";
 import { decodeJwtPayload } from "@/utils/jwtPayload";
+import { realtimeRefreshDelay, type RealtimeTokenExpiry } from "@/utils/realtimeSchedule";
 import { parseMercureEvent } from "@/utils/parseMercureEvent";
 import { identityFetch, unwrapMember, type ServerContext } from "./identityFetch";
 
@@ -122,7 +123,6 @@ export function originOf(url: string | null | undefined): string | null {
 
 export const RETRY_DELAYS_MS = [15_000, 30_000, 60_000, 120_000, 300_000];
 const REFRESH_MARGIN_MS = 5 * 60 * 1000;
-const REALTIME_TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const REALTIME_TOKEN_MIN_DELAY_MS = 30_000;
 
 class AuthFailedError extends Error {
@@ -184,7 +184,9 @@ export class IdentityConnection {
   private railSeedValue: ConnectionRailSeed | null = null;
   private unreadCountsValue: Record<string, number> = {};
   private conversationActivityAtValue: number | null = null;
-  private realtimeUnsubscribe: (() => void) | null = null;
+  private realtimeSubscription: MercureSubscription | null = null;
+  private realtimeSubscriptionKey: string | null = null;
+  private realtimeToken: string | null = null;
   private realtimeRemintTimer: ReturnType<typeof setTimeout> | null = null;
   private dataRetryAttempt = 0;
   private dataRetryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -560,7 +562,7 @@ export class IdentityConnection {
           "/me/pinned-communities",
         ),
         identityFetch<{ counts: Record<string, number> }>(ctx, "/notifications/unread-counts"),
-        identityFetch<{ token: string; expiresAt: number }>(ctx, "/realtime/token"),
+        identityFetch<{ token: string } & RealtimeTokenExpiry>(ctx, "/realtime/token"),
       ]);
       if (this.stopped || this.connectionId !== myId) return;
       this.dataRetryAttempt = 0;
@@ -578,7 +580,7 @@ export class IdentityConnection {
       this.unreadCountsValue = counts.counts;
       this.rebuildSnapshot();
       void this.cacheProfileForRelogin(me, ctx);
-      this.subscribeRealtime(myId, me.id, realtimeToken.token, realtimeToken.expiresAt);
+      this.subscribeRealtime(myId, me.id, realtimeToken.token, realtimeToken);
     } catch (error) {
       if (this.stopped || this.connectionId !== myId) return;
       this.errorValue = error;
@@ -601,40 +603,50 @@ export class IdentityConnection {
     }, delay);
   }
 
-  private subscribeRealtime(myId: number, userId: number, token: string, expiresAt: number): void {
+  private subscribeRealtime(
+    myId: number,
+    userId: number,
+    token: string,
+    expiry: RealtimeTokenExpiry,
+  ): void {
     if (this.stopped || this.connectionId !== myId) return;
-    this.closeRealtimeSubscription();
-    const topics = [userNotificationsTopic(userId), conversationActivityTopic(userId)];
-    const handlers: MercureHandlers = {
-      onReconnect: () => void this.refetchUnreadCounts(myId),
-      onStaleToken: () => void this.remintRealtimeToken(myId, userId),
-      onSustainedFailure: () => {},
-    };
-    this.realtimeUnsubscribe = subscribeMercure(
-      topics,
-      (event) => this.handleRealtimeEvent(event),
-      token,
-      handlers,
-      this.serverInfoValue?.mercureUrl,
-    );
-    this.scheduleRealtimeRemint(myId, userId, expiresAt);
+    this.realtimeToken = token;
+    const subscriptionKey = `${myId}:${userId}`;
+    if (this.realtimeSubscription && this.realtimeSubscriptionKey === subscriptionKey) {
+      this.realtimeSubscription.rollover();
+    } else {
+      this.closeRealtimeSubscription();
+      const topics = [userNotificationsTopic(userId), conversationActivityTopic(userId)];
+      const handlers: MercureHandlers = {
+        onReconnect: () => void this.refetchUnreadCounts(myId),
+        onStaleToken: () => void this.remintRealtimeToken(myId, userId),
+        onSustainedFailure: () => {},
+      };
+      this.realtimeSubscriptionKey = subscriptionKey;
+      this.realtimeSubscription = subscribeMercure(
+        topics,
+        (event) => this.handleRealtimeEvent(event),
+        () => this.realtimeToken,
+        handlers,
+        this.serverInfoValue?.mercureUrl,
+      );
+    }
+    this.scheduleRealtimeRemint(myId, userId, expiry);
   }
 
   private closeRealtimeSubscription(): void {
-    this.realtimeUnsubscribe?.();
-    this.realtimeUnsubscribe = null;
+    this.realtimeSubscription?.close();
+    this.realtimeSubscription = null;
+    this.realtimeSubscriptionKey = null;
   }
 
-  private scheduleRealtimeRemint(myId: number, userId: number, expiresAt: number): void {
+  private scheduleRealtimeRemint(myId: number, userId: number, expiry: RealtimeTokenExpiry): void {
     if (this.realtimeRemintTimer) {
       clearTimeout(this.realtimeRemintTimer);
       this.realtimeRemintTimer = null;
     }
     if (this.stopped || this.connectionId !== myId) return;
-    const delay = Math.max(
-      expiresAt * 1000 - Date.now() - REALTIME_TOKEN_REFRESH_MARGIN_MS,
-      REALTIME_TOKEN_MIN_DELAY_MS,
-    );
+    const delay = realtimeRefreshDelay(expiry);
     this.realtimeRemintTimer = setTimeout(() => {
       this.realtimeRemintTimer = null;
       void this.remintRealtimeToken(myId, userId);
@@ -645,12 +657,12 @@ export class IdentityConnection {
     if (this.stopped || this.connectionId !== myId) return;
     try {
       const ctx = this.serverContext();
-      const realtimeToken = await identityFetch<{ token: string; expiresAt: number }>(
+      const realtimeToken = await identityFetch<{ token: string } & RealtimeTokenExpiry>(
         ctx,
         "/realtime/token",
       );
       if (this.stopped || this.connectionId !== myId) return;
-      this.subscribeRealtime(myId, userId, realtimeToken.token, realtimeToken.expiresAt);
+      this.subscribeRealtime(myId, userId, realtimeToken.token, realtimeToken);
     } catch {
       if (this.stopped || this.connectionId !== myId) return;
       if (this.realtimeRemintTimer) clearTimeout(this.realtimeRemintTimer);

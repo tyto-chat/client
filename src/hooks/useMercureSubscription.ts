@@ -1,14 +1,14 @@
 import { useEffect, useRef } from "react";
-import { subscribeMercure } from "@/api/mercure";
+import { subscribeMercure, type MercureSubscription } from "@/api/mercure";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotification } from "@/context/NotificationContext";
 import { getServerInfo } from "@/api/serverInfo";
-import { needsReconnect } from "@/utils/mercureGrants";
 
 interface Connection {
   key: string;
   token: string;
-  close: () => void;
+  suspended: boolean;
+  subscription: MercureSubscription;
 }
 
 export function useMercureSubscription(
@@ -17,7 +17,8 @@ export function useMercureSubscription(
   errorMessage: string,
   onReconnect?: () => void,
 ): void {
-  const { mercureToken, refreshMercureToken } = useAuthContext();
+  const { mercureToken, mercureTokenRevokesGrants, mercureSuspended, refreshMercureToken } =
+    useAuthContext();
   const { notify } = useNotification();
 
   const latest = useRef({
@@ -42,28 +43,45 @@ export function useMercureSubscription(
   const topics = topic === null ? [] : Array.isArray(topic) ? topic : [topic];
   const key = topics.join("\n");
   const connection = useRef<Connection | null>(null);
+  const waitedForResumeKey = useRef<string | null>(null);
 
   useEffect(() => {
     const current = connection.current;
     if (key === "" || !mercureToken) {
-      current?.close();
+      current?.subscription.close();
       connection.current = null;
       return;
     }
-    const subscribed = key.split("\n");
-    if (
-      current &&
-      current.key === key &&
-      !needsReconnect(current.token, mercureToken, subscribed)
-    ) {
+    if (current && current.key === key) {
+      if (mercureSuspended) {
+        if (!current.suspended) current.subscription.suspend();
+        current.suspended = true;
+        return;
+      }
+      if (current.token !== mercureToken || current.suspended) {
+        const wasSuspended = current.suspended;
+        current.token = mercureToken;
+        current.suspended = false;
+        if (mercureTokenRevokesGrants || wasSuspended) current.subscription.reconnect();
+        else current.subscription.rollover();
+      }
       return;
     }
-    current?.close();
+    if (mercureSuspended) {
+      current?.subscription.close();
+      connection.current = null;
+      waitedForResumeKey.current = key;
+      return;
+    }
+    const refetchOnFirstOpen = waitedForResumeKey.current === key;
+    waitedForResumeKey.current = null;
+    current?.subscription.close();
     connection.current = {
       key,
       token: mercureToken,
-      close: subscribeMercure(
-        subscribed,
+      suspended: false,
+      subscription: subscribeMercure(
+        key.split("\n"),
         (e) => latest.current.onMessage(e),
         () => latest.current.mercureToken,
         {
@@ -72,13 +90,14 @@ export function useMercureSubscription(
           onSustainedFailure: () => latest.current.notify(latest.current.errorMessage, "error"),
         },
         getServerInfo()?.mercureUrl,
+        { refetchOnFirstOpen },
       ),
     };
-  }, [key, mercureToken]);
+  }, [key, mercureToken, mercureTokenRevokesGrants, mercureSuspended]);
 
   useEffect(
     () => () => {
-      connection.current?.close();
+      connection.current?.subscription.close();
       connection.current = null;
     },
     [],

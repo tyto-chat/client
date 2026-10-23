@@ -40,6 +40,7 @@
   "confirm_delete": "Confirmer la suppression",
   "cancel_delete": "Annuler la suppression",
   "section": "Section",
+  "no_section": "Aucune section",
   "edit_section": "Modifier la section",
   "delete_section": "Supprimer la section",
   "add_channel": "Ajouter un salon",

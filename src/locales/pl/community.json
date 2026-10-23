@@ -40,6 +40,7 @@
   "confirm_delete": "Potwierdź usunięcie",
   "cancel_delete": "Anuluj usunięcie",
   "section": "Sekcja",
+  "no_section": "Bez sekcji",
   "edit_section": "Edytuj sekcję",
   "delete_section": "Usuń sekcję",
   "add_channel": "Dodaj kanał",

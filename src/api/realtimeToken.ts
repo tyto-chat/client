@@ -3,11 +3,13 @@ import { apiClient } from "@/api/client";
 export interface RealtimeTokenResponse {
   token: string;
   expiresAt: number;
+  expiresIn?: number;
 }
 
 export interface PublicRealtimeTokenResponse {
   token: string | null;
   expiresAt: number | null;
+  expiresIn?: number | null;
 }
 
 export interface RealtimeScope {

@@ -69,6 +69,7 @@ const BASE: AdminServerConfig = {
   resetPasswordCodeExpiryMinutes: 30,
   emailChallengeExpiryMinutes: 60,
   invitationExpiryHours: 72,
+  realtimeTokenTtlMinutes: 20,
   validateEmails: false,
   digestHour: 8,
   mediaTokenTtlSeconds: 3600,

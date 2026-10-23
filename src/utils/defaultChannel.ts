@@ -16,12 +16,10 @@ export function defaultChannelFor(community: {
   }
 
   const sectionOrder = new Map(community.channelSections.map((s, i) => [s.id, i]));
+  const rank = (c: Channel) =>
+    c.section ? (sectionOrder.get(c.section.id) ?? Number.MAX_SAFE_INTEGER) : -1;
   const candidates = community.channels
     .filter(isLandable)
-    .sort(
-      (a, b) =>
-        (sectionOrder.get(a.section.id) ?? Number.MAX_SAFE_INTEGER) -
-          (sectionOrder.get(b.section.id) ?? Number.MAX_SAFE_INTEGER) || a.position - b.position,
-    );
+    .sort((a, b) => rank(a) - rank(b) || a.position - b.position);
   return candidates[0] ?? null;
 }

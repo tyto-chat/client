@@ -40,6 +40,7 @@
   "confirm_delete": "Confirm delete",
   "cancel_delete": "Cancel delete",
   "section": "Section",
+  "no_section": "No section",
   "edit_section": "Edit section",
   "delete_section": "Delete section",
   "add_channel": "Add channel",

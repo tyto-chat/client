@@ -37,7 +37,7 @@ export function ChannelModal(props: ChannelModalProps) {
   const [type, setType] = useState<"text" | "audio">(
     isEdit ? (props.channel.type ?? "text") : "text",
   );
-  const [sectionId, setSectionId] = useState(isEdit ? props.channel.section.id : 0);
+  const [sectionId, setSectionId] = useState(isEdit ? (props.channel.section?.id ?? 0) : 0);
   const [isPrivate, setIsPrivate] = useState(isEdit ? (props.channel.isPrivate ?? false) : false);
   const [isReadonly, setIsReadonly] = useState(
     isEdit ? (props.channel.isReadonly ?? false) : false,
@@ -56,7 +56,7 @@ export function ChannelModal(props: ChannelModalProps) {
     isEdit &&
     name === props.channel.name &&
     description === (props.channel.description ?? "") &&
-    sectionId === props.channel.section.id &&
+    sectionId === (props.channel.section?.id ?? 0) &&
     isPrivate === (props.channel.isPrivate ?? false) &&
     isReadonly === (props.channel.isReadonly ?? false) &&
     areReadonlyRepliesAllowed === (props.channel.areReadonlyRepliesAllowed ?? false) &&
@@ -74,7 +74,9 @@ export function ChannelModal(props: ChannelModalProps) {
           name: name !== props.channel.name ? name : undefined,
           description: description !== (props.channel.description ?? "") ? description : undefined,
           section:
-            sectionId !== props.channel.section.id ? sectionIri(communityId, sectionId) : undefined,
+            sectionId !== (props.channel.section?.id ?? 0)
+              ? sectionIri(communityId, sectionId)
+              : undefined,
           isPrivate: isPrivate !== (props.channel.isPrivate ?? false) ? isPrivate : undefined,
           isReadonly:
             type === "text" && isReadonly !== (props.channel.isReadonly ?? false)
@@ -184,6 +186,11 @@ export function ChannelModal(props: ChannelModalProps) {
               value={sectionId}
               onChange={(e) => setSectionId(Number(e.target.value))}
             >
+              {!props.channel.section && (
+                <option value={0} disabled>
+                  {t("no_section")}
+                </option>
+              )}
               {sections.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}

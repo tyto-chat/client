@@ -2,7 +2,7 @@ import type { Channel, ChannelSection, ChannelPinState } from "@/types/api";
 
 export interface SidebarSection {
   key: string;
-  kind: "favorites" | "real" | "hidden" | "archived";
+  kind: "favorites" | "unsectioned" | "real" | "hidden" | "archived";
   name: string;
   section: ChannelSection | null;
   channels: Channel[];
@@ -47,6 +47,7 @@ export function buildSidebarSections({
   const favorites: Channel[] = [];
   const hidden: Channel[] = [];
   const archived: Channel[] = [];
+  const unsectioned: Channel[] = [];
   const realBySection = new Map<number, Channel[]>();
 
   for (const ch of channels) {
@@ -59,10 +60,12 @@ export function buildSidebarSections({
       favorites.push(ch);
     } else if (pin === "hidden") {
       hidden.push(ch);
-    } else {
+    } else if (ch.section) {
       const list = realBySection.get(ch.section.id) ?? [];
       list.push(ch);
       realBySection.set(ch.section.id, list);
+    } else {
+      unsectioned.push(ch);
     }
   }
 
@@ -84,6 +87,20 @@ export function buildSidebarSections({
     });
   }
 
+  if (unsectioned.length > 0) {
+    unsectioned.sort((a, b) => a.position - b.position || byIdentifier(a, b));
+    out.push({
+      key: `unsectioned:${communityId}`,
+      kind: "unsectioned",
+      name: "",
+      section: null,
+      channels: unsectioned,
+      collapsed: false,
+      hasUnread: hasUnread(unsectioned),
+      isEmpty: false,
+    });
+  }
+
   for (const section of sections) {
     const list = (realBySection.get(section.id) ?? [])
       .slice()
@@ -97,7 +114,7 @@ export function buildSidebarSections({
       channels: list,
       collapsed: collapsedFor(key, "real", collapseMap),
       hasUnread: hasUnread(list),
-      isEmpty: !channels.some((ch) => ch.section.id === section.id),
+      isEmpty: !channels.some((ch) => ch.section?.id === section.id),
     });
   }
 
