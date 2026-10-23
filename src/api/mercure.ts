@@ -124,6 +124,7 @@ export function subscribeMercure(
   mercureToken: string | null | undefined | (() => string | null | undefined),
   handlers: MercureHandlers = {},
   hubUrl?: string,
+  options: { refetchOnFirstOpen?: boolean } = {},
 ): MercureSubscription {
   if (!hubUrl)
     return { close: () => {}, rollover: () => {}, reconnect: () => {}, suspend: () => {} };
@@ -148,7 +149,7 @@ export function subscribeMercure(
   let pending: Slot | null = null;
   let replaying: Slot | null = null;
   let resumeMain = false;
-  let refetchOnOpen = false;
+  let refetchOnOpen = options.refetchOnFirstOpen === true;
   let suspendNeedsRecovery = false;
   let suspendedAt: number | null = null;
   let ticket: RolloverTicket | null = null;
@@ -191,7 +192,8 @@ export function subscribeMercure(
   };
 
   const promote = (slot: Slot) => {
-    const recovered = everOpened && (main.errors > 0 || sleptSince(activeSince));
+    const recovered = (everOpened && (main.errors > 0 || sleptSince(activeSince))) || refetchOnOpen;
+    refetchOnOpen = false;
     clearDeadline(slot);
     disposeSlot(main);
     main = slot;
@@ -211,7 +213,7 @@ export function subscribeMercure(
     refetchOnOpen = false;
     main.errors = 0;
     notifiedFailure = false;
-    if (everOpened && recovered) handlers.onReconnect?.();
+    if (recovered && (everOpened || options.refetchOnFirstOpen)) handlers.onReconnect?.();
     everOpened = true;
     activeSince = Date.now();
   };

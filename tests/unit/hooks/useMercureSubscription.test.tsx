@@ -313,6 +313,44 @@ describe("useMercureSubscription", () => {
       expect(new URL(next.url).searchParams.get("lastEventID")).toBe("urn:uuid:1");
     });
 
+    it("refetches once when a view opened during a suspension finally subscribes", () => {
+      const { setToken, setTopic, suspend, onReconnect } = renderWithToken("c/30", "tok-a");
+      act(() => getLastFakeEventSource()!.triggerOpen());
+      suspend();
+      setTopic("c/31");
+      expect(active()).toEqual([]);
+
+      setToken("tok-b", true);
+
+      const next = getLastFakeEventSource()!;
+      expect(new URL(next.url).searchParams.getAll("topic")).toEqual(["c/31"]);
+      act(() => next.triggerOpen());
+      expect(onReconnect).toHaveBeenCalledOnce();
+    });
+
+    it("still refetches when a rollover opens before the waited subscription's first stream", () => {
+      const { setToken, setTopic, suspend, onReconnect } = renderWithToken("c/30", "tok-a");
+      act(() => getLastFakeEventSource()!.triggerOpen());
+      suspend();
+      setTopic("c/31");
+      setToken("tok-b", true);
+      const first = getLastFakeEventSource()!;
+
+      setToken("tok-c");
+      const pending = getLastFakeEventSource()!;
+      expect(pending).not.toBe(first);
+      act(() => pending.triggerOpen());
+
+      expect(onReconnect).toHaveBeenCalledOnce();
+      expect(active()).toEqual([pending]);
+    });
+
+    it("does not refetch on the first open of an ordinary new subscription", () => {
+      const { onReconnect } = renderWithToken("c/30", "tok-a");
+      act(() => getLastFakeEventSource()!.triggerOpen());
+      expect(onReconnect).not.toHaveBeenCalled();
+    });
+
     it("does not report a rollover as a reconnect", () => {
       const { setToken, onReconnect } = renderWithToken("c/30", "tok-a");
       act(() => getLastFakeEventSource()!.triggerOpen());

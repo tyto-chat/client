@@ -43,6 +43,7 @@ export function useMercureSubscription(
   const topics = topic === null ? [] : Array.isArray(topic) ? topic : [topic];
   const key = topics.join("\n");
   const connection = useRef<Connection | null>(null);
+  const waitedForResumeKey = useRef<string | null>(null);
 
   useEffect(() => {
     const current = connection.current;
@@ -69,8 +70,11 @@ export function useMercureSubscription(
     if (mercureSuspended) {
       current?.subscription.close();
       connection.current = null;
+      waitedForResumeKey.current = key;
       return;
     }
+    const refetchOnFirstOpen = waitedForResumeKey.current === key;
+    waitedForResumeKey.current = null;
     current?.subscription.close();
     connection.current = {
       key,
@@ -86,6 +90,7 @@ export function useMercureSubscription(
           onSustainedFailure: () => latest.current.notify(latest.current.errorMessage, "error"),
         },
         getServerInfo()?.mercureUrl,
+        { refetchOnFirstOpen },
       ),
     };
   }, [key, mercureToken, mercureTokenRevokesGrants, mercureSuspended]);
