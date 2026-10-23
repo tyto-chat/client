@@ -16,7 +16,7 @@ export function useMercureSubscription(
   errorMessage: string,
   onReconnect?: () => void,
 ): void {
-  const { mercureToken, refreshMercureToken } = useAuthContext();
+  const { mercureToken, mercureTokenRevokesGrants, refreshMercureToken } = useAuthContext();
   const { notify } = useNotification();
 
   const latest = useRef({
@@ -52,7 +52,8 @@ export function useMercureSubscription(
     if (current && current.key === key) {
       if (current.token !== mercureToken) {
         current.token = mercureToken;
-        current.subscription.rollover();
+        if (mercureTokenRevokesGrants) current.subscription.reconnect();
+        else current.subscription.rollover();
       }
       return;
     }
@@ -72,7 +73,7 @@ export function useMercureSubscription(
         getServerInfo()?.mercureUrl,
       ),
     };
-  }, [key, mercureToken]);
+  }, [key, mercureToken, mercureTokenRevokesGrants]);
 
   useEffect(
     () => () => {

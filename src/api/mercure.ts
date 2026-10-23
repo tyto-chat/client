@@ -7,6 +7,7 @@ export interface MercureHandlers {
 export interface MercureSubscription {
   close(): void;
   rollover(): void;
+  reconnect(): void;
 }
 
 const SEEN_ID_LIMIT = 500;
@@ -122,7 +123,7 @@ export function subscribeMercure(
   handlers: MercureHandlers = {},
   hubUrl?: string,
 ): MercureSubscription {
-  if (!hubUrl) return { close: () => {}, rollover: () => {} };
+  if (!hubUrl) return { close: () => {}, rollover: () => {}, reconnect: () => {} };
 
   const currentToken = typeof mercureToken === "function" ? mercureToken : () => mercureToken;
   const buildUrl = (resume: boolean) => {
@@ -143,6 +144,8 @@ export function subscribeMercure(
   let main = newSlot();
   let pending: Slot | null = null;
   let replaying: Slot | null = null;
+  let resumeMain = false;
+  let refetchOnOpen = false;
   let ticket: RolloverTicket | null = null;
   let lastDeliveredId: string | null = null;
   let closed = false;
@@ -199,7 +202,8 @@ export function subscribeMercure(
   };
 
   const markMainOpen = () => {
-    const recovered = main.errors > 0;
+    const recovered = main.errors > 0 || refetchOnOpen;
+    refetchOnOpen = false;
     main.errors = 0;
     notifiedFailure = false;
     if (everOpened && recovered) handlers.onReconnect?.();
@@ -211,6 +215,7 @@ export function subscribeMercure(
     const errors = main.errors + 1;
     disposeSlot(main);
     main = newSlot();
+    replaying = null;
     main.errors = errors;
     if (errors >= 5 && !notifiedFailure) {
       notifiedFailure = true;
@@ -265,7 +270,9 @@ export function subscribeMercure(
     slot.timer = null;
     if (!isLive(slot)) return;
     const recovering = !everOpened || main.errors > 0 || sleptSince(activeSince);
-    const es = new EventSource(buildUrl(slot === pending && !recovering));
+    const resume = (slot === pending || (slot === main && resumeMain)) && !recovering;
+    if (slot === main) resumeMain = false;
+    const es = new EventSource(buildUrl(resume));
     slot.source = es;
     if (slot === pending) {
       slot.deadline = setTimeout(() => {
@@ -294,6 +301,16 @@ export function subscribeMercure(
       releaseSleepWatch();
       disposeSlot(main);
       endRollover();
+    },
+    reconnect: () => {
+      if (closed) return;
+      endRollover();
+      refetchOnOpen = main.errors > 0 || sleptSince(activeSince) || !lastDeliveredId;
+      disposeSlot(main);
+      main = newSlot();
+      replaying = null;
+      resumeMain = !refetchOnOpen;
+      connect(main);
     },
     rollover: () => {
       if (closed) return;

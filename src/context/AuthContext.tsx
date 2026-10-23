@@ -41,7 +41,8 @@ interface AuthState {
   refreshUser: () => Promise<void>;
   sessionExpired: boolean;
   mercureToken: string | null;
-  refreshMercureToken: () => Promise<void>;
+  mercureTokenRevokesGrants: boolean;
+  refreshMercureToken: (options?: { revoke?: boolean }) => Promise<void>;
   setRealtimeScope: (scope: RealtimeScope) => void;
 }
 
@@ -62,6 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [mercureToken, setMercureToken] = useState<string | null>(null);
+  const [mercureTokenRevokesGrants, setMercureTokenRevokesGrants] = useState(false);
+  const revokeRequestedAtRef = useRef<number | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mercureRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userRef = useRef<User | null>(null);
@@ -118,6 +121,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const mToken = minted.token;
         if (request !== mercureRequestRef.current) return;
         mercureFailuresRef.current = 0;
+        const revokedAt = revokeRequestedAtRef.current;
+        setMercureTokenRevokesGrants(revokedAt !== null);
+        if (revokedAt !== null && request > revokedAt) revokeRequestedAtRef.current = null;
         setMercureToken(mToken);
         clearMercureTimer();
         if (!mToken) {
@@ -196,7 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const mercureRefreshInFlightRef = useRef<Promise<void> | null>(null);
   const mercureRefreshAgainRef = useRef(false);
 
-  const refreshMercureToken = useCallback((): Promise<void> => {
+  const refreshMercureToken = useCallback((options?: { revoke?: boolean }): Promise<void> => {
+    if (options?.revoke) revokeRequestedAtRef.current = mercureRequestRef.current;
     if (mercureRefreshInFlightRef.current) {
       mercureRefreshAgainRef.current = true;
       return mercureRefreshInFlightRef.current;
@@ -484,6 +491,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshUser,
         sessionExpired,
         mercureToken,
+        mercureTokenRevokesGrants,
         refreshMercureToken,
         setRealtimeScope,
       }}

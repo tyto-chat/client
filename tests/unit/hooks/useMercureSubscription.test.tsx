@@ -12,8 +12,12 @@ type NotificationContextValue = ReturnType<typeof useNotification>;
 
 // Minimal context stubs (only the fields the hook under test reads)
 
-const MockAuthContext = createContext<Pick<AuthState, "mercureToken" | "refreshMercureToken">>({
+const MockAuthContext = createContext<
+  Pick<AuthState, "mercureToken" | "refreshMercureToken"> &
+    Partial<Pick<AuthState, "mercureTokenRevokesGrants">>
+>({
   mercureToken: null,
+  mercureTokenRevokesGrants: false,
   refreshMercureToken: vi.fn(),
 });
 
@@ -36,7 +40,8 @@ vi.mock("@/api/serverInfo", () => ({
   }),
 }));
 
-type StubAuthState = Pick<AuthState, "mercureToken" | "refreshMercureToken">;
+type StubAuthState = Pick<AuthState, "mercureToken" | "refreshMercureToken"> &
+  Partial<Pick<AuthState, "mercureTokenRevokesGrants">>;
 
 function makeWrapper(auth: StubAuthState, notify: NotificationContextValue["notify"]) {
   return function Wrapper({ children }: { children: ReactNode }) {
@@ -178,7 +183,11 @@ describe("useMercureSubscription", () => {
 
   describe("when the realtime token changes", () => {
     function renderWithToken(initialTopic: string | string[], initial: string) {
-      const auth: StubAuthState = { mercureToken: initial, refreshMercureToken: vi.fn() };
+      const auth: StubAuthState = {
+        mercureToken: initial,
+        mercureTokenRevokesGrants: false,
+        refreshMercureToken: vi.fn(),
+      };
       let currentTopic = initialTopic;
       const onReconnect = vi.fn();
       function Wrapper({ children }: { children: ReactNode }) {
@@ -196,8 +205,9 @@ describe("useMercureSubscription", () => {
       );
       return {
         onReconnect,
-        setToken: (next: string) => {
+        setToken: (next: string, revokesGrants = false) => {
           auth.mercureToken = next;
+          auth.mercureTokenRevokesGrants = revokesGrants;
           view.rerender();
         },
         setTopic: (next: string | string[]) => {
@@ -258,6 +268,23 @@ describe("useMercureSubscription", () => {
 
       expect(active()).toEqual([first]);
       vi.useRealTimers();
+    });
+
+    it("closes the old source at once when the new token revokes grants", () => {
+      const { setToken, onReconnect } = renderWithToken("c/30", "tok-a");
+      const first = getLastFakeEventSource()!;
+      act(() => first.triggerOpen());
+      act(() => first.dispatch("a", "urn:uuid:1"));
+
+      setToken("tok-b", true);
+
+      expect(first.closed).toBe(true);
+      const second = getLastFakeEventSource()!;
+      expect(active()).toEqual([second]);
+      expect(new URL(second.url).searchParams.get("authorization")).toBe("tok-b");
+      expect(new URL(second.url).searchParams.get("lastEventID")).toBe("urn:uuid:1");
+      act(() => second.triggerOpen());
+      expect(onReconnect).not.toHaveBeenCalled();
     });
 
     it("does not report a rollover as a reconnect", () => {

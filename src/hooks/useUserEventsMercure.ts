@@ -39,7 +39,9 @@ export function useUserEventsMercure() {
     (event) => {
       const data = parseMercureEvent<UserControlEvent>(event);
       if (!data || data.type !== "user.event") return;
-      if (data.event && GRANT_CHANGING_EVENTS.has(data.event)) void refreshMercureToken();
+      if (data.event && GRANT_CHANGING_EVENTS.has(data.event)) {
+        void refreshMercureToken({ revoke: data.event !== "channel.access.granted" });
+      }
 
       const onThisCommunity =
         !!data.communityIdentifier && params.communityId === data.communityIdentifier;

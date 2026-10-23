@@ -165,6 +165,40 @@ describe("AuthContext realtime re-mint resilience", () => {
     expect(hits.length).toBe(2);
   });
 
+  it("keeps the revocation for the mint that starts after it, even when an older refresh lands first", async () => {
+    const { result } = await mountAuthed([{ token: "rt-1" }]);
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let calls = 0;
+    server.use(
+      http.get(`${BASE}/api/v1/realtime/token`, async () => {
+        calls += 1;
+        const n = calls;
+        if (n === 1) await gate;
+        return HttpResponse.json({ token: `rt-${n + 1}`, expiresIn: 1800 });
+      }),
+    );
+
+    act(() => {
+      void result.current.refreshMercureToken();
+    });
+    act(() => {
+      void result.current.refreshMercureToken({ revoke: true });
+    });
+    release();
+
+    await waitFor(() => expect(result.current.mercureToken).toBe("rt-3"));
+    expect(result.current.mercureTokenRevokesGrants).toBe(true);
+
+    await act(async () => {
+      await result.current.refreshMercureToken();
+    });
+    expect(result.current.mercureToken).toBe("rt-4");
+    expect(result.current.mercureTokenRevokesGrants).toBe(false);
+  });
+
   it("drops the token on a definitive 403 and does not retry", async () => {
     const { result, hits } = await mountAuthed([{ token: "rt-1" }, { status: 403 }]);
 

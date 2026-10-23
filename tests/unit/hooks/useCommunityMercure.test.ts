@@ -52,6 +52,7 @@ describe("useCommunityMercure", () => {
 
   it("re-mints the realtime token when a structure change alters grants", () => {
     fire({ type: "community.structure", communityIdentifier: "my-com", grantsChanged: true });
+    expect(refreshMercureToken).toHaveBeenCalledWith({ revoke: true });
     expect(refreshMercureToken).toHaveBeenCalledOnce();
   });
 

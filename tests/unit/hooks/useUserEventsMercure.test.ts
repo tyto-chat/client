@@ -56,6 +56,9 @@ describe("useUserEventsMercure", () => {
   ])("%s re-mints the realtime token so grants follow access", (event) => {
     fire({ type: "user.event", event, communityIdentifier: "c1" });
     expect(refreshMercureToken).toHaveBeenCalledTimes(1);
+    expect(refreshMercureToken).toHaveBeenCalledWith({
+      revoke: event !== "channel.access.granted",
+    });
   });
 
   it("other events leave the realtime token alone", () => {

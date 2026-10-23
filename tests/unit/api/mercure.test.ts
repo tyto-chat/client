@@ -417,6 +417,90 @@ describe("subscribeMercure", () => {
     sub.close();
   });
 
+  it("reconnect() closes the stream at once and resumes the replacement from the last event", () => {
+    const token = { value: "tok-a" };
+    const { sub, first, onReconnect } = open(token);
+    first.dispatch("a", "urn:uuid:1");
+    token.value = "tok-b";
+
+    sub.reconnect();
+
+    expect(first.closed).toBe(true);
+    const next = getLastFakeEventSource()!;
+    expect(lastEventIdOf(next)).toBe("urn:uuid:1");
+    expect(new URL(next.url).searchParams.get("authorization")).toBe("tok-b");
+    next.triggerOpen();
+    expect(onReconnect).not.toHaveBeenCalled();
+    expect(active()).toEqual([next]);
+    sub.close();
+  });
+
+  it("reconnect() after the device slept refetches instead of resuming", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2000-01-01T00:00:00Z"));
+    const token = { value: "tok-a" };
+    const { sub, first, onReconnect } = open(token);
+    first.dispatch("a", "urn:uuid:1");
+    vi.setSystemTime(new Date("2000-01-01T00:10:00Z"));
+
+    sub.reconnect();
+
+    const next = getLastFakeEventSource()!;
+    expect(lastEventIdOf(next)).toBeNull();
+    next.triggerOpen();
+    expect(onReconnect).toHaveBeenCalledOnce();
+    sub.close();
+  });
+
+  it("reconnect() refetches when there is no event to resume from", () => {
+    const token = { value: "tok-a" };
+    const { sub, onReconnect } = open(token);
+
+    sub.reconnect();
+
+    const next = getLastFakeEventSource()!;
+    expect(lastEventIdOf(next)).toBeNull();
+    next.triggerOpen();
+    expect(onReconnect).toHaveBeenCalledOnce();
+    sub.close();
+  });
+
+  it("reconnect() cancels a rollover in progress", () => {
+    const token = { value: "tok-a" };
+    const { sub, first } = open(token);
+    sub.rollover();
+    const pending = getLastFakeEventSource()!;
+
+    sub.reconnect();
+
+    expect(pending.closed).toBe(true);
+    expect(first.closed).toBe(true);
+    expect(active()).toEqual([getLastFakeEventSource()]);
+    sub.close();
+  });
+
+  it("trims the dedup window again after a failed rollover replaced a replaying stream", () => {
+    vi.useFakeTimers();
+    const token = { value: "tok-a" };
+    const { sub, first, onMessage } = open(token);
+    sub.rollover();
+    const second = getLastFakeEventSource()!;
+    second.triggerOpen();
+    first.dispatch("x", "old-0");
+    sub.rollover();
+    getLastFakeEventSource()!.triggerError();
+    vi.advanceTimersByTime(40000);
+    const replacement = getLastFakeEventSource()!;
+    replacement.triggerOpen();
+    for (let i = 0; i < 600; i++) replacement.dispatch(`n${i}`, `new-${i}`);
+    onMessage.mockClear();
+
+    replacement.dispatch("y", "new-0");
+
+    expect(onMessage).toHaveBeenCalledOnce();
+    sub.close();
+  });
+
   describe("app-wide rollover serialisation", () => {
     function two() {
       const token = { value: "tok-a" };

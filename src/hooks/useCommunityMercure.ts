@@ -17,7 +17,7 @@ export function useCommunityMercure(communityIdentifier: string, communityId: nu
     (event) => {
       const data = parseMercureEvent<{ type?: string; grantsChanged?: boolean }>(event);
       if (data?.type !== "community.structure") return;
-      if (data.grantsChanged === true) void refreshMercureToken();
+      if (data.grantsChanged === true) void refreshMercureToken({ revoke: true });
 
       void queryClient.invalidateQueries({ queryKey: queryKeys.community(communityIdentifier) });
       void queryClient.invalidateQueries({
