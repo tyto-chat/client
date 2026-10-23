@@ -208,11 +208,19 @@ export function subscribeMercure(
   };
 
   const replaceMain = () => {
+    const errors = main.errors + 1;
     disposeSlot(main);
     main = newSlot();
-    main.errors = 1;
+    main.errors = errors;
+    if (errors >= 5 && !notifiedFailure) {
+      notifiedFailure = true;
+      handlers.onSustainedFailure?.();
+    }
     const slot = main;
-    slot.timer = setTimeout(() => connect(slot), 1000);
+    slot.timer = setTimeout(
+      () => connect(slot),
+      Math.min(1000 * 2 ** Math.min(errors - 1, 5), 30000),
+    );
   };
 
   const failPending = (slot: Slot, es: EventSource) => {

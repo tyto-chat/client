@@ -393,6 +393,30 @@ describe("subscribeMercure", () => {
     sub.close();
   });
 
+  it("keeps the main backoff growing when rollovers fail during a hub outage", () => {
+    vi.useFakeTimers();
+    const token = { value: "tok-a" };
+    const onSustainedFailure = vi.fn();
+    const sub = subscribeMercure(["c/1"], vi.fn(), () => token.value, { onSustainedFailure }, HUB);
+    const first = getLastFakeEventSource()!;
+    first.triggerOpen();
+    for (let i = 0; i < 4; i++) {
+      getLastFakeEventSource()!.triggerError();
+      vi.advanceTimersByTime(30000);
+    }
+    sub.rollover();
+    getLastFakeEventSource()!.triggerError();
+    vi.advanceTimersByTime(40000);
+
+    expect(onSustainedFailure).toHaveBeenCalledOnce();
+    const before = getFakeEventSourceInstances().length;
+    vi.advanceTimersByTime(8000);
+    expect(getFakeEventSourceInstances()).toHaveLength(before);
+    vi.advanceTimersByTime(30000);
+    expect(getFakeEventSourceInstances()).toHaveLength(before + 1);
+    sub.close();
+  });
+
   describe("app-wide rollover serialisation", () => {
     function two() {
       const token = { value: "tok-a" };
