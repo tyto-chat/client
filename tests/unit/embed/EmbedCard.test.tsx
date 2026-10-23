@@ -6,6 +6,7 @@ import { TEST_BASE_URL as BASE, mockUser } from "../../fixtures";
 import { configureEmbedApiBase } from "@/embed/api";
 import { EmbedCard } from "@/embed/EmbedCard";
 import { getUserTextColor } from "@/utils/userColor";
+import * as inertHtml from "@/utils/inertHtml";
 
 const UUID = "3b2c10a4-9f5e-4c1a-8d2b-1f3e4a5b6c7d";
 
@@ -144,8 +145,10 @@ describe("EmbedCard", () => {
       http.get(`${BASE}/api/v1/communities/demo/emojis`, () => HttpResponse.json(emojiCollection)),
     );
 
+    const inertParse = vi.spyOn(inertHtml, "parseInertHtml");
     const { container } = render(<EmbedCard uuid={UUID} />);
     await waitFor(() => expect(screen.getByText("Test User")).toBeInTheDocument());
+    expect(inertParse).toHaveBeenCalled();
 
     const span = container.querySelector("span.mention-user");
     expect(span).not.toBeNull();

@@ -7,8 +7,9 @@ import { server } from "../../mocks/server";
 import { AuthProvider, useAuthContext } from "@/context/AuthContext";
 import { configureApiClient } from "@/api/client";
 import { __resetRefreshStateForTests } from "@/api/auth";
-import { setAccessToken } from "@/api/tokenStore";
+import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { TEST_BASE_URL as BASE, mockUser } from "../../fixtures";
+import { STORAGE_KEYS } from "@/utils/storageKeys";
 
 function tokenExpiringIn(seconds: number, marker: string): string {
   const header = btoa(JSON.stringify({ alg: "none" }));
@@ -39,6 +40,7 @@ describe("AuthContext silent refresh retries", () => {
 
   afterEach(() => {
     setAccessToken(null);
+    localStorage.clear();
     __resetRefreshStateForTests();
     vi.useRealTimers();
   });
@@ -68,5 +70,86 @@ describe("AuthContext silent refresh retries", () => {
 
     expect(calls).toBe(3);
     expect(result.current.token).toBe(fresh);
+  });
+
+  it("keeps retrying the cookie restore of a returning user after a transient failure", async () => {
+    const fresh = tokenExpiringIn(3600, "restored");
+    const replies = [429];
+    let calls = 0;
+    server.use(
+      http.post(`${BASE}/token/refresh`, () => {
+        calls += 1;
+        const status = replies.shift();
+        if (status) return new HttpResponse(null, { status });
+        return HttpResponse.json({ token: fresh });
+      }),
+    );
+    localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
+
+    const { result } = renderHook(() => useAuthContext(), { wrapper });
+    await waitFor(() => expect(calls).toBe(1));
+    expect(result.current.token).toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61_000);
+    });
+
+    await waitFor(() => expect(result.current.token).toBe(fresh));
+    expect(calls).toBe(2);
+  });
+
+  it("ends the session when a scheduled refresh fails for good", async () => {
+    let calls = 0;
+    server.use(
+      http.post(`${BASE}/token/refresh`, () => {
+        calls += 1;
+        return new HttpResponse(null, { status: 401 });
+      }),
+    );
+    setAccessToken(tokenExpiringIn(5 * 60 + 2, "old"));
+
+    const { result } = renderHook(() => useAuthContext(), { wrapper });
+    await waitFor(() => expect(result.current.user).not.toBeNull());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000);
+    });
+
+    await waitFor(() => expect(result.current.token).toBeNull());
+    expect(calls).toBe(1);
+  });
+
+  it("drops a background restore that finishes after the user logged in", async () => {
+    const restored = tokenExpiringIn(3600, "restored");
+    const newer = tokenExpiringIn(3600, "newer");
+    let release: () => void = () => {};
+    let calls = 0;
+    server.use(
+      http.post(`${BASE}/token/refresh`, async () => {
+        calls += 1;
+        if (calls === 1) return new HttpResponse(null, { status: 429 });
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        return HttpResponse.json({ token: restored });
+      }),
+    );
+    localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
+
+    const { result } = renderHook(() => useAuthContext(), { wrapper });
+    await waitFor(() => expect(calls).toBe(1));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61_000);
+    });
+    await waitFor(() => expect(calls).toBe(2));
+
+    act(() => result.current.login(newer));
+    await act(async () => {
+      release();
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    expect(result.current.token).toBe(newer);
+    expect(getAccessToken()).toBe(newer);
   });
 });

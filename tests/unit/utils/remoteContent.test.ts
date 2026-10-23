@@ -17,7 +17,6 @@ import {
   normalizeHost,
   setRemoteContentHosts,
   setRemoteContentLevel,
-  alwaysLoadHost,
 } from "@/utils/remoteContent";
 
 beforeEach(() => {
@@ -145,15 +144,17 @@ describe("normalizeHost", () => {
   });
 });
 
-describe("alwaysLoadHost", () => {
-  it("keeps the exact host so shared hosting tenants stay separate", () => {
-    expect(alwaysLoadHost("i.imgur.com")).toBe("i.imgur.com");
-    expect(alwaysLoadHost("www.example.com")).toBe("example.com");
-    expect(alwaysLoadHost("alice.github.io")).toBe("alice.github.io");
+describe("always-load grants", () => {
+  it("offer the exact host, www included", () => {
+    const out = gateRemoteImages('<img src="https://www.example.com/a.png">', LABELS, {
+      version: 0,
+      canAutoLoad: () => false,
+    });
+    expect(out).toContain('data-remote-host="www.example.com"');
   });
 
   it("allowing one github.io site does not allow another", () => {
-    setRemoteContentHosts([alwaysLoadHost("alice.github.io")]);
+    setRemoteContentHosts(["alice.github.io"]);
     expect(canAutoLoad("https://alice.github.io/a.png")).toBe(true);
     expect(canAutoLoad("https://attacker.github.io/a.png")).toBe(false);
   });

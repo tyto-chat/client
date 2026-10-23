@@ -5,6 +5,7 @@ import { sanitizeMessageHtml } from "@/utils/sanitize";
 import { isImageMime } from "@/utils/attachmentFormat";
 import { getUserTextColor } from "@/utils/userColor";
 import { t } from "./i18n";
+import { parseInertHtml } from "@/utils/inertHtml";
 
 interface Props {
   uuid: string;
@@ -59,10 +60,9 @@ function renderBodyHtml(text: string | null, emojiByShortcode: Map<string, strin
   const sanitized = sanitizeMessageHtml(text ?? "");
   if (emojiByShortcode.size === 0) return sanitized;
 
-  const container = document.createElement("div");
-  container.innerHTML = sanitized;
+  const container = parseInertHtml(sanitized);
   const textNodes: Text[] = [];
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const walker = container.ownerDocument.createTreeWalker(container, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     if (!isInsideCode(node)) textNodes.push(node as Text);
   }

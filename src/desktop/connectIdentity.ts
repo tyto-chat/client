@@ -91,11 +91,18 @@ export async function resolveServerQuiet(origin: string): Promise<ServerInfo> {
 }
 
 export function installRefreshExecutor(bridge: PlatformBridge, key: string): void {
-  setRefreshExecutor(async () => {
+  let inFlight: Promise<string> | null = null;
+  const refresh = async (): Promise<string> => {
     const current = await bridge.secrets.get(key);
     if (!current) throw new Error("refresh_failed");
     const { token, refreshToken } = await refreshWithToken(getBaseUrl(), current);
     if (refreshToken) await bridge.secrets.set(key, refreshToken);
     return token;
+  };
+  setRefreshExecutor(() => {
+    inFlight ??= refresh().finally(() => {
+      inFlight = null;
+    });
+    return inFlight;
   });
 }

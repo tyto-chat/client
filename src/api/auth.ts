@@ -43,12 +43,16 @@ export async function loginAt(
 ): Promise<LoginTokens> {
   let response: Response;
   try {
-    response = await fetch(baseUrl + "/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...transportHeaders() },
-      credentials: "include",
-      body: JSON.stringify({ email, password, remember_me: rememberMe }),
-    });
+    response = await fetchWithDeadline(
+      baseUrl + "/auth",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...transportHeaders() },
+        credentials: "include",
+        body: JSON.stringify({ email, password, remember_me: rememberMe }),
+      },
+      requestTimeoutMs(),
+    );
   } catch {
     throw new LoginRequestError("unreachable", null);
   }
@@ -165,6 +169,24 @@ function withDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
 }
 
+async function refreshViaCookie(): Promise<{ ok: true; newToken: string } | { ok: false }> {
+  const res = await fetchWithDeadline(
+    getBaseUrl() + "/token/refresh",
+    { method: "POST", credentials: "include" },
+    requestTimeoutMs(),
+  );
+  // A rate-limited refresh says "ask again shortly", not "your session is
+  // gone" — callers must keep the session and retry rather than sign out.
+  if (res.status === 429) {
+    throw new RefreshRateLimitedError();
+  }
+  if (!res.ok) {
+    return { ok: false };
+  }
+  const { token: newToken } = (await res.json()) as { token: string };
+  return { ok: true, newToken };
+}
+
 export function refreshAccessToken(): Promise<string> {
   if (activeRefresh) return activeRefresh;
   const token = getAccessToken();
@@ -174,35 +196,23 @@ export function refreshAccessToken(): Promise<string> {
   if (!token && Date.now() - lastFailedAt < 10_000) {
     return Promise.reject(new Error("refresh_failed"));
   }
-  activeRefresh = withDeadline(
+  activeRefresh = (
     refreshExecutor
-      ? refreshExecutor()
+      ? withDeadline(refreshExecutor(), requestTimeoutMs() * 4)
           .then((newToken) => ({ ok: true, newToken }) as const)
           .catch((err: unknown) => {
             if (err instanceof ApiError && err.status === 429) {
               throw new RefreshRateLimitedError();
             }
-            if (err instanceof RequestDeadlineError) throw err;
+            if (
+              err instanceof RequestDeadlineError ||
+              (err instanceof LoginRequestError && err.kind === "unreachable")
+            ) {
+              throw new RequestDeadlineError();
+            }
             return { ok: false } as const;
           })
-      : fetchWithDeadline(
-          getBaseUrl() + "/token/refresh",
-          { method: "POST", credentials: "include" },
-          requestTimeoutMs(),
-        ).then(async (res) => {
-          // A rate-limited refresh says "ask again shortly", not "your session
-          // is gone" — callers must keep the session and retry rather than sign
-          // out, so this bypasses the shared failure bookkeeping below.
-          if (res.status === 429) {
-            throw new RefreshRateLimitedError();
-          }
-          if (!res.ok) {
-            return { ok: false } as const;
-          }
-          const { token: newToken } = (await res.json()) as { token: string };
-          return { ok: true, newToken } as const;
-        }),
-    requestTimeoutMs(),
+      : refreshViaCookie()
   )
     .then((result) => {
       if (!result.ok) {

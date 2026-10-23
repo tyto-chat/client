@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ImageLightbox } from "./ImageLightbox";
-import {
-  allowHostForSession,
-  remoteHost,
-  alwaysLoadHost,
-  useRemoteContentPolicy,
-} from "@/utils/remoteContent";
+import { allowHostForSession, remoteHost, useRemoteContentPolicy } from "@/utils/remoteContent";
 import { useAllowRemoteHost } from "@/hooks/useAllowRemoteHost";
 
 interface Props {
@@ -37,10 +32,10 @@ export function ImageEmbed({ url }: Props) {
         <button
           type="button"
           data-testid="remote-image-always"
-          onClick={() => allowAlways(alwaysLoadHost(host))}
+          onClick={() => allowAlways(host)}
           className="remote-image-placeholder"
         >
-          {t("remote_content_always_load", { host: alwaysLoadHost(host) })}
+          {t("remote_content_always_load", { host: host })}
         </button>
       </span>
     );

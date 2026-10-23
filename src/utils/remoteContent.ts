@@ -84,10 +84,6 @@ export function normalizeHost(input: string): string | null {
   return HOST_RE.test(host) ? host : null;
 }
 
-export function alwaysLoadHost(host: string): string {
-  return host.replace(/^www\./, "");
-}
-
 export function addRemoteContentHost(domain: string): string[] {
   const hosts = getRemoteContentHosts();
   const next = hosts.includes(domain) ? hosts : [...hosts, domain];
@@ -158,8 +154,8 @@ export function gateRemoteImages(
     const always = document.createElement("button");
     always.type = "button";
     always.className = "remote-image-placeholder remote-image-always";
-    always.dataset.remoteHost = alwaysLoadHost(host);
-    always.textContent = labels.always(alwaysLoadHost(host));
+    always.dataset.remoteHost = host;
+    always.textContent = labels.always(host);
     gate.append(load, always);
     img.replaceWith(gate);
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import {
   login,
@@ -10,9 +10,10 @@ import {
   isRefreshTransient,
   setRefreshExecutor,
   LoginRequestError,
+  loginAt,
 } from "@/api/auth";
 import { ApiError, configureApiClient } from "@/api/client";
-import { RequestDeadlineError } from "@/api/fetchWithDeadline";
+import { RequestDeadlineError, __setRequestTimeoutsForTests } from "@/api/fetchWithDeadline";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { TEST_BASE_URL as BASE } from "../../fixtures";
@@ -116,6 +117,44 @@ describe("refreshAccessToken", () => {
   });
 });
 
+describe("refreshAccessToken deadline", () => {
+  it("times out when the refresh response body stalls after the headers", async () => {
+    __setRequestTimeoutsForTests({ request: 50 });
+    setAccessToken("still-valid");
+    server.use(
+      http.post(
+        `${BASE}/token/refresh`,
+        () =>
+          new HttpResponse(new ReadableStream({ start() {} }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+      ),
+    );
+
+    try {
+      await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
+    } finally {
+      __setRequestTimeoutsForTests(null);
+    }
+    expect(getAccessToken()).toBe("still-valid");
+  });
+});
+
+describe("loginAt deadline", () => {
+  it("reports a stalled login as unreachable instead of hanging", async () => {
+    __setRequestTimeoutsForTests({ request: 30 });
+    server.use(http.post(`${BASE}/auth`, async () => delay("infinite")));
+    try {
+      await expect(loginAt(BASE, "a@example.com", "pw")).rejects.toMatchObject({
+        kind: "unreachable",
+      });
+    } finally {
+      __setRequestTimeoutsForTests(null);
+    }
+  });
+});
+
 describe("refreshAccessToken via executor", () => {
   it("throttles after an executor rejection without re-invoking the executor", async () => {
     let calls = 0;
@@ -140,6 +179,17 @@ describe("refreshAccessToken via executor", () => {
 
     await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
     expect(getAccessToken()).toBe("still-valid");
+  });
+
+  it("treats an unreachable server during executor refresh as transient", async () => {
+    setAccessToken("still-valid");
+    localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
+    setRefreshExecutor(async () => {
+      throw new LoginRequestError("unreachable", 503);
+    });
+
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
+    expect(localStorage.getItem(STORAGE_KEYS.HAD_SESSION)).toBe("1");
   });
 
   it("keeps a timed-out executor refresh transient and the session marker intact", async () => {
