@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -154,6 +154,12 @@ describe("AuthContext silent refresh retries", () => {
   });
 
   it("ends the session when a retried refresh then fails for good", async () => {
+    let expiredEvents = 0;
+    const onExpired = () => {
+      expiredEvents += 1;
+    };
+    window.addEventListener("session:expired", onExpired);
+    onTestFinished(() => window.removeEventListener("session:expired", onExpired));
     const replies = [429, 401];
     server.use(
       http.post(
@@ -171,6 +177,8 @@ describe("AuthContext silent refresh retries", () => {
 
     await waitFor(() => expect(result.current.token).toBeNull());
     expect(result.current.sessionExpired).toBe(true);
+    expect(result.current.mercureToken).toBeNull();
+    expect(expiredEvents).toBe(1);
   });
 
   it("drops a scheduled refresh that finishes after the user logged in", async () => {

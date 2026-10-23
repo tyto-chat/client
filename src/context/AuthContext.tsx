@@ -271,9 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Try again shortly instead of ending the session.
             refreshTimerRef.current = setTimeout(() => refresh(true), 60_000);
           } else if (endSessionOnFailure) {
-            setToken(null);
-            setUser(null);
-            setSessionExpired(true);
+            window.dispatchEvent(new CustomEvent("session:expired"));
           }
         });
       };
