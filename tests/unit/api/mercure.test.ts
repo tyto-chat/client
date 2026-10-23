@@ -360,23 +360,35 @@ describe("subscribeMercure", () => {
     expect(active()).toEqual([]);
   });
 
-  it("gives up on a rollover source after repeated failures without nudging the token", () => {
+  it("after repeated rollover failures drops the old stream and reconnects with the current token", () => {
     vi.useFakeTimers();
     const token = { value: "tok-a" };
     const onStaleToken = vi.fn();
-    const sub = subscribeMercure(["c/1"], vi.fn(), () => token.value, { onStaleToken }, HUB);
+    const onReconnect = vi.fn();
+    const sub = subscribeMercure(
+      ["c/1"],
+      vi.fn(),
+      () => token.value,
+      { onStaleToken, onReconnect },
+      HUB,
+    );
     const first = getLastFakeEventSource()!;
     first.triggerOpen();
+    first.dispatch("a", "urn:uuid:1");
+    token.value = "tok-b";
     sub.rollover();
 
-    for (let i = 0; i < 10; i++) {
-      const latest = getLastFakeEventSource()!;
-      if (latest !== first) latest.triggerError();
-      vi.advanceTimersByTime(35000);
-    }
+    getLastFakeEventSource()!.triggerError();
+    vi.advanceTimersByTime(35000);
 
-    expect(getFakeEventSourceInstances()).toHaveLength(4);
-    expect(active()).toEqual([first]);
+    expect(first.closed).toBe(true);
+    const replacement = getLastFakeEventSource()!;
+    expect(getFakeEventSourceInstances()).toHaveLength(5);
+    expect(new URL(replacement.url).searchParams.get("authorization")).toBe("tok-b");
+    expect(lastEventIdOf(replacement)).toBeNull();
+    replacement.triggerOpen();
+    expect(active()).toEqual([replacement]);
+    expect(onReconnect).toHaveBeenCalledOnce();
     expect(onStaleToken).not.toHaveBeenCalled();
     sub.close();
   });

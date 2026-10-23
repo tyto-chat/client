@@ -151,6 +151,20 @@ describe("AuthContext realtime re-mint resilience", () => {
     expect(result.current.mercureToken).toBeNull();
   });
 
+  it("keeps the retry backoff when the tab becomes visible during a token outage", async () => {
+    const { hits } = await mountAuthed([{ token: "rt-1" }, { status: 502 }, { status: 502 }]);
+    await advance(300_000);
+    await waitFor(() => expect(hits.length).toBe(2));
+
+    setVisibility("hidden");
+    setVisibility("visible");
+    setVisibility("hidden");
+    setVisibility("visible");
+    await advance(1000);
+
+    expect(hits.length).toBe(2);
+  });
+
   it("drops the token on a definitive 403 and does not retry", async () => {
     const { result, hits } = await mountAuthed([{ token: "rt-1" }, { status: 403 }]);
 

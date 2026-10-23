@@ -207,6 +207,14 @@ export function subscribeMercure(
     activeSince = Date.now();
   };
 
+  const replaceMain = () => {
+    disposeSlot(main);
+    main = newSlot();
+    main.errors = 1;
+    const slot = main;
+    slot.timer = setTimeout(() => connect(slot), 1000);
+  };
+
   const failPending = (slot: Slot, es: EventSource) => {
     slot.errors += 1;
     es.close();
@@ -216,6 +224,7 @@ export function subscribeMercure(
     ticket = null;
     if (slot.errors >= PENDING_MAX_ERRORS) {
       endRollover();
+      replaceMain();
       return;
     }
     const delay = Math.min(1000 * 2 ** Math.min(slot.errors - 1, 5), 30000);

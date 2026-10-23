@@ -144,6 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         const delay = realtimeRetryDelay(mercureFailuresRef.current);
         mercureFailuresRef.current += 1;
+        mercureDueAtRef.current = Date.now() + delay;
         mercureRefreshTimerRef.current = setTimeout(() => void mercureScheduleRef.current(), delay);
       }
     },
@@ -177,10 +178,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const onVisibility = () => {
       if (document.visibilityState === "visible") remintIfDue();
     };
-    window.addEventListener("online", remintIfDue);
+    const onOnline = () => {
+      if (mercureDueAtRef.current !== null && mercureFailuresRef.current > 0) {
+        void mercureScheduleRef.current();
+        return;
+      }
+      remintIfDue();
+    };
+    window.addEventListener("online", onOnline);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.removeEventListener("online", remintIfDue);
+      window.removeEventListener("online", onOnline);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
