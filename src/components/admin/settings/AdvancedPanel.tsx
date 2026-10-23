@@ -9,6 +9,7 @@ const KEYS = [
   "resetPasswordCodeExpiryMinutes",
   "emailChallengeExpiryMinutes",
   "invitationExpiryHours",
+  "realtimeTokenTtlMinutes",
   "validateEmails",
   "digestHour",
   "mediaTokenTtlSeconds",
@@ -69,6 +70,19 @@ export function AdvancedPanel({
             max={720}
             value={current.invitationExpiryHours}
             onChange={(e) => set("invitationExpiryHours", Number(e.target.value))}
+            className={inputClass}
+          />
+        </Field>
+      </Section>
+
+      <Section title={t("section_realtime")}>
+        <Field label={t("realtime_token_ttl_minutes")} hint={t("realtime_token_ttl_hint")}>
+          <input
+            type="number"
+            min={5}
+            max={240}
+            value={current.realtimeTokenTtlMinutes}
+            onChange={(e) => set("realtimeTokenTtlMinutes", Number(e.target.value))}
             className={inputClass}
           />
         </Field>

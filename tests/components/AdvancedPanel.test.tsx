@@ -90,6 +90,18 @@ describe("AdvancedPanel", () => {
     expect("digestHour" in body).toBe(false);
   });
 
+  it("patches the realtime token lifetime", async () => {
+    renderPanel();
+    const input = screen.getByRole("spinbutton", { name: /realtime token lifetime/i });
+    await userEvent.clear(input);
+    await userEvent.type(input, "45");
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    const body = patchMock.mock.calls[0]![0];
+    expect(body.realtimeTokenTtlMinutes).toBe(45);
+    expect("resetPasswordCodeExpiryMinutes" in body).toBe(false);
+  });
+
   it("patches only welcomeBotId when the welcome-bot select is changed", async () => {
     renderPanel();
     const welcomeSelect = screen.getByRole("combobox", { name: /welcome bot/i });

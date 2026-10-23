@@ -70,6 +70,7 @@ export interface AdminServerConfig {
   resetPasswordCodeExpiryMinutes: number;
   emailChallengeExpiryMinutes: number;
   invitationExpiryHours: number;
+  realtimeTokenTtlMinutes: number;
   validateEmails: boolean;
   digestHour: number;
   mediaTokenTtlSeconds: number;

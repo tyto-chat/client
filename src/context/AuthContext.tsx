@@ -22,7 +22,11 @@ import { finishAuthRestore, getAccessToken, setAccessToken } from "@/api/tokenSt
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { decodeJwtPayload } from "@/utils/jwtPayload";
 import type { RealtimeScope } from "@/api/realtimeToken";
-import { realtimeRefreshDelay, realtimeRetryDelay } from "@/utils/realtimeSchedule";
+import {
+  realtimeRefreshDelay,
+  realtimeRetryDelay,
+  type RealtimeTokenExpiry,
+} from "@/utils/realtimeSchedule";
 import { unsubscribeFromPush } from "@/utils/webPush";
 import { isManagedIdentityMode } from "@/platform/appMode";
 import { getActiveIdentityKey, subscribeActiveIdentity } from "@/platform/activeIdentity";
@@ -106,11 +110,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const mintMercureToken = useCallback(
     async (
-      mint: (scope: RealtimeScope) => Promise<{ token: string | null; expiresAt: number | null }>,
+      mint: (scope: RealtimeScope) => Promise<{ token: string | null } & RealtimeTokenExpiry>,
     ) => {
       const request = ++mercureRequestRef.current;
       try {
-        const { token: mToken, expiresAt } = await mint(realtimeScopeRef.current);
+        const minted = await mint(realtimeScopeRef.current);
+        const mToken = minted.token;
         if (request !== mercureRequestRef.current) return;
         mercureFailuresRef.current = 0;
         setMercureToken(mToken);
@@ -119,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           mercureDueAtRef.current = null;
           return;
         }
-        const delay = realtimeRefreshDelay(expiresAt);
+        const delay = realtimeRefreshDelay(minted);
         mercureDueAtRef.current = Date.now() + delay;
         mercureRefreshTimerRef.current = setTimeout(() => void mercureScheduleRef.current(), delay);
       } catch (err) {

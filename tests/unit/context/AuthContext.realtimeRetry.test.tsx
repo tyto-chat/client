@@ -100,6 +100,29 @@ describe("AuthContext realtime re-mint resilience", () => {
     await waitFor(() => expect(result.current.mercureToken).toBe("rt-2"));
   });
 
+  it("schedules the next mint from expiresIn instead of the five-minute fallback", async () => {
+    const hits: number[] = [];
+    server.use(
+      http.get(`${BASE}/api/v1/realtime/token`, () => {
+        hits.push(Date.now());
+        return HttpResponse.json({
+          token: `rt-${hits.length}`,
+          expiresAt: Math.floor(Date.now() / 1000) + 1800,
+          expiresIn: 1800,
+        });
+      }),
+    );
+    setAccessToken(sessionToken());
+    const { result } = renderHook(() => useAuthContext(), { wrapper });
+    await waitFor(() => expect(result.current.mercureToken).toBe("rt-1"));
+
+    await advance(1_670_000);
+    expect(hits).toHaveLength(1);
+
+    await advance(20_000);
+    await waitFor(() => expect(result.current.mercureToken).toBe("rt-2"));
+  });
+
   it("drops the token on a definitive 403 and does not retry", async () => {
     const { result, hits } = await mountAuthed([{ token: "rt-1" }, { status: 403 }]);
 

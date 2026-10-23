@@ -22,7 +22,7 @@ import type {
   NotificationMercureEvent,
 } from "@/types/api";
 import { decodeJwtPayload } from "@/utils/jwtPayload";
-import { realtimeRefreshDelay } from "@/utils/realtimeSchedule";
+import { realtimeRefreshDelay, type RealtimeTokenExpiry } from "@/utils/realtimeSchedule";
 import { parseMercureEvent } from "@/utils/parseMercureEvent";
 import { identityFetch, unwrapMember, type ServerContext } from "./identityFetch";
 
@@ -562,7 +562,7 @@ export class IdentityConnection {
           "/me/pinned-communities",
         ),
         identityFetch<{ counts: Record<string, number> }>(ctx, "/notifications/unread-counts"),
-        identityFetch<{ token: string; expiresAt: number }>(ctx, "/realtime/token"),
+        identityFetch<{ token: string } & RealtimeTokenExpiry>(ctx, "/realtime/token"),
       ]);
       if (this.stopped || this.connectionId !== myId) return;
       this.dataRetryAttempt = 0;
@@ -580,7 +580,7 @@ export class IdentityConnection {
       this.unreadCountsValue = counts.counts;
       this.rebuildSnapshot();
       void this.cacheProfileForRelogin(me, ctx);
-      this.subscribeRealtime(myId, me.id, realtimeToken.token, realtimeToken.expiresAt);
+      this.subscribeRealtime(myId, me.id, realtimeToken.token, realtimeToken);
     } catch (error) {
       if (this.stopped || this.connectionId !== myId) return;
       this.errorValue = error;
@@ -603,7 +603,12 @@ export class IdentityConnection {
     }, delay);
   }
 
-  private subscribeRealtime(myId: number, userId: number, token: string, expiresAt: number): void {
+  private subscribeRealtime(
+    myId: number,
+    userId: number,
+    token: string,
+    expiry: RealtimeTokenExpiry,
+  ): void {
     if (this.stopped || this.connectionId !== myId) return;
     this.realtimeToken = token;
     const subscriptionKey = `${myId}:${userId}`;
@@ -626,7 +631,7 @@ export class IdentityConnection {
         this.serverInfoValue?.mercureUrl,
       );
     }
-    this.scheduleRealtimeRemint(myId, userId, expiresAt);
+    this.scheduleRealtimeRemint(myId, userId, expiry);
   }
 
   private closeRealtimeSubscription(): void {
@@ -635,13 +640,13 @@ export class IdentityConnection {
     this.realtimeSubscriptionKey = null;
   }
 
-  private scheduleRealtimeRemint(myId: number, userId: number, expiresAt: number): void {
+  private scheduleRealtimeRemint(myId: number, userId: number, expiry: RealtimeTokenExpiry): void {
     if (this.realtimeRemintTimer) {
       clearTimeout(this.realtimeRemintTimer);
       this.realtimeRemintTimer = null;
     }
     if (this.stopped || this.connectionId !== myId) return;
-    const delay = realtimeRefreshDelay(expiresAt);
+    const delay = realtimeRefreshDelay(expiry);
     this.realtimeRemintTimer = setTimeout(() => {
       this.realtimeRemintTimer = null;
       void this.remintRealtimeToken(myId, userId);
@@ -652,12 +657,12 @@ export class IdentityConnection {
     if (this.stopped || this.connectionId !== myId) return;
     try {
       const ctx = this.serverContext();
-      const realtimeToken = await identityFetch<{ token: string; expiresAt: number }>(
+      const realtimeToken = await identityFetch<{ token: string } & RealtimeTokenExpiry>(
         ctx,
         "/realtime/token",
       );
       if (this.stopped || this.connectionId !== myId) return;
-      this.subscribeRealtime(myId, userId, realtimeToken.token, realtimeToken.expiresAt);
+      this.subscribeRealtime(myId, userId, realtimeToken.token, realtimeToken);
     } catch {
       if (this.stopped || this.connectionId !== myId) return;
       if (this.realtimeRemintTimer) clearTimeout(this.realtimeRemintTimer);

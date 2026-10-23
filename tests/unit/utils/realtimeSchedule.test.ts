@@ -5,23 +5,28 @@ describe("realtimeRefreshDelay", () => {
   const now = 1_000_000_000_000;
   const at = (secondsFromNow: number) => Math.floor(now / 1000) + secondsFromNow;
 
-  it("refreshes five minutes before expiry", () => {
-    expect(realtimeRefreshDelay(at(600), now)).toBe(300_000);
+  it("refreshes two minutes before expiry, counted from the server's expiresIn", () => {
+    expect(realtimeRefreshDelay({ expiresIn: 1800, expiresAt: at(1800) }, now)).toBe(1_680_000);
+    expect(realtimeRefreshDelay({ expiresIn: 600 }, now)).toBe(480_000);
   });
 
-  it("never waits longer than five minutes, so a slow client clock cannot overshoot the hub kill", () => {
-    expect(realtimeRefreshDelay(at(1200), now)).toBe(300_000);
-    expect(realtimeRefreshDelay(at(3600), now)).toBe(300_000);
+  it("ignores the client clock when expiresIn is present", () => {
+    expect(realtimeRefreshDelay({ expiresIn: 1800, expiresAt: at(-3600) }, now)).toBe(1_680_000);
   });
 
   it("waits at least thirty seconds", () => {
-    expect(realtimeRefreshDelay(at(60), now)).toBe(30_000);
-    expect(realtimeRefreshDelay(at(-60), now)).toBe(30_000);
+    expect(realtimeRefreshDelay({ expiresIn: 60 }, now)).toBe(30_000);
   });
 
-  it("falls back to the cap without an expiry", () => {
+  it("falls back to the capped expiresAt schedule for servers without expiresIn", () => {
+    expect(realtimeRefreshDelay({ expiresAt: at(600) }, now)).toBe(300_000);
+    expect(realtimeRefreshDelay({ expiresAt: at(3600) }, now)).toBe(300_000);
+    expect(realtimeRefreshDelay({ expiresAt: at(60) }, now)).toBe(30_000);
+  });
+
+  it("falls back to five minutes without any expiry", () => {
     expect(realtimeRefreshDelay(null, now)).toBe(300_000);
-    expect(realtimeRefreshDelay(undefined, now)).toBe(300_000);
+    expect(realtimeRefreshDelay({ expiresAt: null }, now)).toBe(300_000);
   });
 });
 
