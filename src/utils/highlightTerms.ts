@@ -1,3 +1,5 @@
+import { parseInertHtml } from "@/utils/inertHtml";
+
 function escapeForRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -16,13 +18,12 @@ export function highlightTerms(html: string, terms: readonly string[]): string {
   const cleanTerms = [...new Set(terms.map((t) => t.trim()).filter((t) => t.length >= 2))];
   if (cleanTerms.length === 0) return html;
 
-  const div = document.createElement("div");
-  div.innerHTML = html;
+  const div = parseInertHtml(html);
 
   cleanTerms.sort((a, b) => b.length - a.length);
   const pattern = new RegExp(`(${cleanTerms.map(escapeForRegex).join("|")})`, "gi");
 
-  const walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT, {
+  const walker = div.ownerDocument.createTreeWalker(div, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       let parent = node.parentElement;
       while (parent) {

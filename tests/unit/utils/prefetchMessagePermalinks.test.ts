@@ -97,7 +97,7 @@ describe("prefetchMessagePermalinks across servers", () => {
     const qc = new QueryClient();
     await prefetchMessagePermalinks(qc, [msg("host", `see ${FOREIGN}/m/${A}`)]);
 
-    expect(qc.getQueryData(queryKeys.foreignMessage(FOREIGN, A))).toBeTruthy();
+    expect(qc.getQueryData(queryKeys.foreignMessage(FOREIGN, "ib", A))).toBeTruthy();
     expect(qc.getQueryData(queryKeys.message(A))).toBeUndefined();
     expect(auth).toBe("Bearer token-ib");
   });
@@ -114,7 +114,9 @@ describe("prefetchMessagePermalinks across servers", () => {
     await prefetchMessagePermalinks(qc, [msg("host", `${origin}/m/${A} ${FOREIGN}/m/${A}`)]);
 
     expect((qc.getQueryData(queryKeys.message(A)) as Message).text).toBe("here");
-    expect((qc.getQueryData(queryKeys.foreignMessage(FOREIGN, A)) as Message).text).toBe("there");
+    expect((qc.getQueryData(queryKeys.foreignMessage(FOREIGN, "ib", A)) as Message).text).toBe(
+      "there",
+    );
   });
 
   it("does not fetch an unknown host or a lookalike", async () => {

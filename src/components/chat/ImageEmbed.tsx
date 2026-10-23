@@ -4,7 +4,7 @@ import { ImageLightbox } from "./ImageLightbox";
 import {
   allowHostForSession,
   remoteHost,
-  topDomain,
+  alwaysLoadHost,
   useRemoteContentPolicy,
 } from "@/utils/remoteContent";
 import { useAllowRemoteHost } from "@/hooks/useAllowRemoteHost";
@@ -37,10 +37,10 @@ export function ImageEmbed({ url }: Props) {
         <button
           type="button"
           data-testid="remote-image-always"
-          onClick={() => allowAlways(topDomain(host))}
+          onClick={() => allowAlways(alwaysLoadHost(host))}
           className="remote-image-placeholder"
         >
-          {t("remote_content_always_load", { host: topDomain(host) })}
+          {t("remote_content_always_load", { host: alwaysLoadHost(host) })}
         </button>
       </span>
     );

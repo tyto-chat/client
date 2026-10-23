@@ -21,6 +21,7 @@ import { openLinkedMessage } from "@/utils/openLinkedMessage";
 import { serverOrigin } from "@/utils/permalinkOrigins";
 import { useServerDirectory } from "@/platform/serverDirectory";
 import type { CommunityEmoji } from "@/types/api";
+import { parseInertHtml } from "@/utils/inertHtml";
 
 const COLLAPSE_VIEWPORT_RATIO = 0.3;
 
@@ -70,8 +71,7 @@ function convertMentionLinks(html: string): string {
 }
 
 function normalizeRenderedHtml(html: string): string {
-  const div = document.createElement("div");
-  div.innerHTML = html;
+  const div = parseInertHtml(html);
 
   const isEmpty = (el: Element) => el.tagName === "P" && (el.textContent?.trim() ?? "") === "";
 

@@ -3,6 +3,7 @@ import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { permalinkOrigins } from "@/utils/permalinkOrigins";
 import { getServerDirectory } from "@/platform/serverDirectory";
 import type { RemoteContentLevel } from "@/api/userPreferences";
+import { parseInertHtml } from "@/utils/inertHtml";
 
 export const REMOTE_CONTENT_LEVELS: readonly RemoteContentLevel[] = ["custom", "all"];
 
@@ -83,14 +84,8 @@ export function normalizeHost(input: string): string | null {
   return HOST_RE.test(host) ? host : null;
 }
 
-const SECOND_LEVEL_SUFFIXES = new Set(["co", "com", "net", "org", "gov", "edu", "ac"]);
-
-export function topDomain(host: string): string {
-  const labels = host.split(".");
-  const tld = labels.at(-1) ?? "";
-  const second = labels.at(-2) ?? "";
-  const keep = tld.length === 2 && SECOND_LEVEL_SUFFIXES.has(second) ? 3 : 2;
-  return labels.slice(-keep).join(".");
+export function alwaysLoadHost(host: string): string {
+  return host.replace(/^www\./, "");
 }
 
 export function addRemoteContentHost(domain: string): string[] {
@@ -148,8 +143,7 @@ export function gateRemoteImages(
   policy: RemoteContentPolicy = currentPolicy(),
 ): string {
   if (!html.includes("<img")) return html;
-  const div = document.createElement("div");
-  div.innerHTML = html;
+  const div = parseInertHtml(html);
   for (const img of Array.from(div.querySelectorAll("img"))) {
     const src = img.getAttribute("src") ?? "";
     if (policy.canAutoLoad(src)) continue;
@@ -164,8 +158,8 @@ export function gateRemoteImages(
     const always = document.createElement("button");
     always.type = "button";
     always.className = "remote-image-placeholder remote-image-always";
-    always.dataset.remoteHost = topDomain(host);
-    always.textContent = labels.always(topDomain(host));
+    always.dataset.remoteHost = alwaysLoadHost(host);
+    always.textContent = labels.always(alwaysLoadHost(host));
     gate.append(load, always);
     img.replaceWith(gate);
   }

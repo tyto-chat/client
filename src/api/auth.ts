@@ -1,4 +1,9 @@
-import { bootRequestTimeoutMs, fetchWithDeadline } from "@/api/fetchWithDeadline";
+import {
+  bootRequestTimeoutMs,
+  fetchWithDeadline,
+  RequestDeadlineError,
+  requestTimeoutMs,
+} from "@/api/fetchWithDeadline";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { getBaseUrl, ApiError } from "@/api/client";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
@@ -139,8 +144,8 @@ export class RefreshRateLimitedError extends Error {
   }
 }
 
-export function isRefreshRateLimited(error: unknown): boolean {
-  return error instanceof RefreshRateLimitedError;
+export function isRefreshTransient(error: unknown): boolean {
+  return error instanceof RefreshRateLimitedError || error instanceof RequestDeadlineError;
 }
 
 let activeRefresh: Promise<string> | null = null;
@@ -152,6 +157,14 @@ export function setRefreshExecutor(executor: (() => Promise<string>) | null): vo
   refreshExecutor = executor;
 }
 
+function withDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new RequestDeadlineError()), timeoutMs);
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
+
 export function refreshAccessToken(): Promise<string> {
   if (activeRefresh) return activeRefresh;
   const token = getAccessToken();
@@ -161,7 +174,7 @@ export function refreshAccessToken(): Promise<string> {
   if (!token && Date.now() - lastFailedAt < 10_000) {
     return Promise.reject(new Error("refresh_failed"));
   }
-  activeRefresh = (
+  activeRefresh = withDeadline(
     refreshExecutor
       ? refreshExecutor()
           .then((newToken) => ({ ok: true, newToken }) as const)
@@ -169,23 +182,27 @@ export function refreshAccessToken(): Promise<string> {
             if (err instanceof ApiError && err.status === 429) {
               throw new RefreshRateLimitedError();
             }
+            if (err instanceof RequestDeadlineError) throw err;
             return { ok: false } as const;
           })
-      : fetch(getBaseUrl() + "/token/refresh", { method: "POST", credentials: "include" }).then(
-          async (res) => {
-            // A rate-limited refresh says "ask again shortly", not "your session
-            // is gone" — callers must keep the session and retry rather than sign
-            // out, so this bypasses the shared failure bookkeeping below.
-            if (res.status === 429) {
-              throw new RefreshRateLimitedError();
-            }
-            if (!res.ok) {
-              return { ok: false } as const;
-            }
-            const { token: newToken } = (await res.json()) as { token: string };
-            return { ok: true, newToken } as const;
-          },
-        )
+      : fetchWithDeadline(
+          getBaseUrl() + "/token/refresh",
+          { method: "POST", credentials: "include" },
+          requestTimeoutMs(),
+        ).then(async (res) => {
+          // A rate-limited refresh says "ask again shortly", not "your session
+          // is gone" — callers must keep the session and retry rather than sign
+          // out, so this bypasses the shared failure bookkeeping below.
+          if (res.status === 429) {
+            throw new RefreshRateLimitedError();
+          }
+          if (!res.ok) {
+            return { ok: false } as const;
+          }
+          const { token: newToken } = (await res.json()) as { token: string };
+          return { ok: true, newToken } as const;
+        }),
+    requestTimeoutMs(),
   )
     .then((result) => {
       if (!result.ok) {

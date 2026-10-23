@@ -17,7 +17,7 @@ import {
   normalizeHost,
   setRemoteContentHosts,
   setRemoteContentLevel,
-  topDomain,
+  alwaysLoadHost,
 } from "@/utils/remoteContent";
 
 beforeEach(() => {
@@ -145,12 +145,17 @@ describe("normalizeHost", () => {
   });
 });
 
-describe("topDomain", () => {
-  it("keeps the registrable part of a host", () => {
-    expect(topDomain("i.imgur.com")).toBe("imgur.com");
-    expect(topDomain("imgur.com")).toBe("imgur.com");
-    expect(topDomain("cdn.news.bbc.co.uk")).toBe("bbc.co.uk");
-    expect(topDomain("media.example.com.au")).toBe("example.com.au");
+describe("alwaysLoadHost", () => {
+  it("keeps the exact host so shared hosting tenants stay separate", () => {
+    expect(alwaysLoadHost("i.imgur.com")).toBe("i.imgur.com");
+    expect(alwaysLoadHost("www.example.com")).toBe("example.com");
+    expect(alwaysLoadHost("alice.github.io")).toBe("alice.github.io");
+  });
+
+  it("allowing one github.io site does not allow another", () => {
+    setRemoteContentHosts([alwaysLoadHost("alice.github.io")]);
+    expect(canAutoLoad("https://alice.github.io/a.png")).toBe(true);
+    expect(canAutoLoad("https://attacker.github.io/a.png")).toBe(false);
   });
 });
 
@@ -166,8 +171,8 @@ describe("gateRemoteImages", () => {
     const out = gateRemoteImages(html, LABELS);
     expect(out).toContain('data-remote-src="https://cdn.evil.example/a.png"');
     expect(out).toContain("Load from cdn.evil.example");
-    expect(out).toContain('data-remote-host="evil.example"');
-    expect(out).toContain("Always evil.example");
+    expect(out).toContain('data-remote-host="cdn.evil.example"');
+    expect(out).toContain("Always cdn.evil.example");
     expect(out).toContain('<img src="https://server.example.com/media/e.png" alt="e">');
     expect(out).not.toContain('<img src="https://cdn.evil.example');
   });

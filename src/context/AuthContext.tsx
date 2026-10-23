@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchMe } from "@/api/users";
 import {
-  isRefreshRateLimited,
+  isRefreshTransient,
   refreshAccessToken,
   revokeRefreshToken,
   setRefreshExecutor,
@@ -94,18 +94,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const scheduleRefreshRef = useRef<(tok: string) => void>(() => {});
   const mercureScheduleRef = useRef<() => Promise<void>>(async () => {});
 
-  // Distinguishes "session is gone" from "ask again shortly": a rate-limited
-  // refresh must leave the current session alone, or a burst of reloads signs
-  // the user out.
-  const rateLimitedRef = useRef(false);
+  // Distinguishes "session is gone" from "ask again shortly": a rate-limited or
+  // timed-out refresh must leave the current session alone.
+  const transientRefreshRef = useRef(false);
 
   const doSilentRefresh = useCallback(async (): Promise<string | null> => {
     try {
       const refreshed = await refreshAccessToken();
-      rateLimitedRef.current = false;
+      transientRefreshRef.current = false;
       return refreshed;
     } catch (err) {
-      rateLimitedRef.current = isRefreshRateLimited(err);
+      transientRefreshRef.current = isRefreshTransient(err);
       return null;
     }
   }, []);
@@ -247,8 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearRefreshTimer();
       const exp = parseTokenExp(tok);
       if (!exp) return;
-      const delay = exp * 1000 - Date.now() - 5 * 60 * 1000;
-      if (delay <= 0) {
+      const refresh = (endSessionOnFailure: boolean) =>
         void doSilentRefresh().then(async (newToken) => {
           if (newToken) {
             setToken(newToken);
@@ -261,33 +259,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 /* non-fatal */
               }
             }
-          }
-        });
-        return;
-      }
-      refreshTimerRef.current = setTimeout(() => {
-        void doSilentRefresh().then(async (newToken) => {
-          if (newToken) {
-            setToken(newToken);
-            scheduleRefreshRef.current(newToken);
-            void doMercureFetch();
-            if (!userRef.current) {
-              try {
-                setUser(await fetchMe());
-              } catch {
-                /* non-fatal */
-              }
-            }
-          } else if (rateLimitedRef.current) {
+          } else if (transientRefreshRef.current) {
             // Try again shortly instead of ending the session.
             refreshTimerRef.current = setTimeout(() => scheduleRefreshRef.current(tok), 60_000);
-          } else {
+          } else if (endSessionOnFailure) {
             setToken(null);
             setUser(null);
             setSessionExpired(true);
           }
         });
-      }, delay);
+      const delay = exp * 1000 - Date.now() - 5 * 60 * 1000;
+      if (delay <= 0) {
+        refresh(false);
+        return;
+      }
+      refreshTimerRef.current = setTimeout(() => refresh(true), delay);
     };
   }, [clearRefreshTimer, doSilentRefresh, doMercureFetch, setToken]);
 
@@ -316,7 +302,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               } catch {
                 setToken(null);
               }
-            } else if (rateLimitedRef.current) {
+            } else if (transientRefreshRef.current) {
               // Keep the stored token — it may well still be valid, and the
               // scheduled refresh retries once the limiter window clears.
               scheduleRefreshRef.current(stored);

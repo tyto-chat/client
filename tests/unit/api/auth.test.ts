@@ -7,11 +7,13 @@ import {
   refreshAccessToken,
   revokeRefreshToken,
   __resetRefreshStateForTests,
-  isRefreshRateLimited,
+  isRefreshTransient,
   setRefreshExecutor,
   LoginRequestError,
 } from "@/api/auth";
 import { ApiError, configureApiClient } from "@/api/client";
+import { RequestDeadlineError } from "@/api/fetchWithDeadline";
+import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { TEST_BASE_URL as BASE } from "../../fixtures";
 
@@ -96,13 +98,13 @@ describe("refreshAccessToken", () => {
   it("flags a rate-limited refresh as transient, not a dead session", async () => {
     server.use(http.post(`${BASE}/token/refresh`, () => new HttpResponse(null, { status: 429 })));
 
-    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshRateLimited);
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
   });
 
   it("does not flag other failures as rate limited", async () => {
     server.use(http.post(`${BASE}/token/refresh`, () => new HttpResponse(null, { status: 401 })));
 
-    await expect(refreshAccessToken()).rejects.not.toSatisfy(isRefreshRateLimited);
+    await expect(refreshAccessToken()).rejects.not.toSatisfy(isRefreshTransient);
   });
 
   it("keeps a previously stored token after a 429", async () => {
@@ -136,8 +138,20 @@ describe("refreshAccessToken via executor", () => {
       throw new ApiError(429, null);
     });
 
-    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshRateLimited);
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
     expect(getAccessToken()).toBe("still-valid");
+  });
+
+  it("keeps a timed-out executor refresh transient and the session marker intact", async () => {
+    setAccessToken("still-valid");
+    localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
+    setRefreshExecutor(async () => {
+      throw new RequestDeadlineError();
+    });
+
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
+    expect(getAccessToken()).toBe("still-valid");
+    expect(localStorage.getItem(STORAGE_KEYS.HAD_SESSION)).toBe("1");
   });
 });
 

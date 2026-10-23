@@ -1,5 +1,6 @@
 import type { ServerDirectorySnapshot } from "@/platform/serverDirectory";
 import { linkScope, type PermalinkTarget } from "@/utils/linkScope";
+import { parseInertHtml } from "@/utils/inertHtml";
 
 const TRAILING_PUNCTUATION = ".,!?:;)]";
 const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`[\]]*/g;
@@ -82,10 +83,9 @@ function processTextNode(node: Text, directory?: ServerDirectorySnapshot): void 
 }
 
 export function autoLinkUrls(html: string, directory?: ServerDirectorySnapshot): string {
-  const div = document.createElement("div");
-  div.innerHTML = html;
+  const div = parseInertHtml(html);
 
-  const walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT, {
+  const walker = div.ownerDocument.createTreeWalker(div, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       let parent = node.parentElement;
       while (parent) {

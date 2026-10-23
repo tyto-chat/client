@@ -163,6 +163,27 @@ describe("apiClient — 401 auto-refresh", () => {
     expect(getAccessToken()).toBe("valid-token");
   });
 
+  it("times out a stalled refresh instead of hanging, and keeps the session", async () => {
+    setAccessToken("valid-token");
+    __setRequestTimeoutsForTests({ request: 50 });
+    server.use(
+      http.get(`${BASE}/api/v1/protected`, () => new HttpResponse(null, { status: 401 })),
+      http.post(`${BASE}/token/refresh`, async () => delay("infinite")),
+    );
+    const events: Event[] = [];
+    const handler = (e: Event) => events.push(e);
+    window.addEventListener("session:expired", handler);
+
+    try {
+      await expect(apiClient.get("/api/protected")).rejects.toBeInstanceOf(ApiTimeoutError);
+    } finally {
+      window.removeEventListener("session:expired", handler);
+    }
+
+    expect(events).toHaveLength(0);
+    expect(getAccessToken()).toBe("valid-token");
+  });
+
   it("does not retry or dispatch session:expired for a domain 401 with an error body", async () => {
     setAccessToken("pending-token");
     let callCount = 0;
