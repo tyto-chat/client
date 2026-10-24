@@ -44,8 +44,17 @@ export class ConversationPage {
     await this.page.locator("aside").getByText(name, { exact: false }).first().click();
   }
 
-  async toggleMute(): Promise<void> {
-    await this.page.getByTestId(testIds.dmMuteToggle).click();
+  async setMuted(muted: boolean): Promise<void> {
+    const toggle = this.page.getByTestId(testIds.dmMuteToggle);
+    await expect(toggle).toHaveAttribute("aria-pressed", String(!muted));
+    const saved = this.page.waitForResponse(
+      (res) =>
+        res.request().method() === "POST" &&
+        /\/conversations\/[^/]+\/mute$/.test(new URL(res.url()).pathname),
+    );
+    await toggle.click();
+    expect((await saved).ok()).toBe(true);
+    await expect(toggle).toHaveAttribute("aria-pressed", String(muted), { timeout: T(10_000) });
   }
 
   async addReactionToLastMessage(emoji: string): Promise<void> {

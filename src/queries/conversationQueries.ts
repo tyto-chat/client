@@ -59,10 +59,9 @@ export function useMuteConversation(identifier: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (mutedUntil: string | null) => muteConversation(identifier, mutedUntil),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.conversation(identifier) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
+    onSuccess: async () => {
       bumpDmListRevision();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
     },
   });
 }

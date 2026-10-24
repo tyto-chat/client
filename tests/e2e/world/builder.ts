@@ -234,6 +234,10 @@ export class WorldBuilder {
     return body as { identifier: string };
   }
 
+  async setConversationMute(identifier: string, mutedUntil: string | null): Promise<void> {
+    await this.apiPost(`/api/v1/conversations/${identifier}/mute`, { mutedUntil });
+  }
+
   /**
    * Delete every user-group in a community (admin auth required). Used by spec
    * cleanup so a group left owned by a non-admin (e.g. the group-owner spec)

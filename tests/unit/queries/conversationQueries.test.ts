@@ -8,8 +8,10 @@ import { server } from "../../mocks/server";
 import { configureApiClient } from "@/api/client";
 import { TEST_BASE_URL as BASE } from "../../fixtures";
 import {
+  useConversation,
   useInfiniteConversationMessages,
   useMarkConversationRead,
+  useMuteConversation,
 } from "@/queries/conversationQueries";
 import { queryKeys } from "@/queries/queryKeys";
 import { getDmListRevision } from "@/platform/dmListRevision";
@@ -100,5 +102,44 @@ describe("useMarkConversationRead", () => {
     expect(qc.getQueryState(queryKeys.notificationUnreadCounts())?.isInvalidated).toBe(true);
     expect(qc.getQueryState(queryKeys.dmNotifications())?.isInvalidated).toBe(true);
     expect(qc.getQueryState(queryKeys.conversations())?.isInvalidated).toBe(true);
+  });
+});
+
+describe("useMuteConversation", () => {
+  it("stays pending until the conversation reloads with the new mute state", async () => {
+    let mutedUntil: string | null = null;
+    let releaseReload: () => void = () => {};
+    let holdReload = false;
+    server.use(
+      http.get(`${BASE}/api/v1/conversations/abc`, async () => {
+        if (holdReload) await new Promise<void>((resolve) => (releaseReload = resolve));
+        return HttpResponse.json({
+          "@id": "/api/conversations/abc",
+          identifier: "abc",
+          members: [{ userId: 1, mutedUntil }],
+        });
+      }),
+      http.post(`${BASE}/api/v1/conversations/abc/mute`, async ({ request }) => {
+        mutedUntil = ((await request.json()) as { mutedUntil: string | null }).mutedUntil;
+        return HttpResponse.json({ identifier: "abc" });
+      }),
+    );
+
+    const qc = makeQueryClient();
+    const { result } = renderHook(
+      () => ({ conversation: useConversation("abc"), mute: useMuteConversation("abc") }),
+      { wrapper: makeWrapper(qc) },
+    );
+    await waitFor(() => expect(result.current.conversation.isSuccess).toBe(true));
+
+    holdReload = true;
+    act(() => result.current.mute.mutate("2999-01-01T00:00:00Z"));
+    await waitFor(() => expect(mutedUntil).toBe("2999-01-01T00:00:00Z"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(result.current.mute.isPending).toBe(true);
+
+    act(() => releaseReload());
+    await waitFor(() => expect(result.current.mute.isPending).toBe(false));
+    expect(result.current.conversation.data?.members[0]?.mutedUntil).toBe("2999-01-01T00:00:00Z");
   });
 });
