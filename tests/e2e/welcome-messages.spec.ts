@@ -70,7 +70,14 @@ test.describe.serial("Welcome messages", () => {
     const page = await authedPage(browser, joiner.jwt);
     try {
       await page.goto(`/${communityId}`);
-      await page.getByRole("button", { name: /join/i }).first().click();
+      const joined = page.waitForResponse(
+        (res) =>
+          res.request().method() === "POST" &&
+          res.url().endsWith(`/communities/${communityId}/members`),
+        { timeout: T(10_000) },
+      );
+      await page.getByRole("button", { name: "Join community" }).click();
+      expect((await joined).ok()).toBe(true);
 
       await page.goto(`/${communityId}/${channelId}`);
 
