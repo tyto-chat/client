@@ -9,7 +9,7 @@ import { useServerDirectory } from "@/platform/serverDirectory";
 import { queryKeys } from "@/queries/queryKeys";
 import { StaleTime } from "@/queries/staleTimes";
 import type { CommunityEmoji, Message } from "@/types/api";
-import { linkScope, type LinkScope, type PermalinkTarget } from "@/utils/linkScope";
+import { linkScope, linkViewer, type LinkScope, type PermalinkTarget } from "@/utils/linkScope";
 import { hostFromOrigin } from "@/utils/serverDisplay";
 
 export function useLinkScope(origin: string): LinkScope | null {
@@ -22,7 +22,7 @@ export function useLinkedMessage(target: PermalinkTarget) {
   return useQuery({
     queryKey:
       scope?.kind === "foreign"
-        ? queryKeys.foreignMessage(target.origin, target.uuid)
+        ? queryKeys.foreignMessage(target.origin, linkViewer(scope), target.uuid)
         : queryKeys.message(target.uuid),
     queryFn: () => fetchMessageIn(scope!, target.uuid),
     enabled: scope !== null,
@@ -51,7 +51,12 @@ export function useLinkedPlaces(
       : undefined;
 
   const channel = useQuery({
-    queryKey: queryKeys.linkedChannel(target.origin, communityId ?? "", channelId ?? ""),
+    queryKey: queryKeys.linkedChannel(
+      target.origin,
+      linkViewer(scope),
+      communityId ?? "",
+      channelId ?? "",
+    ),
     queryFn: () => fetchChannelIn(scope!, communityId!, channelId!),
     enabled: scope !== null && !!communityId && !!channelId,
     staleTime: StaleTime.long,
@@ -59,7 +64,7 @@ export function useLinkedPlaces(
     meta: { noGlobalRedirect: true },
   });
   const community = useQuery({
-    queryKey: queryKeys.linkedCommunity(target.origin, communityId ?? ""),
+    queryKey: queryKeys.linkedCommunity(target.origin, linkViewer(scope), communityId ?? ""),
     queryFn: () => fetchCommunityIn(scope!, communityId!),
     enabled: scope !== null && !!communityId && !snapshotCommunity,
     staleTime: StaleTime.long,
@@ -85,7 +90,7 @@ export function useLinkedEmojis(
   const { data } = useQuery({
     queryKey:
       scope?.kind === "foreign"
-        ? queryKeys.foreignEmojis(target.origin, communityIdentifier ?? "")
+        ? queryKeys.foreignEmojis(target.origin, linkViewer(scope), communityIdentifier ?? "")
         : queryKeys.communityEmojis(communityIdentifier ?? ""),
     queryFn: () => fetchEmojisIn(scope!, communityIdentifier!),
     enabled: scope !== null && !!communityIdentifier,

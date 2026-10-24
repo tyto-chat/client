@@ -48,6 +48,29 @@ describe("useLinkedMessage", () => {
     expect(qc.getQueryCache().findAll()).toHaveLength(2);
   });
 
+  it("does not reuse a foreign preview after the account behind that server changes", async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${FOREIGN}/api/v1/messages/${UUID}`, () => {
+        calls += 1;
+        return HttpResponse.json({ text: `seen by account ${calls}` });
+      }),
+    );
+    const { wrapper } = setup();
+    const { result, rerender } = renderHook(
+      () => useLinkedMessage({ origin: FOREIGN, uuid: UUID }),
+      {
+        wrapper,
+      },
+    );
+    await waitFor(() => expect(result.current.data?.text).toBe("seen by account 1"));
+
+    registerFakeDirectory([fakeEndpoint("ib-other", FOREIGN, { serverName: "Beta" })], "ia");
+    rerender();
+
+    await waitFor(() => expect(result.current.data?.text).toBe("seen by account 2"));
+  });
+
   it("does not fetch for an unknown origin", async () => {
     let called = false;
     server.use(

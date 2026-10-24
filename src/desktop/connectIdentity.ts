@@ -1,5 +1,6 @@
 import { ApiError, configureApiClient, getBaseUrl } from "@/api/client";
 import { refreshWithToken, setRefreshExecutor } from "@/api/auth";
+import { requestTimeoutMs, withDeadline } from "@/api/fetchWithDeadline";
 import {
   getApiVersion,
   getApiVersionForOrigin,
@@ -91,11 +92,18 @@ export async function resolveServerQuiet(origin: string): Promise<ServerInfo> {
 }
 
 export function installRefreshExecutor(bridge: PlatformBridge, key: string): void {
-  setRefreshExecutor(async () => {
-    const current = await bridge.secrets.get(key);
+  let inFlight: Promise<string> | null = null;
+  const refresh = async (): Promise<string> => {
+    const current = await withDeadline(bridge.secrets.get(key), requestTimeoutMs());
     if (!current) throw new Error("refresh_failed");
     const { token, refreshToken } = await refreshWithToken(getBaseUrl(), current);
     if (refreshToken) await bridge.secrets.set(key, refreshToken);
     return token;
+  };
+  setRefreshExecutor(() => {
+    inFlight ??= refresh().finally(() => {
+      inFlight = null;
+    });
+    return inFlight;
   });
 }

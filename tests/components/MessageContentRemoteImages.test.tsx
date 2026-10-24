@@ -36,7 +36,7 @@ describe("MessageContent remote images", () => {
     });
 
     expect(screen.getByText("Load image from cdn.evil.example")).toBeInTheDocument();
-    expect(screen.getByText("Always load from evil.example")).toBeInTheDocument();
+    expect(screen.getByText("Always load from cdn.evil.example")).toBeInTheDocument();
     const images = Array.from(document.querySelectorAll("img")).map((img) => img.src);
     expect(images).toEqual(["https://server.example.com/media/x/42"]);
   });
@@ -50,12 +50,12 @@ describe("MessageContent remote images", () => {
     expect(getRemoteContentHosts()).toEqual([]);
   });
 
-  it("adds the top domain to the list from the always button", () => {
+  it("adds the exact host to the list from the always button", () => {
     render(<MessageContent text={FOREIGN} renderPermalinkPreview={false} />, { wrapper });
 
-    fireEvent.click(screen.getByText("Always load from evil.example"));
+    fireEvent.click(screen.getByText("Always load from cdn.evil.example"));
 
-    expect(getRemoteContentHosts()).toEqual(["evil.example"]);
+    expect(getRemoteContentHosts()).toEqual(["cdn.evil.example"]);
     expect(document.querySelector('img[src="https://cdn.evil.example/image/42"]')).not.toBeNull();
   });
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
 import {
   login,
@@ -7,11 +7,14 @@ import {
   refreshAccessToken,
   revokeRefreshToken,
   __resetRefreshStateForTests,
-  isRefreshRateLimited,
+  isRefreshTransient,
   setRefreshExecutor,
   LoginRequestError,
+  loginAt,
 } from "@/api/auth";
 import { ApiError, configureApiClient } from "@/api/client";
+import { RequestDeadlineError, __setRequestTimeoutsForTests } from "@/api/fetchWithDeadline";
+import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { TEST_BASE_URL as BASE } from "../../fixtures";
 
@@ -96,13 +99,13 @@ describe("refreshAccessToken", () => {
   it("flags a rate-limited refresh as transient, not a dead session", async () => {
     server.use(http.post(`${BASE}/token/refresh`, () => new HttpResponse(null, { status: 429 })));
 
-    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshRateLimited);
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
   });
 
   it("does not flag other failures as rate limited", async () => {
     server.use(http.post(`${BASE}/token/refresh`, () => new HttpResponse(null, { status: 401 })));
 
-    await expect(refreshAccessToken()).rejects.not.toSatisfy(isRefreshRateLimited);
+    await expect(refreshAccessToken()).rejects.not.toSatisfy(isRefreshTransient);
   });
 
   it("keeps a previously stored token after a 429", async () => {
@@ -111,6 +114,73 @@ describe("refreshAccessToken", () => {
 
     await expect(refreshAccessToken()).rejects.toThrow();
     expect(getAccessToken()).toBe("still-valid");
+  });
+});
+
+describe("refreshAccessToken deadline", () => {
+  it("times out when the refresh response body stalls after the headers", async () => {
+    __setRequestTimeoutsForTests({ request: 50 });
+    setAccessToken("still-valid");
+    server.use(
+      http.post(
+        `${BASE}/token/refresh`,
+        () =>
+          new HttpResponse(new ReadableStream({ start() {} }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+      ),
+    );
+
+    try {
+      await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
+    } finally {
+      __setRequestTimeoutsForTests(null);
+    }
+    expect(getAccessToken()).toBe("still-valid");
+  });
+});
+
+describe("refresh outages are transient", () => {
+  it.each([
+    ["a 503 from the cookie refresh", () => new HttpResponse(null, { status: 503 })],
+    ["a network error on the cookie refresh", () => HttpResponse.error()],
+  ])("%s keeps the session", async (_label, reply) => {
+    setAccessToken("still-valid");
+    localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
+    server.use(http.post(`${BASE}/token/refresh`, reply));
+
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
+    expect(getAccessToken()).toBe("still-valid");
+    expect(localStorage.getItem(STORAGE_KEYS.HAD_SESSION)).toBe("1");
+  });
+
+  it.each([
+    ["a 503", new ApiError(503, null)],
+    ["a network error", new TypeError("Failed to fetch")],
+  ])("%s from the desktop executor keeps the session", async (_label, error) => {
+    setAccessToken("still-valid");
+    localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
+    setRefreshExecutor(async () => {
+      throw error;
+    });
+
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
+    expect(localStorage.getItem(STORAGE_KEYS.HAD_SESSION)).toBe("1");
+  });
+});
+
+describe("loginAt deadline", () => {
+  it("reports a stalled login as unreachable instead of hanging", async () => {
+    __setRequestTimeoutsForTests({ request: 30 });
+    server.use(http.post(`${BASE}/auth`, async () => delay("infinite")));
+    try {
+      await expect(loginAt(BASE, "a@example.com", "pw")).rejects.toMatchObject({
+        kind: "unreachable",
+      });
+    } finally {
+      __setRequestTimeoutsForTests(null);
+    }
   });
 });
 
@@ -136,8 +206,31 @@ describe("refreshAccessToken via executor", () => {
       throw new ApiError(429, null);
     });
 
-    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshRateLimited);
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
     expect(getAccessToken()).toBe("still-valid");
+  });
+
+  it("treats an unreachable server during executor refresh as transient", async () => {
+    setAccessToken("still-valid");
+    localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
+    setRefreshExecutor(async () => {
+      throw new LoginRequestError("unreachable", 503);
+    });
+
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
+    expect(localStorage.getItem(STORAGE_KEYS.HAD_SESSION)).toBe("1");
+  });
+
+  it("keeps a timed-out executor refresh transient and the session marker intact", async () => {
+    setAccessToken("still-valid");
+    localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
+    setRefreshExecutor(async () => {
+      throw new RequestDeadlineError();
+    });
+
+    await expect(refreshAccessToken()).rejects.toSatisfy(isRefreshTransient);
+    expect(getAccessToken()).toBe("still-valid");
+    expect(localStorage.getItem(STORAGE_KEYS.HAD_SESSION)).toBe("1");
   });
 });
 

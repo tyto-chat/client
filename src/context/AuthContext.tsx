@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchMe } from "@/api/users";
 import {
-  isRefreshRateLimited,
+  isRefreshTransient,
   refreshAccessToken,
   revokeRefreshToken,
   setRefreshExecutor,
@@ -56,7 +56,10 @@ function parseTokenExp(token: string): number | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [token, setTokenState] = useState<string | null>(() => getAccessToken());
+  const sessionEpochRef = useRef(0);
+  const sessionTokenRef = useRef<string | null>(getAccessToken());
   const setToken = useCallback((next: string | null) => {
+    sessionTokenRef.current = next;
     setAccessToken(next);
     setTokenState(next);
   }, []);
@@ -94,18 +97,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const scheduleRefreshRef = useRef<(tok: string) => void>(() => {});
   const mercureScheduleRef = useRef<() => Promise<void>>(async () => {});
 
-  // Distinguishes "session is gone" from "ask again shortly": a rate-limited
-  // refresh must leave the current session alone, or a burst of reloads signs
-  // the user out.
-  const rateLimitedRef = useRef(false);
+  // Distinguishes "session is gone" from "ask again shortly": a rate-limited or
+  // timed-out refresh must leave the current session alone.
+  const transientRefreshRef = useRef(false);
 
   const doSilentRefresh = useCallback(async (): Promise<string | null> => {
     try {
       const refreshed = await refreshAccessToken();
-      rateLimitedRef.current = false;
+      transientRefreshRef.current = false;
       return refreshed;
     } catch (err) {
-      rateLimitedRef.current = isRefreshRateLimited(err);
+      transientRefreshRef.current = isRefreshTransient(err);
       return null;
     }
   }, []);
@@ -247,47 +249,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearRefreshTimer();
       const exp = parseTokenExp(tok);
       if (!exp) return;
+      const refresh = (endSessionOnFailure: boolean) => {
+        const epoch = sessionEpochRef.current;
+        void doSilentRefresh().then(async (newToken) => {
+          if (sessionEpochRef.current !== epoch) {
+            setAccessToken(sessionTokenRef.current);
+            return;
+          }
+          if (newToken) {
+            setToken(newToken);
+            scheduleRefreshRef.current(newToken);
+            void doMercureFetch();
+            if (!userRef.current) {
+              try {
+                setUser(await fetchMe());
+              } catch {
+                /* non-fatal */
+              }
+            }
+          } else if (transientRefreshRef.current) {
+            // Try again shortly instead of ending the session.
+            refreshTimerRef.current = setTimeout(() => refresh(true), 60_000);
+          } else if (endSessionOnFailure) {
+            window.dispatchEvent(new CustomEvent("session:expired"));
+          }
+        });
+      };
       const delay = exp * 1000 - Date.now() - 5 * 60 * 1000;
       if (delay <= 0) {
-        void doSilentRefresh().then(async (newToken) => {
-          if (newToken) {
-            setToken(newToken);
-            scheduleRefreshRef.current(newToken);
-            void doMercureFetch();
-            if (!userRef.current) {
-              try {
-                setUser(await fetchMe());
-              } catch {
-                /* non-fatal */
-              }
-            }
-          }
-        });
+        refresh(false);
         return;
       }
-      refreshTimerRef.current = setTimeout(() => {
-        void doSilentRefresh().then(async (newToken) => {
-          if (newToken) {
-            setToken(newToken);
-            scheduleRefreshRef.current(newToken);
-            void doMercureFetch();
-            if (!userRef.current) {
-              try {
-                setUser(await fetchMe());
-              } catch {
-                /* non-fatal */
-              }
-            }
-          } else if (rateLimitedRef.current) {
-            // Try again shortly instead of ending the session.
-            refreshTimerRef.current = setTimeout(() => scheduleRefreshRef.current(tok), 60_000);
-          } else {
-            setToken(null);
-            setUser(null);
-            setSessionExpired(true);
-          }
-        });
-      }, delay);
+      refreshTimerRef.current = setTimeout(() => refresh(true), delay);
     };
   }, [clearRefreshTimer, doSilentRefresh, doMercureFetch, setToken]);
 
@@ -316,7 +309,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               } catch {
                 setToken(null);
               }
-            } else if (rateLimitedRef.current) {
+            } else if (transientRefreshRef.current) {
               // Keep the stored token — it may well still be valid, and the
               // scheduled refresh retries once the limiter window clears.
               scheduleRefreshRef.current(stored);
@@ -333,21 +326,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } else if (localStorage.getItem(STORAGE_KEYS.HAD_SESSION) === "1") {
-        const newToken = await doSilentRefresh();
-        finishAuthRestore();
-        if (newToken) {
-          setToken(newToken);
-          try {
-            setUser(await fetchMe());
-            scheduleRefreshRef.current(newToken);
-            void doMercureFetch();
-          } catch {
-            setToken(null);
-            void doPublicMercureFetch();
+        const restoreFromCookie = async (firstAttempt: boolean) => {
+          const epoch = sessionEpochRef.current;
+          const superseded = () => {
+            if (sessionEpochRef.current === epoch) return false;
+            setAccessToken(sessionTokenRef.current);
+            return true;
+          };
+          const newToken = await doSilentRefresh();
+          finishAuthRestore();
+          if (superseded()) return;
+          if (newToken) {
+            setToken(newToken);
+            try {
+              const me = await fetchMe();
+              if (superseded()) return;
+              setUser(me);
+              scheduleRefreshRef.current(newToken);
+              void doMercureFetch();
+            } catch {
+              if (superseded()) return;
+              setToken(null);
+              void doPublicMercureFetch();
+            }
+            return;
           }
-        } else {
-          void doPublicMercureFetch();
-        }
+          if (firstAttempt) void doPublicMercureFetch();
+          if (transientRefreshRef.current) {
+            refreshTimerRef.current = setTimeout(() => void restoreFromCookie(false), 60_000);
+          }
+        };
+        await restoreFromCookie(true);
       } else {
         void doPublicMercureFetch();
       }
@@ -380,7 +389,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setMercureSuspended(false);
       setMercureToken(null);
       mercureDueAtRef.current = null;
+      sessionEpochRef.current += 1;
       const switched = getAccessToken();
+      sessionTokenRef.current = switched;
       setTokenState(switched);
       if (switched) {
         scheduleRefreshRef.current(switched);
@@ -403,6 +414,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     (newToken: string) => {
+      sessionEpochRef.current += 1;
       setToken(newToken);
       localStorage.setItem(STORAGE_KEYS.HAD_SESSION, "1");
       queryClient.clear();
@@ -441,6 +453,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     clearRefreshTimer();
     clearMercureTimer();
+    sessionEpochRef.current += 1;
     mercureRequestRef.current += 1;
     revokeRequestedAtRef.current = null;
     setMercureSuspended(false);
@@ -470,6 +483,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     function handleSessionExpired() {
       clearRefreshTimer();
       clearMercureTimer();
+      sessionEpochRef.current += 1;
       mercureRequestRef.current += 1;
       revokeRequestedAtRef.current = null;
       setMercureSuspended(false);

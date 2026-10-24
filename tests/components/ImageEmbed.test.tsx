@@ -38,14 +38,14 @@ describe("ImageEmbed", () => {
     expect(document.querySelector("img")).toHaveAttribute("src", "https://evil.example/a.png");
   });
 
-  it("adds the top domain to the always-load list from the second button", () => {
+  it("adds the exact host to the always-load list from the second button", () => {
     render(<ImageEmbed url="https://i.imgur.com/a.png" />, { wrapper });
     const always = screen.getByTestId("remote-image-always");
-    expect(always).toHaveTextContent("Always load from imgur.com");
+    expect(always).toHaveTextContent("Always load from i.imgur.com");
 
     fireEvent.click(always);
 
-    expect(getRemoteContentHosts()).toEqual(["imgur.com"]);
+    expect(getRemoteContentHosts()).toEqual(["i.imgur.com"]);
     expect(document.querySelector("img")).toHaveAttribute("src", "https://i.imgur.com/a.png");
   });
 
@@ -63,7 +63,7 @@ describe("ImageEmbed", () => {
 
     fireEvent.click(screen.getByTestId("remote-image-always"));
 
-    await waitFor(() => expect(patches).toEqual([{ remoteContentHosts: ["imgur.com"] }]));
+    await waitFor(() => expect(patches).toEqual([{ remoteContentHosts: ["i.imgur.com"] }]));
   });
 
   it("loads images from added hosts and the own server immediately", () => {

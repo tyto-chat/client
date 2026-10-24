@@ -25,6 +25,31 @@ describe("fetchWithDeadline", () => {
     await expect(response.json()).resolves.toEqual({ ok: true });
   });
 
+  it("covers the response body, not just the headers", async () => {
+    server.use(
+      http.get(
+        "https://srv.example/stall-body",
+        () =>
+          new HttpResponse(new ReadableStream({ start() {} }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+      ),
+    );
+    await expect(
+      fetchWithDeadline("https://srv.example/stall-body", {}, 30),
+    ).rejects.toBeInstanceOf(RequestDeadlineError);
+  });
+
+  it("keeps status and headers of a buffered empty response", async () => {
+    server.use(
+      http.delete("https://srv.example/gone", () => new HttpResponse(null, { status: 204 })),
+    );
+    const response = await fetchWithDeadline("https://srv.example/gone", { method: "DELETE" }, 500);
+    expect(response.status).toBe(204);
+    expect(response.ok).toBe(true);
+  });
+
   it("keeps network errors distinct from deadlines", async () => {
     server.use(http.get("https://srv.example/down", () => HttpResponse.error()));
     await expect(fetchWithDeadline("https://srv.example/down", {}, 500)).rejects.not.toBeInstanceOf(

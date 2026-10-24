@@ -27,15 +27,43 @@ export class RequestDeadlineError extends Error {
   }
 }
 
+export function withDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new RequestDeadlineError()), timeoutMs);
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
+
+const NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
+
 export async function fetchWithDeadline(
   input: string,
   init: RequestInit,
   timeoutMs: number,
 ): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new RequestDeadlineError());
+    }, timeoutMs);
+  });
+  deadline.catch(() => {});
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    const response = await Promise.race([
+      fetch(input, { ...init, signal: controller.signal }),
+      deadline,
+    ]);
+    const body = NULL_BODY_STATUSES.has(response.status)
+      ? null
+      : await Promise.race([response.arrayBuffer(), deadline]);
+    return new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
   } catch (err) {
     if (controller.signal.aborted) throw new RequestDeadlineError();
     throw err;

@@ -4,7 +4,7 @@ import { queryKeys } from "@/queries/queryKeys";
 import { StaleTime } from "@/queries/staleTimes";
 import type { Message } from "@/types/api";
 import { extractPermalinkTargets } from "@/utils/extractPermalinkTargets";
-import { linkScope } from "@/utils/linkScope";
+import { linkScope, linkViewer } from "@/utils/linkScope";
 
 export async function prefetchMessagePermalinks(
   queryClient: QueryClient,
@@ -17,7 +17,7 @@ export async function prefetchMessagePermalinks(
       if (!scope) continue;
       const queryKey =
         scope.kind === "foreign"
-          ? queryKeys.foreignMessage(target.origin, target.uuid)
+          ? queryKeys.foreignMessage(target.origin, linkViewer(scope), target.uuid)
           : queryKeys.message(target.uuid);
       const id = queryKey.join("|");
       if (jobs.has(id)) continue;

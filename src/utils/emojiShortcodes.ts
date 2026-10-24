@@ -1,4 +1,5 @@
 import type { CommunityEmoji } from "@/types/api";
+import { parseInertHtml } from "@/utils/inertHtml";
 
 const SHORTCODE_RE = /:([a-z0-9_-]{2,32}):/g;
 
@@ -8,10 +9,9 @@ export function replaceEmojiShortcodes(html: string, emojis: CommunityEmoji[] | 
   const byShortcode = new Map<string, CommunityEmoji>();
   for (const e of emojis) byShortcode.set(e.shortcode, e);
 
-  const container = document.createElement("div");
-  container.innerHTML = html;
+  const container = parseInertHtml(html);
 
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const walker = container.ownerDocument.createTreeWalker(container, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
   let node: Node | null;
   while ((node = walker.nextNode())) {

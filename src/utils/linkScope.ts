@@ -23,3 +23,7 @@ export function linkScope(
     ? { kind: "current" }
     : { kind: "foreign", endpoint };
 }
+
+export function linkViewer(scope: LinkScope | null): string {
+  return scope?.kind === "foreign" ? scope.endpoint.identityId : "current";
+}

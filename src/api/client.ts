@@ -175,10 +175,11 @@ async function send<T>(
         await refreshAccessToken();
         refreshed = true;
       } catch (err) {
-        const { isRefreshRateLimited } = await import("@/api/auth");
-        // Rate-limited refreshes are transient — expiring the session here
-        // would sign the user out over a burst of reloads.
-        if (!isRefreshRateLimited(err)) {
+        if (err instanceof RequestDeadlineError) throw err;
+        const { isRefreshTransient } = await import("@/api/auth");
+        // Rate-limited or timed-out refreshes are transient — expiring the
+        // session here would sign the user out over a slow or busy server.
+        if (!isRefreshTransient(err)) {
           window.dispatchEvent(new CustomEvent("session:expired"));
         }
       }

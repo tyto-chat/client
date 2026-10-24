@@ -1,4 +1,10 @@
-import { bootRequestTimeoutMs, fetchWithDeadline } from "@/api/fetchWithDeadline";
+import {
+  bootRequestTimeoutMs,
+  fetchWithDeadline,
+  RequestDeadlineError,
+  requestTimeoutMs,
+  withDeadline,
+} from "@/api/fetchWithDeadline";
 import { getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { getBaseUrl, ApiError } from "@/api/client";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
@@ -38,12 +44,16 @@ export async function loginAt(
 ): Promise<LoginTokens> {
   let response: Response;
   try {
-    response = await fetch(baseUrl + "/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...transportHeaders() },
-      credentials: "include",
-      body: JSON.stringify({ email, password, remember_me: rememberMe }),
-    });
+    response = await fetchWithDeadline(
+      baseUrl + "/auth",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...transportHeaders() },
+        credentials: "include",
+        body: JSON.stringify({ email, password, remember_me: rememberMe }),
+      },
+      requestTimeoutMs(),
+    );
   } catch {
     throw new LoginRequestError("unreachable", null);
   }
@@ -139,8 +149,27 @@ export class RefreshRateLimitedError extends Error {
   }
 }
 
-export function isRefreshRateLimited(error: unknown): boolean {
-  return error instanceof RefreshRateLimitedError;
+export class RefreshUnavailableError extends Error {
+  constructor() {
+    super("refresh_unavailable");
+    this.name = "RefreshUnavailableError";
+  }
+}
+
+export function isRefreshTransient(error: unknown): boolean {
+  return (
+    error instanceof RefreshRateLimitedError ||
+    error instanceof RequestDeadlineError ||
+    error instanceof RefreshUnavailableError
+  );
+}
+
+function isServerUnavailable(error: unknown): boolean {
+  return (
+    error instanceof TypeError ||
+    (error instanceof ApiError && error.status >= 500) ||
+    (error instanceof LoginRequestError && error.kind === "unreachable")
+  );
 }
 
 let activeRefresh: Promise<string> | null = null;
@@ -150,6 +179,33 @@ let refreshExecutor: (() => Promise<string>) | null = null;
 
 export function setRefreshExecutor(executor: (() => Promise<string>) | null): void {
   refreshExecutor = executor;
+}
+
+async function refreshViaCookie(): Promise<{ ok: true; newToken: string } | { ok: false }> {
+  let res: Response;
+  try {
+    res = await fetchWithDeadline(
+      getBaseUrl() + "/token/refresh",
+      { method: "POST", credentials: "include" },
+      requestTimeoutMs(),
+    );
+  } catch (err) {
+    if (err instanceof TypeError) throw new RefreshUnavailableError();
+    throw err;
+  }
+  if (res.status >= 500) {
+    throw new RefreshUnavailableError();
+  }
+  // A rate-limited refresh says "ask again shortly", not "your session is
+  // gone" — callers must keep the session and retry rather than sign out.
+  if (res.status === 429) {
+    throw new RefreshRateLimitedError();
+  }
+  if (!res.ok) {
+    return { ok: false };
+  }
+  const { token: newToken } = (await res.json()) as { token: string };
+  return { ok: true, newToken };
 }
 
 export function refreshAccessToken(): Promise<string> {
@@ -163,29 +219,17 @@ export function refreshAccessToken(): Promise<string> {
   }
   activeRefresh = (
     refreshExecutor
-      ? refreshExecutor()
+      ? withDeadline(refreshExecutor(), requestTimeoutMs() * 4)
           .then((newToken) => ({ ok: true, newToken }) as const)
           .catch((err: unknown) => {
             if (err instanceof ApiError && err.status === 429) {
               throw new RefreshRateLimitedError();
             }
+            if (err instanceof RequestDeadlineError) throw err;
+            if (isServerUnavailable(err)) throw new RefreshUnavailableError();
             return { ok: false } as const;
           })
-      : fetch(getBaseUrl() + "/token/refresh", { method: "POST", credentials: "include" }).then(
-          async (res) => {
-            // A rate-limited refresh says "ask again shortly", not "your session
-            // is gone" — callers must keep the session and retry rather than sign
-            // out, so this bypasses the shared failure bookkeeping below.
-            if (res.status === 429) {
-              throw new RefreshRateLimitedError();
-            }
-            if (!res.ok) {
-              return { ok: false } as const;
-            }
-            const { token: newToken } = (await res.json()) as { token: string };
-            return { ok: true, newToken } as const;
-          },
-        )
+      : refreshViaCookie()
   )
     .then((result) => {
       if (!result.ok) {
