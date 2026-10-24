@@ -27,6 +27,14 @@ export class RequestDeadlineError extends Error {
   }
 }
 
+export function withDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new RequestDeadlineError()), timeoutMs);
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
+
 const NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
 
 export async function fetchWithDeadline(
