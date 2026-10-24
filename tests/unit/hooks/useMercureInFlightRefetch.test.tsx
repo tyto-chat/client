@@ -5,10 +5,11 @@ import {
   QueryClient,
   QueryClientProvider,
   useInfiniteQuery,
+  useQuery,
   type InfiniteData,
 } from "@tanstack/react-query";
 import { patchMessageInPages } from "@/queries/messageQueries";
-import { useChannelMercure, useConversationMercure } from "@/hooks/useMercure";
+import { useChannelMercure, useConversationMercure, useThreadMercure } from "@/hooks/useMercure";
 import { queryKeys } from "@/queries/queryKeys";
 import type { useAuthContext } from "@/context/AuthContext";
 import type { useNotification } from "@/context/NotificationContext";
@@ -346,6 +347,158 @@ describe("realtime updates during an in-flight page fetch", () => {
 
     const ids = result.current.data?.pages.flatMap((p) => p.messages!.map((m) => m["@id"]));
     expect(ids).toEqual([MESSAGE_IRI]);
+  });
+});
+
+describe("replay boundaries", () => {
+  function renderChannel(queryFn: () => Promise<ChannelPage>) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = renderHook(
+      () => {
+        useChannelMercure("c/12", "c1", "general");
+        return useInfiniteQuery({
+          queryKey: KEY,
+          queryFn,
+          initialPageParam: 1,
+          getNextPageParam: () => undefined,
+        });
+      },
+      { wrapper: wrapper(queryClient) },
+    );
+    return { queryClient, ...view };
+  }
+
+  function sendUpdate(patch: Record<string, unknown>) {
+    const es = getLastFakeEventSource()!;
+    act(() =>
+      es.onmessage?.(
+        new MessageEvent("message", {
+          data: JSON.stringify({ type: "message.update", "@id": MESSAGE_IRI, ...patch }),
+        }),
+      ),
+    );
+  }
+
+  it("does not overwrite a newer single-message cache when replaying", async () => {
+    const pending: Array<() => void> = [];
+    const queryFn = vi.fn(
+      () => new Promise<ChannelPage>((resolve) => pending.push(() => resolve(page(null)))),
+    );
+    const { queryClient, result } = renderChannel(queryFn);
+    await act(async () => pending.shift()!());
+    await waitFor(() => expect(result.current.data?.pages[0]!.messages).toHaveLength(1));
+    queryClient.setQueryData(queryKeys.message("m1"), page(null).messages![0]);
+
+    act(() => void queryClient.invalidateQueries({ queryKey: KEY }));
+    await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+    sendUpdate({ text: "older" });
+    queryClient.setQueryData<Message>(queryKeys.message("m1"), (old) =>
+      old ? { ...old, text: "newer" } : old,
+    );
+
+    await act(async () => pending.shift()!());
+    await waitFor(() => expect(result.current.isFetching).toBe(false));
+
+    expect(queryClient.getQueryData<Message>(queryKeys.message("m1"))?.text).toBe("newer");
+  });
+
+  it("keeps an update when the single-message cache is reloading too", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const pagePending: Array<() => void> = [];
+    const detailPending: Array<() => void> = [];
+    const pageFn = vi.fn(
+      () => new Promise<ChannelPage>((resolve) => pagePending.push(() => resolve(page(null)))),
+    );
+    const detailFn = vi.fn(
+      () =>
+        new Promise<Message>((resolve) =>
+          detailPending.push(() => resolve(page(null).messages![0]!)),
+        ),
+    );
+    const { result } = renderHook(
+      () => {
+        useChannelMercure("c/12", "c1", "general");
+        const pages = useInfiniteQuery({
+          queryKey: KEY,
+          queryFn: pageFn,
+          initialPageParam: 1,
+          getNextPageParam: () => undefined,
+        });
+        const detail = useQuery({ queryKey: queryKeys.message("m1"), queryFn: detailFn });
+        return { pages, detail };
+      },
+      { wrapper: wrapper(queryClient) },
+    );
+    await act(async () => {
+      pagePending.shift()!();
+      detailPending.shift()!();
+    });
+    await waitFor(() => expect(result.current.detail.data?.reactions).toBeNull());
+
+    act(() => {
+      void queryClient.invalidateQueries({ queryKey: KEY });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.message("m1") });
+    });
+    await waitFor(() => expect(detailFn).toHaveBeenCalledTimes(2));
+    sendUpdate({ reactions: REACTIONS });
+
+    await act(async () => detailPending.shift()!());
+    await act(async () => pagePending.shift()!());
+    await waitFor(() => expect(result.current.detail.isFetching).toBe(false));
+
+    await waitFor(() => expect(result.current.detail.data?.reactions).toEqual(REACTIONS));
+    expect(
+      queryClient.getQueryData<InfiniteData<ChannelPage>>(KEY)?.pages[0]!.messages![0]!.reactions,
+    ).toEqual(REACTIONS);
+  });
+
+  it("keeps an update when an optimistic mutation cancels the in-flight fetch", async () => {
+    const pending: Array<() => void> = [];
+    const queryFn = vi.fn(
+      () => new Promise<ChannelPage>((resolve) => pending.push(() => resolve(page(null)))),
+    );
+    const { queryClient, result } = renderChannel(queryFn);
+    await act(async () => pending.shift()!());
+    await waitFor(() => expect(result.current.data?.pages[0]!.messages).toHaveLength(1));
+
+    act(() => void queryClient.invalidateQueries({ queryKey: KEY }));
+    await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+    sendUpdate({ reactions: REACTIONS });
+
+    await act(async () => queryClient.cancelQueries({ queryKey: KEY }));
+    await waitFor(() => expect(result.current.isFetching).toBe(false));
+
+    expect(result.current.data?.pages[0]!.messages![0]!.reactions).toEqual(REACTIONS);
+  });
+
+  it("keeps a thread reply that arrives while the thread is reloading", async () => {
+    const root = MESSAGE_IRI;
+    const reply = { ...newMessage("r1"), parent: root } as unknown as Message;
+    const pending: Array<() => void> = [];
+    const queryFn = vi.fn(
+      () => new Promise<Message[]>((resolve) => pending.push(() => resolve([]))),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(
+      () => {
+        useThreadMercure(root, "c/12/t");
+        return useQuery({ queryKey: queryKeys.threadReplies(root), queryFn });
+      },
+      { wrapper: wrapper(queryClient) },
+    );
+    await act(async () => pending.shift()!());
+    await waitFor(() => expect(result.current.data).toEqual([]));
+
+    act(() => void queryClient.invalidateQueries({ queryKey: queryKeys.threadReplies(root) }));
+    await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+    const es = getLastFakeEventSource()!;
+    act(() => es.onmessage?.(new MessageEvent("message", { data: JSON.stringify(reply) })));
+
+    await act(async () => pending.shift()!());
+    await waitFor(() => expect(result.current.isFetching).toBe(false));
+    await waitFor(() =>
+      expect(result.current.data?.map((m) => m["@id"])).toEqual(["/api/messages/r1"]),
+    );
   });
 });
 
