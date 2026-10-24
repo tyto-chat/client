@@ -64,28 +64,25 @@ test.describe.serial("Direct messages — lifecycle", () => {
     const conv = await adminApi.createConversation([userId]);
     await adminApi.dispose();
 
-    const adminPage = await authedPage(browser, world.adminJwt);
+    const userApi = new WorldBuilder(E2E_API_URL, E2E_BASE_URL, world.userJwt);
+    await userApi.init();
+    await userApi.setConversationMute(conv.identifier, null);
+
     const userPage = await authedPage(browser, world.userJwt);
 
     try {
-      const adminConv = new ConversationPage(adminPage);
       const userConv = new ConversationPage(userPage);
-
       await userConv.goto(conv.identifier, { waitForMercure: true });
-      await userConv.toggleMute();
-
-      await userPage.goto("/");
-
-      await adminConv.goto(conv.identifier, { waitForMercure: true });
-      await adminConv.sendMessage(`muted msg ${Date.now()}`);
+      await userConv.setMuted(true);
 
       await userPage.goto("/dm");
-      await expect(userPage.getByTestId(testIds.dmMutedIndicator).first()).toBeVisible({
-        timeout: T(10_000),
-      });
+      const row = userPage.locator(`aside a[href="/dm/${conv.identifier}"]`);
+      await expect(row.getByTestId(testIds.dmMutedIndicator)).toBeVisible({ timeout: T(10_000) });
+      await expect(row).toHaveClass(/opacity-60/);
     } finally {
-      await adminPage.context().close();
       await userPage.context().close();
+      await userApi.setConversationMute(conv.identifier, null);
+      await userApi.dispose();
     }
   });
 

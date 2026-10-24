@@ -1,4 +1,4 @@
-import { useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { hashKey, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { conversationActivityTopic, conversationTopic } from "@/api/topics";
@@ -24,23 +24,84 @@ import type {
   TypingMercureEvent,
 } from "@/types/api";
 
+const pendingReplays = new WeakMap<QueryClient, Map<string, Array<() => void>>>();
+
+function reapplyAfterInFlightFetch(
+  queryClient: QueryClient,
+  key: readonly unknown[],
+  apply: () => void,
+): void {
+  const queryHash = hashKey(key);
+  let byQuery = pendingReplays.get(queryClient);
+  if (!byQuery) {
+    byQuery = new Map();
+    pendingReplays.set(queryClient, byQuery);
+  }
+  const queued = byQuery.get(queryHash);
+  if (queued) {
+    queued.push(apply);
+    return;
+  }
+  if (queryClient.isFetching({ queryKey: key, exact: true }) === 0) return;
+  const queue = [apply];
+  byQuery.set(queryHash, queue);
+  const cache = queryClient.getQueryCache();
+  const unsubscribe = cache.subscribe((event) => {
+    if (event.query.queryHash !== queryHash) return;
+    if (event.type !== "removed" && event.type !== "updated") return;
+    if (event.type === "updated" && event.query.state.fetchStatus !== "idle") return;
+    unsubscribe();
+    byQuery.delete(queryHash);
+    const replacedByFetch =
+      event.type === "updated" && event.action.type === "success" && !event.action.manual;
+    if (replacedByFetch) queue.forEach((replay) => replay());
+  });
+}
+
+function containsMessage(data: InfiniteData<ChannelPage> | undefined, iri: string): boolean {
+  return !!data?.pages.some((page) => page.messages?.some((m) => m["@id"] === iri));
+}
+
 function applyMessageEvent(
+  queryClient: QueryClient,
+  key: readonly unknown[],
+  data: Message | MessageUpdateEvent,
+  canReplay: () => boolean = () => true,
+): void {
+  patchMessagePages(queryClient, key, data);
+  const isUpdate = "type" in data && data.type === "message.update";
+  reapplyAfterInFlightFetch(queryClient, key, () => {
+    if (!canReplay()) return;
+    if (!isUpdate && containsMessage(queryClient.getQueryData(key), data["@id"])) return;
+    patchMessagePages(queryClient, key, data);
+  });
+  if (isUpdate) {
+    const detailKey = queryKeys.message(uuidFromIri(data["@id"]));
+    const patchDetail = () =>
+      queryClient.setQueryData<Message>(detailKey, (old) =>
+        old ? { ...old, ...updatePatch(data) } : old,
+      );
+    patchDetail();
+    reapplyAfterInFlightFetch(queryClient, detailKey, patchDetail);
+  }
+}
+
+function updatePatch(data: MessageUpdateEvent): Partial<Message> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { type: _type, "@id": _id, ...rest } = data;
+  return "reactions" in rest
+    ? { ...rest, reactions: stripPendingReactionRemovals(data["@id"], rest.reactions) }
+    : rest;
+}
+
+function patchMessagePages(
   queryClient: QueryClient,
   key: readonly unknown[],
   data: Message | MessageUpdateEvent,
 ): void {
   if ("type" in data && data.type === "message.update") {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { type: _type, "@id": _id, ...rest } = data;
-    const patch =
-      "reactions" in rest
-        ? { ...rest, reactions: stripPendingReactionRemovals(data["@id"], rest.reactions) }
-        : rest;
     queryClient.setQueryData<InfiniteData<ChannelPage>>(key, (old) =>
-      patchMessageInPages(old, data["@id"], patch),
-    );
-    queryClient.setQueryData<Message>(queryKeys.message(uuidFromIri(data["@id"])), (old) =>
-      old ? { ...old, ...patch } : old,
+      patchMessageInPages(old, data["@id"], updatePatch(data)),
     );
     return;
   }
@@ -176,7 +237,12 @@ export function useChannelMercure(
       if (!isUpdate && "@type" in data && data["@type"] !== "Message") {
         return;
       }
-      applyMessageEvent(queryClient, queryKeys.channelPages(communityId, channelIdentifier), data);
+      applyMessageEvent(
+        queryClient,
+        queryKeys.channelPages(communityId, channelIdentifier),
+        data,
+        () => isUpdate || !isLatestLoaded || isLatestLoaded(),
+      );
       if (isUpdate && "pinned" in data) {
         void queryClient.invalidateQueries({
           queryKey: queryKeys.pinnedMessages(communityId, channelIdentifier),
@@ -273,27 +339,31 @@ export function useThreadMercure(rootIri: string | null, topic: string | null) {
       if (!data) return;
       const key = queryKeys.threadReplies(rootIri!);
 
-      queryClient.setQueryData<Message[]>(key, (old) => {
-        const list = old ?? [];
-        if ("type" in data && data.type === "message.update") {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { type: _type, "@id": _id, ...patch } = data;
-          return list.map((m) => (m["@id"] === data["@id"] ? { ...m, ...patch } : m));
-        }
-        const msg = data as Message;
-        const parent = parentIri(msg);
-        if (!parent || !rootIri || uuidFromIri(parent) !== uuidFromIri(rootIri)) return list;
-        if (list.some((m) => m["@id"] === msg["@id"])) return list;
-        const optIdx = list.findIndex(
-          (m) => isOptimisticMessage(m["@id"]) && m.createdBy?.id === msg.createdBy?.id,
-        );
-        if (optIdx >= 0) {
-          const next = [...list];
-          next[optIdx] = msg;
-          return next;
-        }
-        return [...list, msg];
-      });
+      const applyThreadEvent = () => {
+        queryClient.setQueryData<Message[]>(key, (old) => {
+          const list = old ?? [];
+          if ("type" in data && data.type === "message.update") {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { type: _type, "@id": _id, ...patch } = data;
+            return list.map((m) => (m["@id"] === data["@id"] ? { ...m, ...patch } : m));
+          }
+          const msg = data as Message;
+          const parent = parentIri(msg);
+          if (!parent || !rootIri || uuidFromIri(parent) !== uuidFromIri(rootIri)) return list;
+          if (list.some((m) => m["@id"] === msg["@id"])) return list;
+          const optIdx = list.findIndex(
+            (m) => isOptimisticMessage(m["@id"]) && m.createdBy?.id === msg.createdBy?.id,
+          );
+          if (optIdx >= 0) {
+            const next = [...list];
+            next[optIdx] = msg;
+            return next;
+          }
+          return [...list, msg];
+        });
+      };
+      applyThreadEvent();
+      reapplyAfterInFlightFetch(queryClient, key, applyThreadEvent);
     },
     t("realtime_error"),
   );
