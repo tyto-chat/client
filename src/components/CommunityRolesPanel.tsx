@@ -11,6 +11,7 @@ import {
 } from "@/queries/communityQueries";
 import { useInvitableUsers } from "@/queries/conversationQueries";
 import { useNotification } from "@/context/NotificationContext";
+import { useAuth } from "@/hooks/useAuth";
 import type { CommunityMember } from "@/types/api";
 
 interface Props {
@@ -23,6 +24,8 @@ export function CommunityRolesPanel({ communityId, currentUserId }: Props) {
   const { notify } = useNotification();
   const { data: members = [], isLoading } = useCommunityMembers(communityId);
   const updateRole = useUpdateCommunityMemberRole(communityId);
+  const { user } = useAuth();
+  const isServerAdmin = user?.roles?.includes("ROLE_ADMIN") ?? false;
 
   const admins = members.filter((m) => m.role === "admin");
   const moderators = members.filter((m) => m.role === "moderator");
@@ -39,7 +42,9 @@ export function CommunityRolesPanel({ communityId, currentUserId }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <AddMemberSection communityId={communityId} memberUserIds={members.map((m) => m.userId)} />
+      {isServerAdmin && (
+        <AddMemberSection communityId={communityId} memberUserIds={members.map((m) => m.userId)} />
+      )}
       <RoleSection
         heading={t("roles_admins_heading")}
         list={admins}
