@@ -61,7 +61,13 @@ export function useMuteConversation(identifier: string) {
     mutationFn: (mutedUntil: string | null) => muteConversation(identifier, mutedUntil),
     onSuccess: async () => {
       bumpDmListRevision();
-      await queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.conversations(), exact: true }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.conversation(identifier),
+          exact: true,
+        }),
+      ]);
     },
   });
 }

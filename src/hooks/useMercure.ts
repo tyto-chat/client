@@ -48,11 +48,13 @@ function reapplyAfterInFlightFetch(
   const cache = queryClient.getQueryCache();
   const unsubscribe = cache.subscribe((event) => {
     if (event.query.queryHash !== queryHash) return;
-    const removed = event.type === "removed";
-    if (!removed && event.query.state.fetchStatus !== "idle") return;
+    if (event.type !== "removed" && event.type !== "updated") return;
+    if (event.type === "updated" && event.query.state.fetchStatus !== "idle") return;
     unsubscribe();
     byQuery.delete(queryHash);
-    if (!removed) queue.forEach((replay) => replay());
+    const replacedByFetch =
+      event.type === "updated" && event.action.type === "success" && !event.action.manual;
+    if (replacedByFetch) queue.forEach((replay) => replay());
   });
 }
 
@@ -64,10 +66,12 @@ function applyMessageEvent(
   queryClient: QueryClient,
   key: readonly unknown[],
   data: Message | MessageUpdateEvent,
+  canReplay: () => boolean = () => true,
 ): void {
   patchMessageCaches(queryClient, key, data);
   const isUpdate = "type" in data && data.type === "message.update";
   reapplyAfterInFlightFetch(queryClient, key, () => {
+    if (!canReplay()) return;
     if (!isUpdate && containsMessage(queryClient.getQueryData(key), data["@id"])) return;
     patchMessageCaches(queryClient, key, data);
   });
@@ -225,7 +229,12 @@ export function useChannelMercure(
       if (!isUpdate && "@type" in data && data["@type"] !== "Message") {
         return;
       }
-      applyMessageEvent(queryClient, queryKeys.channelPages(communityId, channelIdentifier), data);
+      applyMessageEvent(
+        queryClient,
+        queryKeys.channelPages(communityId, channelIdentifier),
+        data,
+        () => isUpdate || !isLatestLoaded || isLatestLoaded(),
+      );
       if (isUpdate && "pinned" in data) {
         void queryClient.invalidateQueries({
           queryKey: queryKeys.pinnedMessages(communityId, channelIdentifier),
