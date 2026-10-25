@@ -3,7 +3,7 @@
 ###########################################
 # Stage 1 — build the SPA
 ###########################################
-FROM node:24-alpine AS build
+FROM --platform=$BUILDPLATFORM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY scripts ./scripts
@@ -17,8 +17,7 @@ RUN npm run build
 ###########################################
 FROM caddy:2-alpine AS runtime
 COPY docker/Caddyfile /etc/caddy/Caddyfile
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY --from=build /app/dist /srv
 
 ENTRYPOINT ["entrypoint.sh"]
