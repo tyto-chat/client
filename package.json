@@ -1,7 +1,7 @@
 {
   "name": "tyto-client",
   "private": true,
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.6",
   "license": "MIT",
   "type": "module",
   "engines": {
