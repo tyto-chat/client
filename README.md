@@ -1,5 +1,10 @@
 # tyto.chat Client
 
+[![CI](https://github.com/tyto-chat/client/actions/workflows/ci.yml/badge.svg?branch=1.0)](https://github.com/tyto-chat/client/actions/workflows/ci.yml)
+[![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=tyto-chat_client&metric=alert_status)](https://sonarcloud.io/project/overview?id=tyto-chat_client)
+[![Release](https://img.shields.io/github/v/release/tyto-chat/client?include_prereleases&label=release)](https://github.com/tyto-chat/client/releases)
+[![License: MIT](https://img.shields.io/github/license/tyto-chat/client)](LICENSE)
+
 Standalone React SPA for the tyto.chat platform. Consumes the [core](https://github.com/tyto-chat/core) backend API and connects to Mercure for real-time message delivery.
 
 <p align="center">
