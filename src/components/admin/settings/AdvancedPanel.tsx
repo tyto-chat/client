@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AdminServerConfig } from "@/api/adminServerConfig";
 import { useAdminBots } from "@/queries/adminUserQueries";
+import { useConfirm } from "@/hooks/useConfirm";
 import { usePanelForm } from "./usePanelForm";
 import { Section, Field, ToggleField, inputClass } from "./types";
 
@@ -14,9 +15,39 @@ const KEYS = [
   "digestHour",
   "mediaTokenTtlSeconds",
   "communityEmojiTokenTtlSeconds",
+  "httpCachePageTtlSeconds",
+  "httpCachePresenceTtlSeconds",
+  "httpCacheContextTtlSeconds",
   "defaultBotId",
   "welcomeBotId",
   "autoModeratorBotId",
+] as const;
+
+const CACHE_KEYS = [
+  "httpCachePageTtlSeconds",
+  "httpCachePresenceTtlSeconds",
+  "httpCacheContextTtlSeconds",
+] as const;
+
+const CACHE_FIELDS = [
+  {
+    key: "httpCachePageTtlSeconds",
+    label: "http_cache_page_ttl_seconds",
+    hint: "http_cache_page_ttl_hint",
+    max: 31536000,
+  },
+  {
+    key: "httpCachePresenceTtlSeconds",
+    label: "http_cache_presence_ttl_seconds",
+    hint: "http_cache_presence_ttl_hint",
+    max: 3600,
+  },
+  {
+    key: "httpCacheContextTtlSeconds",
+    label: "http_cache_context_ttl_seconds",
+    hint: "http_cache_context_ttl_hint",
+    max: 86400,
+  },
 ] as const;
 
 export function AdvancedPanel({
@@ -29,6 +60,23 @@ export function AdvancedPanel({
   const { t } = useTranslation("admin");
   const { current, dirty, set, save, saving } = usePanelForm(config, KEYS);
   const { data: bots, isLoading: botsLoading } = useAdminBots();
+  const { confirm, confirmDialog } = useConfirm();
+  const [cacheUnlocked, setCacheUnlocked] = useState(false);
+
+  const cacheChanged = CACHE_KEYS.some((k) => current[k] !== config[k]);
+
+  async function handleSave() {
+    if (cacheChanged) {
+      const ok = await confirm({
+        title: t("http_cache_confirm_title"),
+        message: t("http_cache_confirm_message"),
+        confirmLabel: t("http_cache_confirm_label"),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    await save();
+  }
 
   useEffect(() => {
     onDirtyChange?.(dirty);
@@ -124,6 +172,46 @@ export function AdvancedPanel({
         </Field>
       </Section>
 
+      <Section title={t("section_http_cache")}>
+        <p
+          role="note"
+          className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-fg"
+        >
+          {t("http_cache_warning")}
+        </p>
+        <label className="flex items-center gap-2 text-sm font-medium text-fg">
+          <input
+            type="checkbox"
+            checked={cacheUnlocked}
+            onChange={(e) => setCacheUnlocked(e.target.checked)}
+          />
+          {t("http_cache_unlock")}
+        </label>
+        {CACHE_FIELDS.map((f) => (
+          <Field key={f.key} label={t(f.label)} hint={t(f.hint)}>
+            <input
+              type="number"
+              min={0}
+              max={f.max}
+              disabled={!cacheUnlocked}
+              value={current[f.key]}
+              onChange={(e) => set(f.key, Number(e.target.value))}
+              className={inputClass}
+            />
+          </Field>
+        ))}
+        <div>
+          <button
+            type="button"
+            disabled={!cacheUnlocked}
+            onClick={() => CACHE_KEYS.forEach((k) => set(k, 0))}
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-danger ring-1 ring-inset ring-danger/40 transition hover:bg-danger/10 disabled:opacity-40"
+          >
+            {t("http_cache_disable")}
+          </button>
+        </div>
+      </Section>
+
       <Section title={t("section_bot")}>
         <Field label={t("default_bot")} hint={t("default_bot_hint")}>
           <select
@@ -176,12 +264,13 @@ export function AdvancedPanel({
         <button
           type="button"
           disabled={!dirty || saving}
-          onClick={() => void save()}
+          onClick={() => void handleSave()}
           className="rounded-lg bg-accent-gradient px-4 py-2 text-sm font-semibold text-on-accent shadow-soft-sm transition hover:opacity-90 disabled:opacity-40"
         >
           {saving ? t("saving") : t("save")}
         </button>
       </div>
+      {confirmDialog}
     </div>
   );
 }

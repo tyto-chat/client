@@ -125,4 +125,70 @@ describe("AdvancedPanel", () => {
     await userEvent.type(expiryInput, "15");
     expect(onDirtyChange).toHaveBeenCalledWith(true);
   });
+
+  describe("HTTP cache controls", () => {
+    const pageTtl = () => screen.getByRole("spinbutton", { name: /page cache ttl/i });
+
+    it("keeps the cache fields locked until the user confirms they know what they are doing", async () => {
+      renderPanel();
+      expect(pageTtl()).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Disable HTTP cache" })).toBeDisabled();
+
+      await userEvent.click(screen.getByRole("checkbox", { name: "I know what I am doing" }));
+
+      expect(pageTtl()).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Disable HTTP cache" })).toBeEnabled();
+    });
+
+    it("asks for confirmation before saving a cache change and patches nothing when cancelled", async () => {
+      renderPanel();
+      await userEvent.click(screen.getByRole("checkbox", { name: "I know what I am doing" }));
+      await userEvent.clear(pageTtl());
+      await userEvent.type(pageTtl(), "120");
+      await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+      expect(await screen.findByText("Change HTTP cache settings?")).toBeInTheDocument();
+      expect(patchMock).not.toHaveBeenCalled();
+
+      await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(patchMock).not.toHaveBeenCalled();
+    });
+
+    it("patches only the cache field after the confirmation is accepted", async () => {
+      renderPanel();
+      await userEvent.click(screen.getByRole("checkbox", { name: "I know what I am doing" }));
+      await userEvent.clear(pageTtl());
+      await userEvent.type(pageTtl(), "120");
+      await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+      await userEvent.click(await screen.findByRole("button", { name: "Apply changes" }));
+
+      expect(patchMock).toHaveBeenCalledTimes(1);
+      expect(patchMock.mock.calls[0]![0]).toEqual({ httpCachePageTtlSeconds: 120 });
+    });
+
+    it("disables the whole cache by zeroing all three TTLs", async () => {
+      renderPanel();
+      await userEvent.click(screen.getByRole("checkbox", { name: "I know what I am doing" }));
+      await userEvent.click(screen.getByRole("button", { name: "Disable HTTP cache" }));
+      await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+      await userEvent.click(await screen.findByRole("button", { name: "Apply changes" }));
+
+      expect(patchMock.mock.calls[0]![0]).toEqual({
+        httpCachePageTtlSeconds: 0,
+        httpCachePresenceTtlSeconds: 0,
+        httpCacheContextTtlSeconds: 0,
+      });
+    });
+
+    it("saves non-cache changes without any confirmation", async () => {
+      renderPanel();
+      const expiryInput = screen.getByDisplayValue("30");
+      await userEvent.clear(expiryInput);
+      await userEvent.type(expiryInput, "60");
+      await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+      expect(screen.queryByText("Change HTTP cache settings?")).not.toBeInTheDocument();
+      expect(patchMock).toHaveBeenCalledTimes(1);
+    });
+  });
 });
