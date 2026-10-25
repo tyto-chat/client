@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { DownloadIcon } from "@/components/icons";
-import { formatFileSize, previewUrl } from "@/utils/attachmentFormat";
+import { formatFileSize } from "@/utils/attachmentFormat";
+import { PreviewImage } from "./PreviewImage";
 import type { Attachment } from "@/types/api";
 
 export function Lightbox({
@@ -177,8 +178,8 @@ export function Lightbox({
                       ▶
                     </span>
                   ) : (
-                    <img
-                      src={previewUrl(att)}
+                    <PreviewImage
+                      att={att}
                       alt={att.originalName ?? ""}
                       loading="lazy"
                       decoding="async"

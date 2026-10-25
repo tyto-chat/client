@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { AttachmentActions } from "./AttachmentActions";
-import { THUMB_BASE, previewUrl } from "@/utils/attachmentFormat";
+import { THUMB_BASE } from "@/utils/attachmentFormat";
+import { PreviewImage } from "./PreviewImage";
 import type { Attachment } from "@/types/api";
 
 function GalleryTile({
@@ -25,8 +26,8 @@ function GalleryTile({
         aria-label={att.originalName || t("view_image")}
         className="block h-full w-full cursor-zoom-in"
       >
-        <img
-          src={previewUrl(att)}
+        <PreviewImage
+          att={att}
           alt={att.originalName ?? ""}
           width={att.width ?? 320}
           height={att.height ?? 192}
@@ -69,8 +70,8 @@ export function ImageGallery({
           aria-label={single.originalName || t("view_image")}
           className="block h-full cursor-zoom-in"
         >
-          <img
-            src={previewUrl(single)}
+          <PreviewImage
+            att={single}
             alt={single.originalName ?? ""}
             width={single.width ?? 320}
             height={single.height ?? 192}

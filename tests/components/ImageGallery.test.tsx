@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { ImageGallery } from "@/components/chat/attachments/ImageGallery";
 import { previewUrl } from "@/utils/attachmentFormat";
 import type { Attachment } from "@/types/api";
@@ -60,5 +60,43 @@ describe("ImageGallery", () => {
       "https://core.test/thumb-1.jpg",
       "https://core.test/media/token/original-2.jpg",
     ]);
+  });
+
+  it("falls back to the original when the thumbnail fails to load", () => {
+    render(
+      <ImageGallery
+        images={[attachment(1, "https://core.test/thumb-1.jpg")]}
+        canDelete={false}
+        onDeleteAttachment={noop}
+        onOpen={noop}
+      />,
+    );
+    const img = screen.getByRole("img");
+    expect(img).toHaveAttribute("src", "https://core.test/thumb-1.jpg");
+
+    fireEvent.error(img);
+
+    expect(screen.getByRole("img")).toHaveAttribute(
+      "src",
+      "https://core.test/media/token/original-1.jpg",
+    );
+  });
+
+  it("keeps the original on a repeated error instead of looping", () => {
+    render(
+      <ImageGallery
+        images={[attachment(1, null)]}
+        canDelete={false}
+        onDeleteAttachment={noop}
+        onOpen={noop}
+      />,
+    );
+    const img = screen.getByRole("img");
+    fireEvent.error(img);
+    fireEvent.error(img);
+    expect(screen.getByRole("img")).toHaveAttribute(
+      "src",
+      "https://core.test/media/token/original-1.jpg",
+    );
   });
 });
