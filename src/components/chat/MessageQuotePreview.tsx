@@ -16,7 +16,7 @@ import { getUserTextColor } from "@/utils/userColor";
 import { formatMessageTime, formatMessageTooltip } from "@/utils/dateFormat";
 import { useTimezone } from "@/context/TimezoneContext";
 import { MessageContent } from "./MessageContent";
-import { isImageMime } from "@/utils/attachmentFormat";
+import { isImageMime, previewUrl } from "@/utils/attachmentFormat";
 
 const MAX_PREVIEW_IMAGES = 2;
 
@@ -134,7 +134,7 @@ export function MessageQuotePreview({ target, selfMessageIri, hostCommunityId }:
           {images.map((image) => (
             <img
               key={image["@id"]}
-              src={image.contentUrl ?? undefined}
+              src={previewUrl(image)}
               alt={image.originalName ?? ""}
               loading="lazy"
               className="h-16 w-24 rounded border border-line object-cover"

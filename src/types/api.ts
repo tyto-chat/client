@@ -179,6 +179,7 @@ export interface ReactionUser {
 
 export interface Attachment extends HydraResource {
   contentUrl: string | null;
+  thumbnailUrl?: string | null;
   originalName: string | null;
   mimeType: string | null;
   size: number | null;

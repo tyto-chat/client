@@ -2,6 +2,13 @@ export function isImageMime(mimeType: string | null): boolean {
   return !!mimeType && mimeType.startsWith("image/");
 }
 
+export function previewUrl(att: {
+  contentUrl: string | null;
+  thumbnailUrl?: string | null;
+}): string | undefined {
+  return att.thumbnailUrl ?? att.contentUrl ?? undefined;
+}
+
 export function formatFileSize(bytes: number | null): string | null {
   if (bytes == null) return null;
   if (bytes < 1024) return `${bytes} B`;
