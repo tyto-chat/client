@@ -9,6 +9,9 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
+permissions:
+  contents: read
+
 jobs:
   image:
     runs-on: ubuntu-latest
