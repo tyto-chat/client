@@ -7,10 +7,29 @@ on:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+  cancel-in-progress: false
 
 jobs:
+  tip:
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      current: ${{ steps.check.outputs.current }}
+    steps:
+      - id: check
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          current=true
+          if [ "$GITHUB_REF" = refs/heads/1.0 ]; then
+            tip="$(git ls-remote "https://github.com/$REPO.git" refs/heads/1.0 | cut -f1)"
+            [ "$tip" = "$GITHUB_SHA" ] || current=false
+          fi
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+
   image:
+    needs: tip
+    if: needs.tip.outputs.current == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
