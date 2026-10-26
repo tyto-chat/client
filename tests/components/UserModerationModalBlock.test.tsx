@@ -53,11 +53,15 @@ function Wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
 }
 
+let statusServed = false;
+
 function mockStatus(status: { blocked: boolean; blockable: boolean }) {
+  statusServed = false;
   server.use(
-    http.get(`${BASE}/api/v1/me/blocks/2`, () =>
-      HttpResponse.json({ userId: 2, inEffect: status.blocked, ...status }),
-    ),
+    http.get(`${BASE}/api/v1/me/blocks/2`, () => {
+      statusServed = true;
+      return HttpResponse.json({ userId: 2, inEffect: status.blocked, ...status });
+    }),
     http.get(`${BASE}/api/v1/me/blocks`, () => HttpResponse.json({ items: [] })),
   );
 }
@@ -108,8 +112,9 @@ describe("UserModerationModal block actions", () => {
   it("hides Block for staff", async () => {
     mockStatus({ blocked: false, blockable: false });
     renderModal();
-    await screen.findByText("Target");
-    await waitFor(() => expect(screen.getByText("Message")).toBeInTheDocument());
+    await waitFor(() => expect(statusServed).toBe(true));
+    await screen.findByText("Message");
+    await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByTestId("profile-block-button")).toBeNull();
     expect(screen.queryByTestId("profile-unblock-button")).toBeNull();
   });

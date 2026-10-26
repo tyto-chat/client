@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type InfiniteData } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useThreadReplies } from "@/queries/threadQueries";
+import { findMessageAuthorId } from "@/utils/messageAuthor";
 import { fetchConversation } from "@/api/conversations";
 import {
   useConversation,
@@ -232,6 +234,7 @@ function ConversationPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [threadRootIri, setThreadRootIri] = useState<string | null>(null);
   const [reportMessageIri, setReportMessageIri] = useState<string | null>(null);
+  const { data: threadReplies } = useThreadReplies(threadRootIri);
   const { t: searchT } = Route.useSearch();
   if (searchT && focusMessageId && !threadRootIri) {
     setThreadRootIri(focusMessageId);
@@ -394,7 +397,7 @@ function ConversationPage() {
         {reportMessageIri && (
           <ReportModal
             target={{ messageId: uuidFromIri(reportMessageIri) }}
-            blockUserId={messages.find((m) => m["@id"] === reportMessageIri)?.createdBy?.id}
+            blockUserId={findMessageAuthorId(reportMessageIri, messages, threadReplies)}
             onClose={() => setReportMessageIri(null)}
           />
         )}

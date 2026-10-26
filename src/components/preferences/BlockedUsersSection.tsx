@@ -9,7 +9,8 @@ export function BlockedUsersSection() {
   const { t } = useTranslation("settings");
   const { t: tCommunity } = useTranslation("community");
   const { notify } = useNotification();
-  const { data: blocked = [], isLoading } = useBlockedUsers();
+  const { data: blocked = [], isLoading, isError } = useBlockedUsers();
+  const { t: tCommon } = useTranslation("common");
   const unblock = useUnblockUser();
 
   function handleUnblock(userId: number, name: string) {
@@ -22,7 +23,8 @@ export function BlockedUsersSection() {
   return (
     <section className="flex flex-col gap-3">
       <h3 className={sectionHeading}>{t("blocked_users_heading")}</h3>
-      {!isLoading && blocked.length === 0 && (
+      {isError && <p className="text-sm text-danger">{tCommon("recovery_generic")}</p>}
+      {!isLoading && !isError && blocked.length === 0 && (
         <p className="text-sm text-fg-muted">{t("blocked_users_empty")}</p>
       )}
       <ul className="flex flex-col gap-1">
@@ -47,7 +49,8 @@ export function BlockedUsersSection() {
               <button
                 type="button"
                 onClick={() => handleUnblock(b.userId, name)}
-                disabled={unblock.isPending}
+                disabled={unblock.isPending && unblock.variables === b.userId}
+                aria-label={`${t("blocked_users_unblock")} ${name}`}
                 className="rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted transition-colors hover:bg-surface hover:text-fg disabled:opacity-50"
               >
                 {t("blocked_users_unblock")}

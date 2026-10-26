@@ -10,9 +10,9 @@ import { setAccessToken } from "@/api/tokenStore";
 import { TEST_BASE_URL as BASE } from "../fixtures";
 import { ReportModal } from "@/components/ReportModal";
 
-vi.mock("@/context/NotificationContext", () => ({
-  useNotification: () => ({ notify: vi.fn() }),
-}));
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("@/context/NotificationContext", () => ({ useNotification: () => ({ notify }) }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: 1 } }) }));
 
 function Wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({
@@ -22,15 +22,19 @@ function Wrapper({ children }: { children: ReactNode }) {
 }
 
 let calls: string[] = [];
+let statusFetched = false;
 
 beforeEach(() => {
   calls = [];
+  statusFetched = false;
+  notify.mockClear();
   configureApiClient(BASE);
   setAccessToken("test-token");
   server.use(
-    http.get(`${BASE}/api/v1/me/blocks/2`, () =>
-      HttpResponse.json({ userId: 2, blocked: false, blockable: true, inEffect: false }),
-    ),
+    http.get(`${BASE}/api/v1/me/blocks/:id`, () => {
+      statusFetched = true;
+      return HttpResponse.json({ userId: 2, blocked: false, blockable: true, inEffect: false });
+    }),
     http.get(`${BASE}/api/v1/me/blocks`, () => HttpResponse.json({ items: [] })),
     http.post(`${BASE}/api/v1/reports`, () => {
       calls.push("report");
@@ -69,5 +73,24 @@ describe("ReportModal also-block", () => {
     await userEvent.click(await screen.findByLabelText("Also block this person"));
     await userEvent.click(screen.getByText("Submit report"));
     await waitFor(() => expect(calls).toEqual(["report"]));
+  });
+
+  it("shows the block_failed toast when the block fails after the report", async () => {
+    server.use(
+      http.post(`${BASE}/api/v1/me/blocks`, () => new HttpResponse(null, { status: 500 })),
+    );
+    renderModal();
+    await screen.findByLabelText("Also block this person");
+    await userEvent.click(screen.getByText("Submit report"));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith("Couldn't update the block", "error"));
+  });
+
+  it("never offers blocking when reporting your own message", async () => {
+    render(<ReportModal target={{ messageId: "m-1" }} blockUserId={1} onClose={vi.fn()} />, {
+      wrapper: Wrapper,
+    });
+    await screen.findByText("Submit report");
+    expect(screen.queryByLabelText("Also block this person")).toBeNull();
+    expect(statusFetched).toBe(false);
   });
 });

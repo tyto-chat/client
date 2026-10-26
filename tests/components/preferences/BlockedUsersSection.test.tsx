@@ -60,7 +60,8 @@ describe("BlockedUsersSection", () => {
     const rows = await screen.findAllByTestId("blocked-user-row");
     expect(rows).toHaveLength(2);
     expect(screen.getAllByText(/^Not in effect/)).toHaveLength(1);
-    await userEvent.click(rows[1]!.querySelector("button")!);
+    await userEvent.click(screen.getByRole("button", { name: "Unblock Bob" }));
+    expect(screen.getByRole("button", { name: "Unblock Alice" })).toBeInTheDocument();
     await waitFor(() => expect(deleted).toBe(true));
   });
 
@@ -68,5 +69,12 @@ describe("BlockedUsersSection", () => {
     server.use(http.get(`${BASE}/api/v1/me/blocks`, () => HttpResponse.json({ items: [] })));
     render(<BlockedUsersSection />, { wrapper: Wrapper });
     expect(await screen.findByText("You haven't blocked anyone.")).toBeInTheDocument();
+  });
+
+  it("shows an error state instead of the empty state when the fetch fails", async () => {
+    server.use(http.get(`${BASE}/api/v1/me/blocks`, () => new HttpResponse(null, { status: 500 })));
+    render(<BlockedUsersSection />, { wrapper: Wrapper });
+    expect(await screen.findByText(/failed to load/i)).toBeInTheDocument();
+    expect(screen.queryByText("You haven't blocked anyone.")).toBeNull();
   });
 });
