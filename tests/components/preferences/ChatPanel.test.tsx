@@ -60,4 +60,21 @@ describe("ChatPanel", () => {
     await userEvent.setup().click(toggle);
     expect(toggle).toHaveAttribute("aria-checked", "false");
   });
+
+  it("starts with auto-play GIFs off and saves it when switched on", async () => {
+    let patched: Record<string, unknown> | null = null;
+    server.use(
+      http.patch(`${BASE}/api/v1/me/preferences`, async ({ request }) => {
+        patched = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ updatedAt: "2026-07-20T00:00:00Z", ...patched });
+      }),
+    );
+    const { default: userEvent } = await import("@testing-library/user-event");
+    render(<ChatPanel />, { wrapper: makeWrapper() });
+    const toggle = await screen.findByTestId("pref-autoplay-gifs");
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    await userEvent.setup().click(toggle);
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    expect(patched).toEqual({ autoplayGifs: true });
+  });
 });

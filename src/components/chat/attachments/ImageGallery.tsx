@@ -1,23 +1,120 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AttachmentActions } from "./AttachmentActions";
 import { THUMB_BASE } from "@/utils/attachmentFormat";
 import { PreviewImage } from "./PreviewImage";
+import { CanvasStillGif, FullscreenButton, GifBadge } from "./GifControls";
+import { useGifPlayback } from "@/hooks/useGifPlayback";
+import { fitWithin } from "@/utils/gif";
 import type { Attachment } from "@/types/api";
-import type { TFunction } from "i18next";
 
-function imageLabel(att: Attachment, t: TFunction<"channel">): string {
-  const name = att.originalName || t("view_image");
-  return att.animated ? t("view_animated_gif", { name }) : name;
+const SINGLE_MAX_WIDTH = 320;
+const SINGLE_MAX_HEIGHT = 192;
+
+type ImageSizing = { className: string; style?: React.CSSProperties };
+
+function MediaButton({
+  att,
+  onOpen,
+  className,
+  image,
+}: {
+  att: Attachment;
+  onOpen: () => void;
+  className: string;
+  image: ImageSizing;
+}) {
+  const { t } = useTranslation("channel");
+  if (att.animated && att.contentUrl) {
+    return <GifButton att={att} contentUrl={att.contentUrl} className={className} image={image} />;
+  }
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={att.originalName || t("view_image")}
+      className={`${className} cursor-zoom-in`}
+    >
+      <PreviewImage
+        att={att}
+        alt={att.originalName ?? ""}
+        width={att.width ?? 320}
+        height={att.height ?? 192}
+        loading="lazy"
+        decoding="async"
+        className={image.className}
+        style={image.style}
+      />
+    </button>
+  );
 }
 
-function GifBadge() {
+function GifButton({
+  att,
+  contentUrl,
+  className,
+  image,
+}: {
+  att: Attachment;
+  contentUrl: string;
+  className: string;
+  image: ImageSizing;
+}) {
+  const { t } = useTranslation("channel");
+  const { playing, toggle } = useGifPlayback();
+  const [thumbFailed, setThumbFailed] = useState(false);
+  const [originalShown, setOriginalShown] = useState(false);
+  const togglePlayback = () => {
+    setOriginalShown(false);
+    toggle();
+  };
+  const name = att.originalName || t("view_image");
+  const width = att.width ?? undefined;
+  const height = att.height ?? undefined;
   return (
-    <span
-      aria-hidden="true"
-      className="pointer-events-none absolute bottom-1.5 left-1.5 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white"
+    <button
+      type="button"
+      onClick={togglePlayback}
+      aria-pressed={playing}
+      aria-label={t(playing ? "pause_gif" : "play_gif", { name })}
+      className={`${className} relative cursor-pointer`}
     >
-      GIF
-    </span>
+      {att.thumbnailUrl && !thumbFailed ? (
+        <>
+          <img
+            src={att.thumbnailUrl}
+            alt=""
+            width={width}
+            height={height}
+            loading="lazy"
+            decoding="async"
+            onError={() => setThumbFailed(true)}
+            className={`${image.className} ${playing && originalShown ? "invisible" : ""}`}
+            style={image.style}
+          />
+          {playing && (
+            <img
+              src={contentUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onLoad={() => setOriginalShown(true)}
+              data-testid="gif-playing"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+        </>
+      ) : (
+        <CanvasStillGif
+          src={contentUrl}
+          playing={playing}
+          width={width}
+          height={height}
+          className={image.className}
+          style={image.style}
+        />
+      )}
+    </button>
   );
 }
 
@@ -34,30 +131,28 @@ function GalleryTile({
   onOpen: () => void;
   overlay?: React.ReactNode;
 }) {
-  const { t } = useTranslation("channel");
   return (
     <div className="group relative h-full w-full overflow-hidden">
-      <button
-        type="button"
-        onClick={onOpen}
-        aria-label={imageLabel(att, t)}
-        className="block h-full w-full cursor-zoom-in"
-      >
-        <PreviewImage
-          att={att}
-          alt={att.originalName ?? ""}
-          width={att.width ?? 320}
-          height={att.height ?? 192}
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-cover"
-        />
-      </button>
+      <MediaButton
+        att={att}
+        onOpen={onOpen}
+        className="block h-full w-full"
+        image={{ className: "h-full w-full object-cover" }}
+      />
       {att.animated && <GifBadge />}
       {overlay}
       <AttachmentActions att={att} canDelete={canDelete} onDeleteAttachment={onDeleteAttachment} />
+      {att.animated && <FullscreenButton onClick={onOpen} className="absolute left-1 top-1" />}
     </div>
   );
+}
+
+function singleImageSizing(att: Attachment): ImageSizing {
+  if (!att.animated || !att.width || !att.height) {
+    return { className: "block h-auto max-h-48 w-auto max-w-full" };
+  }
+  const { width } = fitWithin(att.width, att.height, SINGLE_MAX_WIDTH, SINGLE_MAX_HEIGHT);
+  return { className: "block h-auto max-w-full", style: { width } };
 }
 
 const tileClass = "overflow-hidden rounded-sm border border-line";
@@ -73,7 +168,6 @@ export function ImageGallery({
   onDeleteAttachment: (iri: string) => void;
   onOpen: (att: Attachment) => void;
 }) {
-  const { t } = useTranslation("channel");
   const count = images.length;
   const visible = images.slice(0, 4);
   const hidden = images.slice(4);
@@ -82,28 +176,21 @@ export function ImageGallery({
   if (single) {
     return (
       <div className="group relative w-fit max-w-xs overflow-hidden rounded-lg border border-line">
-        <button
-          type="button"
-          onClick={() => onOpen(single)}
-          aria-label={imageLabel(single, t)}
-          className="block cursor-zoom-in"
-        >
-          <PreviewImage
-            att={single}
-            alt={single.originalName ?? ""}
-            width={single.width ?? 320}
-            height={single.height ?? 192}
-            loading="lazy"
-            decoding="async"
-            className="block h-auto max-h-48 w-auto max-w-full"
-          />
-        </button>
+        <MediaButton
+          att={single}
+          onOpen={() => onOpen(single)}
+          className="block"
+          image={singleImageSizing(single)}
+        />
         {single.animated && <GifBadge />}
         <AttachmentActions
           att={single}
           canDelete={canDelete}
           onDeleteAttachment={onDeleteAttachment}
         />
+        {single.animated && (
+          <FullscreenButton onClick={() => onOpen(single)} className="absolute left-1 top-1" />
+        )}
       </div>
     );
   }

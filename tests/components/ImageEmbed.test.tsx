@@ -6,6 +6,7 @@ import { http, HttpResponse } from "msw";
 import { server } from "../mocks/server";
 import { TEST_BASE_URL as BASE } from "../fixtures";
 import { ImageEmbed } from "@/components/chat/ImageEmbed";
+import { isGifUrl } from "@/utils/gif";
 import { configureApiClient } from "@/api/client";
 import { setAccessToken } from "@/api/tokenStore";
 import {
@@ -77,5 +78,51 @@ describe("ImageEmbed", () => {
     expect(screen.getByTestId("remote-image-placeholder")).toBeInTheDocument();
     act(() => setRemoteContentLevel("all"));
     expect(document.querySelector("img")).toHaveAttribute("src", "https://i.imgur.com/a.png");
+  });
+  it("keeps a remote GIF behind the external-content gate", () => {
+    render(<ImageEmbed url="https://evil.example/funny.gif" />, { wrapper });
+    expect(screen.getByTestId("remote-image-placeholder")).toBeInTheDocument();
+    expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("shows a remote GIF paused, plays it on click and opens full size from its button", () => {
+    setRemoteContentLevel("all");
+    render(<ImageEmbed url="https://media.example/funny.gif" />, { wrapper });
+    const play = screen.getByRole("button", { name: "Play GIF media.example" });
+    expect(play).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("GIF")).toBeInTheDocument();
+
+    fireEvent.click(play);
+    expect(screen.getByRole("button", { name: "Pause GIF media.example" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "View full size" }));
+    expect(
+      screen
+        .getAllByRole("img")
+        .some((img) => img.getAttribute("src") === "https://media.example/funny.gif"),
+    ).toBe(true);
+  });
+
+  it("keeps a GIF paused behind a placeholder when its first frame cannot be drawn", () => {
+    setRemoteContentLevel("all");
+    render(<ImageEmbed url="https://media.example/funny.gif" />, { wrapper });
+    const img = document.querySelector("img")!;
+    fireEvent.load(img);
+    expect(img.className).toContain("opacity-0");
+    expect(screen.getByTestId("gif-placeholder")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Play GIF media.example" }));
+    expect(img.className).not.toContain("opacity-0");
+    expect(screen.queryByTestId("gif-placeholder")).not.toBeInTheDocument();
+  });
+
+  it("treats only .gif paths as GIFs", () => {
+    expect(isGifUrl("https://a.example/x.GIF?size=2")).toBe(true);
+    expect(isGifUrl("https://a.example/x.png")).toBe(false);
+    expect(isGifUrl("https://a.example/gif/x.webp")).toBe(false);
+    expect(isGifUrl("not a url")).toBe(false);
   });
 });

@@ -47,6 +47,11 @@ export function useUpdateUserPreference() {
   });
 }
 
+export function useAutoplayGifs(): boolean {
+  const { data } = useUserPreferences();
+  return data?.autoplayGifs === true;
+}
+
 export function useSectionCollapsed(key: string): boolean {
   const { data } = useUserPreferences();
   const stored = data?.sectionCollapse?.[key];
