@@ -55,6 +55,10 @@ export function ChatPanel() {
   const toggleResumeLastLocation = () => {
     if (user) updatePreference.mutate({ resumeLastLocation: !resumeEnabled });
   };
+  const autoplayGifs = serverPrefs?.autoplayGifs === true;
+  const toggleAutoplayGifs = () => {
+    if (user) updatePreference.mutate({ autoplayGifs: !autoplayGifs });
+  };
 
   const submitKeyLabels: Record<SubmitKey, string> = {
     enter: "Enter",
@@ -130,6 +134,21 @@ export function ChatPanel() {
           )}
         </div>
       </section>
+      {user && (
+        <section>
+          <h3 className={sectionHeading}>{t("chat_media")}</h3>
+          <div className="flex flex-col gap-2">
+            <SettingRow label={t("autoplay_gifs")} hint={t("autoplay_gifs_hint")}>
+              <Switch
+                checked={autoplayGifs}
+                onChange={toggleAutoplayGifs}
+                testId="pref-autoplay-gifs"
+                label={t("autoplay_gifs")}
+              />
+            </SettingRow>
+          </div>
+        </section>
+      )}
       <RemoteContentSection />
       <SpellCheckSection />
     </div>

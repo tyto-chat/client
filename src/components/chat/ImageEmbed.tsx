@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ImageLightbox } from "./ImageLightbox";
+import { CanvasStillGif, FullscreenButton, GifBadge } from "./attachments/GifControls";
+import { useGifPlayback } from "@/hooks/useGifPlayback";
+import { isGifUrl } from "@/utils/gif";
 import { allowHostForSession, remoteHost, useRemoteContentPolicy } from "@/utils/remoteContent";
 import { useAllowRemoteHost } from "@/hooks/useAllowRemoteHost";
 
@@ -41,6 +44,10 @@ export function ImageEmbed({ url }: Props) {
     );
   }
 
+  if (isGifUrl(url)) {
+    return <RemoteGif url={url} onFailed={() => setFailed(true)} />;
+  }
+
   return (
     <>
       <button
@@ -60,5 +67,33 @@ export function ImageEmbed({ url }: Props) {
       </button>
       {open && <ImageLightbox url={url} onClose={() => setOpen(false)} />}
     </>
+  );
+}
+
+function RemoteGif({ url, onFailed }: { url: string; onFailed: () => void }) {
+  const { t } = useTranslation("channel");
+  const { playing, toggle } = useGifPlayback();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <span className="group relative mt-2 block w-fit">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-pressed={playing}
+        aria-label={t(playing ? "pause_gif" : "play_gif", { name: remoteHost(url) ?? url })}
+        className="relative block cursor-pointer overflow-hidden rounded-lg"
+      >
+        <CanvasStillGif
+          src={url}
+          playing={playing}
+          onError={onFailed}
+          className="block max-h-48 max-w-xs"
+        />
+      </button>
+      <GifBadge />
+      <FullscreenButton onClick={() => setOpen(true)} className="absolute right-1 top-1" />
+      {open && <ImageLightbox url={url} onClose={() => setOpen(false)} />}
+    </span>
   );
 }

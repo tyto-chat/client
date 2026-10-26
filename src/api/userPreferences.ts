@@ -17,6 +17,7 @@ export interface UserPreferences {
   sectionCollapse: Record<string, boolean> | null;
   remoteContent: RemoteContentLevel | null;
   remoteContentHosts: string[] | null;
+  autoplayGifs: boolean | null;
   updatedAt: string;
 }
 

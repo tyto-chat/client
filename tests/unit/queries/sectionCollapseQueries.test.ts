@@ -30,6 +30,7 @@ function seed(qc: QueryClient, sectionCollapse: Record<string, boolean> | null) 
     resumeLastLocation: null,
     remoteContent: null,
     remoteContentHosts: null,
+    autoplayGifs: null,
     sendTypingIndicator: null,
     desktopNotifications: null,
     sectionCollapse,
