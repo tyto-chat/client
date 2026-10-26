@@ -449,16 +449,13 @@ button {
 .tiptap pre {
   font-family: ui-monospace, monospace;
   font-size: 0.875em;
-  background: #f6f8fa;
-  color: #24292e;
+  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
+  border: 1px solid var(--color-line-strong);
+  color: var(--color-fg);
   padding: 0.6rem 0.85rem;
   border-radius: 0.5rem;
   overflow-x: auto;
   margin: 0.3rem 0;
-}
-.dark .tiptap pre {
-  background: #1e1e2e;
-  color: #cdd6f4;
 }
 .tiptap pre code,
 .tiptap pre span,
@@ -628,8 +625,9 @@ button {
 .message-content pre {
   font-family: ui-monospace, monospace;
   font-size: 0.875em;
-  background: #f6f8fa;
-  color: #24292e;
+  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
+  border: 1px solid var(--color-line-strong);
+  color: var(--color-fg);
   padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;
   overflow-x: auto;
@@ -658,7 +656,7 @@ button {
 }
 .code-copy-btn {
   position: absolute;
-  bottom: 0.4rem;
+  top: 0.3rem;
   right: 0.6rem;
   display: flex;
   align-items: center;
@@ -710,17 +708,13 @@ button {
 .message-content pre[data-language]::after {
   content: attr(data-language);
   position: absolute;
-  top: 0.4rem;
-  right: 0.6rem;
+  top: 0.55rem;
+  right: 2.4rem;
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-size: 0.65rem;
   color: #9ca3af;
   pointer-events: none;
   user-select: none;
-}
-.dark .message-content pre {
-  background: #1e1e2e;
-  color: #cdd6f4;
 }
 .message-content pre code {
   background: none;

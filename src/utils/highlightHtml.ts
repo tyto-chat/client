@@ -18,7 +18,7 @@ export function highlightCodeBlocks(html: string): string {
           ? lowlight.highlight(language, text)
           : lowlight.highlightAuto(text);
 
-      codeEl.innerHTML = toHtml(tree);
+      if (tree.children.length > 0) codeEl.innerHTML = toHtml(tree);
 
       const detectedLang = language ?? (tree.data as { language?: string } | undefined)?.language;
       const preEl = codeEl.parentElement;
