@@ -20,6 +20,7 @@
   "message_placeholder": "Enviar mensaje a {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Tú",
+  "open_profile": "Abrir el perfil de {{name}}",
   "muted": "Silenciada",
   "mute_notifications": "Silenciar notificaciones",
   "beginning_of_history": "Inicio de esta conversación",

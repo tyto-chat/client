@@ -59,10 +59,31 @@ vi.mock("@/queries/conversationQueries", () => ({
 }));
 
 describe("ConversationsSidebar", () => {
-  it("opens the profile card when a person's avatar is clicked", async () => {
+  it("opens the profile card from a real button outside the row link", async () => {
     render(<ConversationsSidebar />);
-    await userEvent.click(screen.getByTestId("dm-row-avatar"));
+    const button = screen.getByTestId("dm-row-avatar");
+    expect(button.tagName).toBe("BUTTON");
+    expect(button.closest("a")).toBeNull();
+    expect(button).toHaveAccessibleName("Open profile of Ann");
+    await userEvent.click(button);
     expect(opened).toHaveBeenCalledWith(2);
     expect(navigated).not.toHaveBeenCalled();
+  });
+
+  it("opens the profile card with the keyboard", async () => {
+    opened.mockClear();
+    render(<ConversationsSidebar />);
+    const button = screen.getByTestId("dm-row-avatar");
+    for (let i = 0; i < 6 && document.activeElement !== button; i++) await userEvent.tab();
+    expect(document.activeElement).toBe(button);
+    await userEvent.keyboard("{Enter}");
+    expect(opened).toHaveBeenCalledWith(2);
+  });
+
+  it("still navigates when the row is clicked", async () => {
+    navigated.mockClear();
+    render(<ConversationsSidebar />);
+    await userEvent.click(screen.getByText("Ann"));
+    expect(navigated).toHaveBeenCalled();
   });
 });

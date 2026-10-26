@@ -20,6 +20,7 @@
   "message_placeholder": "Повідомлення для {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Ти",
+  "open_profile": "Відкрити профіль {{name}}",
   "muted": "Без звуку",
   "mute_notifications": "Вимкнути сповіщення",
   "beginning_of_history": "Початок цієї розмови",

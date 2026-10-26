@@ -20,6 +20,7 @@
   "message_placeholder": "Wiadomość do {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Ty",
+  "open_profile": "Otwórz profil: {{name}}",
   "muted": "Wyciszone",
   "mute_notifications": "Wycisz powiadomienia",
   "beginning_of_history": "Początek tej rozmowy",

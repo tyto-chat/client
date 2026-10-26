@@ -20,6 +20,7 @@
   "message_placeholder": "{{name}} kişisine mesaj",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Sen",
+  "open_profile": "{{name}} profilini aç",
   "muted": "Sessizde",
   "mute_notifications": "Bildirimleri sessize al",
   "beginning_of_history": "Bu sohbetin başlangıcı",

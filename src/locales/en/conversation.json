@@ -20,6 +20,7 @@
   "message_placeholder": "Message {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "You",
+  "open_profile": "Open profile of {{name}}",
   "muted": "Muted",
   "mute_notifications": "Mute notifications",
   "beginning_of_history": "Beginning of this conversation",

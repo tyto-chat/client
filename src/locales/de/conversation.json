@@ -20,6 +20,7 @@
   "message_placeholder": "Nachricht an {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Du",
+  "open_profile": "Profil von {{name}} öffnen",
   "muted": "Stummgeschaltet",
   "mute_notifications": "Benachrichtigungen stummschalten",
   "beginning_of_history": "Beginn dieser Unterhaltung",
