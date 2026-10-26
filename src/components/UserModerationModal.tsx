@@ -7,7 +7,7 @@ import { Modal } from "@/components/Modal";
 import { ModalTabs } from "@/components/ui";
 import { Avatar } from "@/components/Avatar";
 import { PresenceDot } from "@/components/PresenceDot";
-import { avatarUrl } from "@/api/client";
+import { apiErrorText, avatarUrl } from "@/api/client";
 import { getUserTextColor } from "@/utils/userColor";
 import { toSafeHttpUrl } from "@/utils/safeUrl";
 import { usePresenceSubscription, useUserPresence } from "@/queries/presenceQueries";
@@ -111,8 +111,8 @@ export function UserModerationModal({
         to: "/dm/$conversationId",
         params: { conversationId: conversation.identifier },
       });
-    } catch {
-      notify(tConv("create_failed"), "error");
+    } catch (err) {
+      notify(apiErrorText(err, tConv("create_failed")), "error");
     }
   }
 
