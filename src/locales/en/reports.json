@@ -48,5 +48,6 @@
     "resolved": "Report resolved.",
     "escalated": "Report escalated.",
     "dismissed": "Report dismissed."
-  }
+  },
+  "also_block": "Also block this person"
 }

@@ -351,5 +351,13 @@
   "nav_group_communities": "Topluluklar",
   "presence_chart_members": "Üyeler",
   "presence_chart_guests": "Misafirler",
-  "presence_chart_empty": "Henüz etkinlik verisi yok"
+  "presence_chart_empty": "Henüz etkinlik verisi yok",
+  "block_action": "Engelle",
+  "unblock_action": "Engeli kaldır",
+  "block_confirm_title": "{{name}} engellensin mi?",
+  "block_confirm_body": "Bu kişi sana özel mesaj gönderemez ve ondan bildirim almazsın. Ortak kanallardaki mesajları senin için daraltılır. Kendisine haber verilmez.",
+  "block_confirm_button": "Engelle",
+  "block_success": "{{name}} engellendi",
+  "unblock_success": "{{name}} engeli kaldırıldı",
+  "block_failed": "Engel güncellenemedi"
 }

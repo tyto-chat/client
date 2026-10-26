@@ -48,5 +48,6 @@
     "resolved": "Denúncia resolvida.",
     "escalated": "Denúncia escalada.",
     "dismissed": "Denúncia descartada."
-  }
+  },
+  "also_block": "Bloquear também esta pessoa"
 }

@@ -245,5 +245,11 @@
   "remote_content_hosts_hint": "Obrazy i podglądy z tych stron ładują się bez pytania.",
   "remote_content_add_host": "Dodaj stronę…",
   "remote_content_add": "Dodaj",
-  "remote_content_remove_host": "Usuń {{host}}"
+  "remote_content_remove_host": "Usuń {{host}}",
+  "nav_privacy": "Prywatność",
+  "blocked_users_heading": "Zablokowani użytkownicy",
+  "blocked_users_empty": "Nikogo nie zablokowałeś.",
+  "blocked_users_since": "Zablokowano {{date}}",
+  "blocked_users_not_in_effect": "Nieaktywne, dopóki ta osoba jest moderatorem lub administratorem",
+  "blocked_users_unblock": "Odblokuj"
 }

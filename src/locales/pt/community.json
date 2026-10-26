@@ -351,5 +351,13 @@
   "nav_group_communities": "Comunidades",
   "presence_chart_members": "Membros",
   "presence_chart_guests": "Convidados",
-  "presence_chart_empty": "Ainda não há dados de atividade"
+  "presence_chart_empty": "Ainda não há dados de atividade",
+  "block_action": "Bloquear",
+  "unblock_action": "Desbloquear",
+  "block_confirm_title": "Bloquear {{name}}?",
+  "block_confirm_body": "Esta pessoa não poderá enviar-te mensagens privadas e não receberás notificações dela. As mensagens dela nos canais partilhados ficarão recolhidas para ti. Ela não será avisada.",
+  "block_confirm_button": "Bloquear",
+  "block_success": "{{name}} foi bloqueado",
+  "unblock_success": "{{name}} foi desbloqueado",
+  "block_failed": "Não foi possível atualizar o bloqueio"
 }

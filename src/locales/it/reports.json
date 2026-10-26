@@ -48,5 +48,6 @@
     "resolved": "Segnalazione risolta.",
     "escalated": "Segnalazione inoltrata.",
     "dismissed": "Segnalazione respinta."
-  }
+  },
+  "also_block": "Blocca anche questa persona"
 }

@@ -394,6 +394,7 @@ function ConversationPage() {
         {reportMessageIri && (
           <ReportModal
             target={{ messageId: uuidFromIri(reportMessageIri) }}
+            blockUserId={messages.find((m) => m["@id"] === reportMessageIri)?.createdBy?.id}
             onClose={() => setReportMessageIri(null)}
           />
         )}

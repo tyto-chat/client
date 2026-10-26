@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ShieldBan } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useNavigate } from "@tanstack/react-router";
@@ -27,6 +28,8 @@ import { useUser } from "@/queries/userQueries";
 import { useCommunity } from "@/queries/communityQueries";
 import { useCommunityMembership } from "@/queries/membershipQueries";
 import { useCreateConversation } from "@/queries/conversationQueries";
+import { useBlockStatus, useBlockUser, useUnblockUser } from "@/queries/blockQueries";
+import { useConfirm } from "@/hooks/useConfirm";
 import {
   useActiveModeration,
   useCreateModerationAction,
@@ -89,6 +92,11 @@ export function UserModerationModal({
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const createConversation = useCreateConversation();
+  const isOther = !!currentUser && currentUser.id !== userId;
+  const { data: blockStatus } = useBlockStatus(isOther ? userId : null);
+  const blockUser = useBlockUser();
+  const unblockUser = useUnblockUser();
+  const { confirm, confirmDialog } = useConfirm();
   usePresenceSubscription([userId]);
   const presenceState = useUserPresence(userId);
 
@@ -102,6 +110,31 @@ export function UserModerationModal({
       });
     } catch {
       notify(tConv("create_failed"), "error");
+    }
+  }
+
+  async function handleBlock(name: string) {
+    const ok = await confirm({
+      title: t("block_confirm_title", { name }),
+      message: t("block_confirm_body"),
+      confirmLabel: t("block_confirm_button"),
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await blockUser.mutateAsync(userId);
+      notify(t("block_success", { name }), "success");
+    } catch {
+      notify(t("block_failed"), "error");
+    }
+  }
+
+  async function handleUnblock(name: string) {
+    try {
+      await unblockUser.mutateAsync(userId);
+      notify(t("unblock_success", { name }), "success");
+    } catch {
+      notify(t("block_failed"), "error");
     }
   }
 
@@ -228,9 +261,11 @@ export function UserModerationModal({
           {reportOpen && (
             <ReportModal
               target={{ userId, communityIdentifier: communityId }}
+              blockUserId={userId}
               onClose={() => setReportOpen(false)}
             />
           )}
+          {confirmDialog}
           {isLoading && <p className="text-sm text-fg-muted">{tc("loading")}</p>}
           {user && (
             <>
@@ -289,16 +324,43 @@ export function UserModerationModal({
                 leading={
                   currentUser && currentUser.id !== userId ? (
                     <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={handleSendDm}
-                        disabled={createConversation.isPending}
-                        title={tConv("write_private_message")}
-                        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-accent-subtle px-3 py-1.5 text-sm font-medium text-accent transition-opacity hover:opacity-80 disabled:opacity-50"
-                      >
-                        <ChatBubbleIcon size={14} />
-                        {tConv("message_tab")}
-                      </button>
+                      {!blockStatus?.blocked && (
+                        <button
+                          type="button"
+                          onClick={handleSendDm}
+                          disabled={createConversation.isPending}
+                          title={tConv("write_private_message")}
+                          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-accent-subtle px-3 py-1.5 text-sm font-medium text-accent transition-opacity hover:opacity-80 disabled:opacity-50"
+                        >
+                          <ChatBubbleIcon size={14} />
+                          {tConv("message_tab")}
+                        </button>
+                      )}
+                      {blockStatus?.blocked ? (
+                        <button
+                          type="button"
+                          data-testid="profile-unblock-button"
+                          onClick={() => void handleUnblock(user.profile.name)}
+                          disabled={unblockUser.isPending}
+                          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted transition-colors hover:bg-surface hover:text-fg disabled:opacity-50"
+                        >
+                          <ShieldBan size={14} />
+                          {t("unblock_action")}
+                        </button>
+                      ) : (
+                        blockStatus?.blockable && (
+                          <button
+                            type="button"
+                            data-testid="profile-block-button"
+                            onClick={() => void handleBlock(user.profile.name)}
+                            disabled={blockUser.isPending}
+                            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted transition-colors hover:bg-danger-subtle hover:text-danger disabled:opacity-50"
+                          >
+                            <ShieldBan size={14} />
+                            {t("block_action")}
+                          </button>
+                        )
+                      )}
                       {!user?.isAdmin && (
                         <button
                           type="button"

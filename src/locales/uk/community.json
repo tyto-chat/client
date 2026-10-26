@@ -351,5 +351,13 @@
   "nav_group_communities": "Спільноти",
   "presence_chart_members": "Учасники",
   "presence_chart_guests": "Гості",
-  "presence_chart_empty": "Даних про активність ще немає"
+  "presence_chart_empty": "Даних про активність ще немає",
+  "block_action": "Заблокувати",
+  "unblock_action": "Розблокувати",
+  "block_confirm_title": "Заблокувати {{name}}?",
+  "block_confirm_body": "Ця людина не зможе писати вам приватно, а ви не отримуватимете від неї сповіщень. Її повідомлення в спільних каналах будуть згорнуті для вас. Їй про це не повідомлять.",
+  "block_confirm_button": "Заблокувати",
+  "block_success": "{{name}} заблоковано",
+  "unblock_success": "{{name}} розблоковано",
+  "block_failed": "Не вдалося оновити блокування"
 }

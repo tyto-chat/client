@@ -243,5 +243,11 @@
   "remote_content_hosts_hint": "Images and previews from these sites load without asking.",
   "remote_content_add_host": "Add site…",
   "remote_content_add": "Add",
-  "remote_content_remove_host": "Remove {{host}}"
+  "remote_content_remove_host": "Remove {{host}}",
+  "nav_privacy": "Privacy",
+  "blocked_users_heading": "Blocked users",
+  "blocked_users_empty": "You haven't blocked anyone.",
+  "blocked_users_since": "Blocked {{date}}",
+  "blocked_users_not_in_effect": "Not in effect while this person is a moderator or administrator",
+  "blocked_users_unblock": "Unblock"
 }

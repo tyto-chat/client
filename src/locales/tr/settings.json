@@ -243,5 +243,11 @@
   "remote_content_hosts_hint": "Bu sitelerden görseller ve önizlemeler sorulmadan yüklenir.",
   "remote_content_add_host": "Site ekle…",
   "remote_content_add": "Ekle",
-  "remote_content_remove_host": "{{host}} kaldır"
+  "remote_content_remove_host": "{{host}} kaldır",
+  "nav_privacy": "Gizlilik",
+  "blocked_users_heading": "Engellenen kullanıcılar",
+  "blocked_users_empty": "Kimseyi engellemedin.",
+  "blocked_users_since": "{{date}} tarihinde engellendi",
+  "blocked_users_not_in_effect": "Bu kişi moderatör veya yönetici olduğu sürece geçerli değil",
+  "blocked_users_unblock": "Engeli kaldır"
 }

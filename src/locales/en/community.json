@@ -351,5 +351,13 @@
   "nav_group_communities": "Communities",
   "presence_chart_members": "Members",
   "presence_chart_guests": "Guests",
-  "presence_chart_empty": "No activity data yet"
+  "presence_chart_empty": "No activity data yet",
+  "block_action": "Block",
+  "unblock_action": "Unblock",
+  "block_confirm_title": "Block {{name}}?",
+  "block_confirm_body": "They won't be able to message you privately and you won't get notifications from them. Their messages in shared channels will be collapsed for you. They won't be told.",
+  "block_confirm_button": "Block",
+  "block_success": "{{name}} is blocked",
+  "unblock_success": "{{name}} is unblocked",
+  "block_failed": "Couldn't update the block"
 }

@@ -48,5 +48,6 @@
     "resolved": "Melding opgelost.",
     "escalated": "Melding geëscaleerd.",
     "dismissed": "Melding afgewezen."
-  }
+  },
+  "also_block": "Blokkeer deze persoon ook"
 }

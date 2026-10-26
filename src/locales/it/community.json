@@ -351,5 +351,13 @@
   "nav_group_communities": "Community",
   "presence_chart_members": "Membri",
   "presence_chart_guests": "Ospiti",
-  "presence_chart_empty": "Ancora nessun dato sull'attività"
+  "presence_chart_empty": "Ancora nessun dato sull'attività",
+  "block_action": "Blocca",
+  "unblock_action": "Sblocca",
+  "block_confirm_title": "Bloccare {{name}}?",
+  "block_confirm_body": "Non potrà scriverti in privato e non riceverai notifiche da lei. I suoi messaggi nei canali condivisi saranno compressi per te. Non verrà avvisata.",
+  "block_confirm_button": "Blocca",
+  "block_success": "{{name}} è bloccato",
+  "unblock_success": "{{name}} è sbloccato",
+  "block_failed": "Impossibile aggiornare il blocco"
 }

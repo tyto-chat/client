@@ -48,5 +48,6 @@
     "resolved": "Şikâyet çözüldü.",
     "escalated": "Şikâyet yükseltildi.",
     "dismissed": "Şikâyet reddedildi."
-  }
+  },
+  "also_block": "Bu kişiyi de engelle"
 }

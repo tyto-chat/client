@@ -8,6 +8,7 @@ import { GeneralPanel } from "@/components/preferences/GeneralPanel";
 import { ChatPanel } from "@/components/preferences/ChatPanel";
 import { NotificationsPanel } from "@/components/preferences/NotificationsPanel";
 import { VoiceVideoPanel } from "@/components/preferences/VoiceVideoPanel";
+import { PrivacyPanel } from "@/components/preferences/PrivacyPanel";
 import { AccountSecurityPanel } from "@/components/preferences/AccountSecurityPanel";
 
 export function PreferencesModal({ onClose }: { onClose: () => void }) {
@@ -27,6 +28,7 @@ export function PreferencesModal({ onClose }: { onClose: () => void }) {
             {effective === "notifications" && <NotificationsPanel />}
             {effective === "voice-video" && <VoiceVideoPanel />}
             {effective === "account" && <AccountSecurityPanel />}
+            {effective === "privacy" && <PrivacyPanel />}
             {effective === "apikeys" && <ApiKeysTab />}
           </div>
         </div>

@@ -48,5 +48,6 @@
     "resolved": "Signalement résolu.",
     "escalated": "Signalement remonté.",
     "dismissed": "Signalement rejeté."
-  }
+  },
+  "also_block": "Bloquer aussi cette personne"
 }

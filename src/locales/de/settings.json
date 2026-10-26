@@ -243,5 +243,11 @@
   "remote_content_hosts_hint": "Bilder und Vorschauen von diesen Seiten werden ohne Nachfrage geladen.",
   "remote_content_add_host": "Seite hinzufügen…",
   "remote_content_add": "Hinzufügen",
-  "remote_content_remove_host": "{{host}} entfernen"
+  "remote_content_remove_host": "{{host}} entfernen",
+  "nav_privacy": "Datenschutz",
+  "blocked_users_heading": "Blockierte Nutzer",
+  "blocked_users_empty": "Du hast niemanden blockiert.",
+  "blocked_users_since": "Blockiert am {{date}}",
+  "blocked_users_not_in_effect": "Nicht wirksam, solange diese Person Moderator oder Administrator ist",
+  "blocked_users_unblock": "Blockierung aufheben"
 }

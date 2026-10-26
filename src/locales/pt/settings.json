@@ -243,5 +243,11 @@
   "remote_content_hosts_hint": "Imagens e pré-visualizações destes sites carregam sem perguntar.",
   "remote_content_add_host": "Adicionar site…",
   "remote_content_add": "Adicionar",
-  "remote_content_remove_host": "Remover {{host}}"
+  "remote_content_remove_host": "Remover {{host}}",
+  "nav_privacy": "Privacidade",
+  "blocked_users_heading": "Utilizadores bloqueados",
+  "blocked_users_empty": "Não bloqueaste ninguém.",
+  "blocked_users_since": "Bloqueado em {{date}}",
+  "blocked_users_not_in_effect": "Sem efeito enquanto esta pessoa for moderadora ou administradora",
+  "blocked_users_unblock": "Desbloquear"
 }

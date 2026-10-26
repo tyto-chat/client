@@ -1,9 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { Bell, KeyRound, MessageCircle, Mic, Settings, UserRound } from "lucide-react";
+import { Bell, KeyRound, MessageCircle, Mic, Settings, ShieldBan, UserRound } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { SettingsNav, type SettingsNavGroup } from "@/components/ui/SettingsNav";
 
-export type PanelKey = "general" | "chat" | "notifications" | "voice-video" | "account" | "apikeys";
+export type PanelKey =
+  "general" | "chat" | "notifications" | "voice-video" | "account" | "privacy" | "apikeys";
 
 type NavHeadingKey = "nav_group_app" | "nav_group_devices" | "nav_group_account";
 type NavLabelKey =
@@ -12,6 +13,7 @@ type NavLabelKey =
   | "tab_notifications"
   | "nav_voice_video"
   | "nav_account_security"
+  | "nav_privacy"
   | "tab_apikeys";
 
 interface NavGroup {
@@ -36,6 +38,7 @@ const GROUPS: NavGroup[] = [
     heading: "nav_group_account",
     items: [
       { key: "account", label: "nav_account_security", icon: UserRound },
+      { key: "privacy", label: "nav_privacy", icon: ShieldBan },
       { key: "apikeys", label: "tab_apikeys", icon: KeyRound },
     ],
   },
