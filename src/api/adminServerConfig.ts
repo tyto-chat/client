@@ -74,6 +74,9 @@ export interface AdminServerConfig {
   validateEmails: boolean;
   digestHour: number;
   mediaTokenTtlSeconds: number;
+  httpCachePageTtlSeconds: number;
+  httpCachePresenceTtlSeconds: number;
+  httpCacheContextTtlSeconds: number;
   communityEmojiTokenTtlSeconds: number;
   defaultBotId: number;
   welcomeBotId: number;
