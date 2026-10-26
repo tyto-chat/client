@@ -99,4 +99,46 @@ describe("ImageGallery", () => {
       "https://core.test/media/token/original-1.jpg",
     );
   });
+
+  it("labels animated GIF tiles and still opens them in the lightbox", () => {
+    const onOpen = vi.fn();
+    const gif = {
+      ...attachment(1, "https://core.test/thumb-1.gif"),
+      mimeType: "image/gif",
+      animated: true,
+    };
+    render(
+      <ImageGallery
+        images={[gif, attachment(2, "https://core.test/thumb-2.jpg")]}
+        canDelete={false}
+        onDeleteAttachment={noop}
+        onOpen={onOpen}
+      />,
+    );
+    expect(screen.getAllByText("GIF")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "photo-1.jpg" }));
+    expect(onOpen).toHaveBeenCalledWith(gif);
+  });
+
+  it("labels a single animated GIF and leaves still images unlabelled", () => {
+    const { rerender } = render(
+      <ImageGallery
+        images={[{ ...attachment(1, "https://core.test/thumb-1.gif"), animated: true }]}
+        canDelete={false}
+        onDeleteAttachment={noop}
+        onOpen={noop}
+      />,
+    );
+    expect(screen.getByText("GIF")).toBeInTheDocument();
+
+    rerender(
+      <ImageGallery
+        images={[{ ...attachment(1, "https://core.test/thumb-1.gif"), animated: false }]}
+        canDelete={false}
+        onDeleteAttachment={noop}
+        onOpen={noop}
+      />,
+    );
+    expect(screen.queryByText("GIF")).not.toBeInTheDocument();
+  });
 });
