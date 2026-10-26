@@ -194,6 +194,7 @@
   "report_message": "Signaler le message",
   "code_language": "Langage du code",
   "view_image": "Voir l'image",
+  "view_animated_gif": "{{name}}, GIF animé",
   "play_video": "Lire la vidéo",
   "image": "Image",
   "previous": "Précédent",

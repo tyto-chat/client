@@ -196,6 +196,7 @@
   "report_message": "Поскаржитися на повідомлення",
   "code_language": "Мова коду",
   "view_image": "Переглянути зображення",
+  "view_animated_gif": "{{name}}, анімований GIF",
   "play_video": "Відтворити відео",
   "image": "Зображення",
   "previous": "Попереднє",
