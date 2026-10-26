@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import {
   useMutation,
   useQuery,
@@ -10,9 +10,14 @@ import { blockUser, fetchBlockedUsers, fetchBlockStatus, unblockUser } from "@/a
 import { ApiError } from "@/api/client";
 import { useHasAccessToken } from "@/api/tokenStore";
 import { useOptionalAuthContext } from "@/context/AuthContext";
-import { getActiveIdentityKey } from "@/platform/activeIdentity";
 import { queryKeys } from "@/queries/queryKeys";
 import type { BlockedUser } from "@/types/api";
+import {
+  readStoredBlockedIds,
+  subscribeStoredBlockedIds,
+  updateStoredBlockedIds,
+  writeStoredBlockedIds,
+} from "@/utils/blockedIdsStore";
 import { StaleTime } from "./staleTimes";
 
 const EMPTY_IDS: ReadonlySet<number> = new Set();
@@ -25,29 +30,6 @@ async function fetchBlockedUsersOrNone(): Promise<BlockedUser[]> {
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) return [];
     throw err;
-  }
-}
-
-function storageKey(userId: number): string {
-  return `tyto:blocked-ids:${getActiveIdentityKey() ?? "web"}:${userId}`;
-}
-
-function readStoredIds(userId: number): number[] | null {
-  try {
-    const raw = localStorage.getItem(storageKey(userId));
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.every((id) => typeof id === "number") ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredIds(userId: number, ids: number[]): void {
-  try {
-    localStorage.setItem(storageKey(userId), JSON.stringify(ids));
-  } catch {
-    /* storage unavailable */
   }
 }
 
@@ -87,15 +69,20 @@ export function useBlockedUserIds(): ReadonlySet<number> {
     () => (data ? data.filter((b) => b.inEffect).map((b) => b.userId) : null),
     [data],
   );
+  const storedIds = useSyncExternalStore(
+    subscribeStoredBlockedIds,
+    () => (userId !== null ? readStoredBlockedIds(userId) : null),
+    () => null,
+  );
 
   useEffect(() => {
-    if (userId !== null && fetchedIds) writeStoredIds(userId, fetchedIds);
+    if (userId !== null && fetchedIds) writeStoredBlockedIds(userId, fetchedIds);
   }, [userId, fetchedIds]);
 
   return useMemo(() => {
-    const ids = fetchedIds ?? (userId !== null ? readStoredIds(userId) : null);
+    const ids = fetchedIds ?? storedIds;
     return ids && ids.length > 0 ? new Set(ids) : EMPTY_IDS;
-  }, [fetchedIds, userId]);
+  }, [fetchedIds, storedIds]);
 }
 
 export function useBlockStatus(userId: number | null) {
@@ -120,20 +107,43 @@ export function invalidateBlockDependents(queryClient: QueryClient): Promise<unk
   ]);
 }
 
-function useInvalidateBlocks() {
+function applyConfirmedBlock(
+  queryClient: QueryClient,
+  userId: number | null,
+  targetId: number,
+  confirmed: BlockedUser | null,
+): void {
+  queryClient.setQueryData<BlockedUser[]>(queryKeys.blocks(), (old) => {
+    if (!old) return old;
+    const rest = old.filter((b) => b.userId !== targetId);
+    return confirmed ? [...rest, confirmed] : rest;
+  });
+  if (userId === null) return;
+  updateStoredBlockedIds(userId, (ids) => {
+    const rest = ids.filter((id) => id !== targetId);
+    return confirmed?.inEffect ? [...rest, targetId] : rest;
+  });
+}
+
+function useBlockMutation(mutationFn: (targetId: number) => Promise<BlockedUser | null>) {
   const queryClient = useQueryClient();
-  return () => invalidateBlockDependents(queryClient);
+  const userId = useOptionalAuthContext()?.user?.id ?? null;
+  return useMutation({
+    mutationFn,
+    onSuccess: (confirmed, targetId) => {
+      applyConfirmedBlock(queryClient, userId, targetId, confirmed);
+      return invalidateBlockDependents(queryClient);
+    },
+  });
 }
 
 export function useBlockUser() {
-  const invalidate = useInvalidateBlocks();
-  return useMutation({ mutationFn: (userId: number) => blockUser(userId), onSuccess: invalidate });
+  return useBlockMutation((targetId) => blockUser(targetId));
 }
 
 export function useUnblockUser() {
-  const invalidate = useInvalidateBlocks();
-  return useMutation({
-    mutationFn: (userId: number) => unblockUser(userId),
-    onSuccess: invalidate,
+  return useBlockMutation(async (targetId) => {
+    await unblockUser(targetId);
+    return null;
   });
 }

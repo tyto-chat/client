@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement } from "react";
 import type { ReactNode } from "react";
@@ -8,7 +8,13 @@ import { server } from "../../mocks/server";
 import { configureApiClient } from "@/api/client";
 import { setAccessToken } from "@/api/tokenStore";
 import { TEST_BASE_URL as BASE } from "../../fixtures";
-import { prefetchBlockedUsers, useBlockedUserIds, useBlockedUsers } from "@/queries/blockQueries";
+import {
+  prefetchBlockedUsers,
+  useBlockedUserIds,
+  useBlockedUsers,
+  useBlockUser,
+  useUnblockUser,
+} from "@/queries/blockQueries";
 import { queryKeys } from "@/queries/queryKeys";
 
 const auth = vi.hoisted(() => ({ userId: 1 as number | null }));
@@ -111,5 +117,69 @@ describe("blocked ids cache", () => {
     const prefetchClient = new QueryClient({ defaultOptions: { queries: { retry: 3 } } });
     await prefetchBlockedUsers(prefetchClient);
     expect(prefetchClient.getQueryData(queryKeys.blocks())).toEqual([]);
+  });
+
+  function renderWithMutations(qc: QueryClient) {
+    return renderHook(
+      () => ({ ids: useBlockedUserIds(), block: useBlockUser(), unblock: useUnblockUser() }),
+      {
+        wrapper: ({ children }: { children: ReactNode }) =>
+          createElement(QueryClientProvider, { client: qc }, children),
+      },
+    );
+  }
+
+  const entry = {
+    userId: 7,
+    name: "x",
+    avatarUrl: null,
+    blockedAt: "2026-10-26T00:00:00Z",
+    inEffect: true,
+  };
+
+  it("collapses right after a confirmed block even when the refetch fails", async () => {
+    server.use(
+      http.post(BLOCKS_URL, () => HttpResponse.json(entry)),
+      http.get(BLOCKS_URL, () => new HttpResponse(null, { status: 500 })),
+    );
+    const qc = makeClient();
+    qc.setQueryData(queryKeys.blocks(), []);
+    const { result } = renderWithMutations(qc);
+    expect(result.current.ids.has(7)).toBe(false);
+
+    await act(() => result.current.block.mutateAsync(7));
+
+    await waitFor(() => expect(qc.getQueryState(queryKeys.blocks())?.status).toBe("error"));
+    expect(result.current.ids.has(7)).toBe(true);
+  });
+
+  it("expands right after a confirmed unblock even when the refetch fails", async () => {
+    server.use(
+      http.delete(`${BLOCKS_URL}/7`, () => new HttpResponse(null, { status: 204 })),
+      http.get(BLOCKS_URL, () => new HttpResponse(null, { status: 500 })),
+    );
+    const qc = makeClient();
+    qc.setQueryData(queryKeys.blocks(), [entry]);
+    const { result } = renderWithMutations(qc);
+    await waitFor(() => expect(result.current.ids.has(7)).toBe(true));
+
+    await act(() => result.current.unblock.mutateAsync(7));
+
+    await waitFor(() => expect(qc.getQueryState(queryKeys.blocks())?.status).toBe("error"));
+    expect(result.current.ids.has(7)).toBe(false);
+  });
+
+  it("expands after an unblock when only the remembered ids were known", async () => {
+    await seedCacheFor(1, [7]);
+    server.use(
+      http.delete(`${BLOCKS_URL}/7`, () => new HttpResponse(null, { status: 204 })),
+      http.get(BLOCKS_URL, () => new HttpResponse(null, { status: 500 })),
+    );
+    const { result } = renderWithMutations(makeClient());
+    expect(result.current.ids.has(7)).toBe(true);
+
+    await act(() => result.current.unblock.mutateAsync(7));
+
+    await waitFor(() => expect(result.current.ids.has(7)).toBe(false));
   });
 });

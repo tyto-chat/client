@@ -12,7 +12,10 @@ import { ConversationReadOnlyBanner } from "@/components/dm/ConversationReadOnly
 import { MessageReactions } from "@/components/chat/MessageReactions";
 import type { Message } from "@/types/api";
 
-vi.mock("@/context/AuthContext", () => ({ useAuthContext: () => ({ user: null }) }));
+vi.mock("@/context/AuthContext", () => ({
+  useAuthContext: () => ({ user: null }),
+  useOptionalAuthContext: () => ({ user: null }),
+}));
 const notify = vi.hoisted(() => vi.fn());
 vi.mock("@/context/NotificationContext", () => ({ useNotification: () => ({ notify }) }));
 

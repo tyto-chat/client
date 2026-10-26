@@ -196,4 +196,24 @@ describe("AuthContext logout in web mode", () => {
     expect(window.location.replace).not.toHaveBeenCalled();
     expect(await bridge.config.get()).toBeNull();
   });
+
+  it("forgets the remembered blocked ids of the user signing out", async () => {
+    server.use(http.post(`${BASE}/logout`, () => new HttpResponse(null, { status: 204 })));
+    const key = `tyto:blocked-ids:web:${mockUser.id}`;
+    localStorage.setItem(key, "[7]");
+    localStorage.setItem("tyto:blocked-ids:web:999", "[8]");
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useAuthContext(), { wrapper: makeWrapper(queryClient) });
+    await waitFor(() => expect(result.current.user?.id).toBe(mockUser.id));
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(localStorage.getItem(key)).toBeNull();
+    expect(localStorage.getItem("tyto:blocked-ids:web:999")).toBe("[8]");
+  });
 });
