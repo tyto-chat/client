@@ -3,10 +3,19 @@ import { AttachmentActions } from "./AttachmentActions";
 import { THUMB_BASE } from "@/utils/attachmentFormat";
 import { PreviewImage } from "./PreviewImage";
 import type { Attachment } from "@/types/api";
+import type { TFunction } from "i18next";
+
+function imageLabel(att: Attachment, t: TFunction<"channel">): string {
+  const name = att.originalName || t("view_image");
+  return att.animated ? t("view_animated_gif", { name }) : name;
+}
 
 function GifBadge() {
   return (
-    <span className="pointer-events-none absolute bottom-1.5 left-1.5 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white">
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute bottom-1.5 left-1.5 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white"
+    >
       GIF
     </span>
   );
@@ -31,7 +40,7 @@ function GalleryTile({
       <button
         type="button"
         onClick={onOpen}
-        aria-label={att.originalName || t("view_image")}
+        aria-label={imageLabel(att, t)}
         className="block h-full w-full cursor-zoom-in"
       >
         <PreviewImage
@@ -76,7 +85,7 @@ export function ImageGallery({
         <button
           type="button"
           onClick={() => onOpen(single)}
-          aria-label={single.originalName || t("view_image")}
+          aria-label={imageLabel(single, t)}
           className="block cursor-zoom-in"
         >
           <PreviewImage

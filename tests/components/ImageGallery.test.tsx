@@ -116,7 +116,9 @@ describe("ImageGallery", () => {
       />,
     );
     expect(screen.getAllByText("GIF")).toHaveLength(1);
-    fireEvent.click(screen.getByRole("button", { name: "photo-1.jpg" }));
+    expect(screen.getByText("GIF")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByRole("button", { name: "photo-2.jpg" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "photo-1.jpg, animated GIF" }));
     expect(onOpen).toHaveBeenCalledWith(gif);
   });
 
@@ -130,6 +132,7 @@ describe("ImageGallery", () => {
       />,
     );
     expect(screen.getByText("GIF")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "photo-1.jpg, animated GIF" })).toBeInTheDocument();
 
     rerender(
       <ImageGallery
