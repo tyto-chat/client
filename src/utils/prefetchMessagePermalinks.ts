@@ -9,6 +9,7 @@ import { linkScope, linkViewer } from "@/utils/linkScope";
 export async function prefetchMessagePermalinks(
   queryClient: QueryClient,
   messages: readonly Message[],
+  waitAtMostMs?: number,
 ): Promise<void> {
   const jobs = new Map<string, Promise<void>>();
   for (const message of messages) {
@@ -28,11 +29,21 @@ export async function prefetchMessagePermalinks(
             queryKey,
             queryFn: () => fetchMessageIn(scope, target.uuid),
             staleTime: StaleTime.long,
+            retry: false,
             meta: { noGlobalRedirect: true },
           })
           .catch(() => {}),
       );
     }
   }
-  await Promise.all(jobs.values());
+  const all = Promise.all(jobs.values()).then(() => undefined);
+  if (waitAtMostMs === undefined || jobs.size === 0) return all;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const budget = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, waitAtMostMs);
+  });
+  await Promise.race([all, budget]);
+  clearTimeout(timer);
 }
+
+export const PERMALINK_LOADER_WAIT_MS = 300;

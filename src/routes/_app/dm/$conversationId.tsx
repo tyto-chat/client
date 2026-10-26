@@ -22,7 +22,10 @@ import { useReadWhileViewing } from "@/hooks/useReadWhileViewing";
 import { useNotificationUnreadCounts } from "@/queries/notificationQueries";
 import { fetchConversationPage, fetchConversationPages } from "@/api/pages";
 import { fetchMessage } from "@/api/messages";
-import { prefetchMessagePermalinks } from "@/utils/prefetchMessagePermalinks";
+import {
+  PERMALINK_LOADER_WAIT_MS,
+  prefetchMessagePermalinks,
+} from "@/utils/prefetchMessagePermalinks";
 import { useConversationMercure } from "@/hooks/useMercure";
 import { usePrefetchMessagePermalinks } from "@/hooks/usePrefetchMessagePermalinks";
 import { useNotification } from "@/context/NotificationContext";
@@ -106,7 +109,11 @@ export const Route = createFileRoute("/_app/dm/$conversationId")({
           queryKeys.conversationPages(params.conversationId),
           { pages: [pageData], pageParams: [initialPageNumber] },
         );
-        await prefetchMessagePermalinks(queryClient, pageData.messages ?? []);
+        await prefetchMessagePermalinks(
+          queryClient,
+          pageData.messages ?? [],
+          PERMALINK_LOADER_WAIT_MS,
+        );
       } else {
         queryClient.setQueryData<InfiniteData<ChannelPage, number>>(
           queryKeys.conversationPages(params.conversationId),
