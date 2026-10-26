@@ -62,6 +62,30 @@ export function groupMessages(
   }, []);
 }
 
+function splitByReveal(
+  group: MessageGroupData,
+  user: User | null,
+  revealedIds: ReadonlySet<string>,
+): MessageGroupData[] {
+  const out: MessageGroupData[] = [];
+  let run: Message[] = [];
+  let runRevealed = false;
+  const flush = () => {
+    if (run.length === 0) return;
+    if (runRevealed) out.push(...groupMessages(run, user));
+    else out.push({ isOwn: group.isOwn, blocked: true, msgs: run });
+    run = [];
+  };
+  for (const msg of group.msgs) {
+    const revealed = revealedIds.has(msg["@id"]);
+    if (revealed !== runRevealed) flush();
+    runRevealed = revealed;
+    run.push(msg);
+  }
+  flush();
+  return out;
+}
+
 export function revealGroups(
   groups: MessageGroupData[],
   user: User | null,
@@ -69,7 +93,7 @@ export function revealGroups(
 ): MessageGroupData[] {
   return groups.flatMap((group) =>
     group.blocked && group.msgs.some((m) => revealedIds.has(m["@id"]))
-      ? groupMessages(group.msgs, user)
+      ? splitByReveal(group, user, revealedIds)
       : [group],
   );
 }

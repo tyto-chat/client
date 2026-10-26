@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { useMessageGroups } from "@/hooks/useMessageGroups";
 import { mockUser } from "../../fixtures";
+import type { MessageGroupData } from "@/utils/messageGroups";
 import type { Message, User } from "@/types/api";
 
 vi.mock("@/queries/blockQueries", () => ({ useBlockedUserIds: () => new Set([7]) }));
@@ -34,6 +35,11 @@ function msg(id: string, createdAt: string): Message {
 const a = msg("a", "2026-05-20T08:00:00Z");
 const b = msg("b", "2026-05-20T10:00:00Z");
 const c = msg("c", "2026-05-20T10:01:00Z");
+const d = msg("d", "2026-05-20T10:02:00Z");
+
+function summary(groups: MessageGroupData[]) {
+  return groups.map((g) => [g.blocked, g.msgs.map((m) => m.id)]);
+}
 
 describe("useMessageGroups", () => {
   it("collapses a blocked run into one blocked group", () => {
@@ -55,21 +61,58 @@ describe("useMessageGroups", () => {
     });
     act(() => result.current.reveal(result.current.groups[0]!.msgs));
     rerender({ list: [a, b, c] });
-    expect(result.current.groups.every((g) => !g.blocked)).toBe(true);
+    expect(summary(result.current.groups)).toEqual([
+      [true, ["a"]],
+      [false, ["b", "c"]],
+    ]);
   });
 
-  it("reveals the run that holds the focus target even when it is not first", () => {
+  it("reveals the focus target even when it is not first", () => {
     const { result, rerender } = renderHook(
       ({ focus }) => useMessageGroups([b, c], mockUser, focus),
       { initialProps: { focus: c["@id"] as string | null } },
     );
-    expect(result.current.groups.every((g) => !g.blocked)).toBe(true);
+    expect(summary(result.current.groups)).toEqual([
+      [true, ["b"]],
+      [false, ["c"]],
+    ]);
     rerender({ focus: null });
-    expect(result.current.groups.every((g) => !g.blocked)).toBe(true);
+    expect(summary(result.current.groups)).toEqual([
+      [true, ["b"]],
+      [false, ["c"]],
+    ]);
   });
 
   it("matches a bare uuid focus against the message IRI suffix", () => {
     const { result } = renderHook(() => useMessageGroups([b, c], mockUser, "c"));
-    expect(result.current.groups.every((g) => !g.blocked)).toBe(true);
+    expect(summary(result.current.groups)).toEqual([
+      [true, ["b"]],
+      [false, ["c"]],
+    ]);
+  });
+
+  it("keeps messages that arrive after Show collapsed", () => {
+    const { result, rerender } = renderHook(({ list }) => useMessageGroups(list, mockUser), {
+      initialProps: { list: [b, c] },
+    });
+    act(() => result.current.reveal(result.current.groups[0]!.msgs));
+    rerender({ list: [b, c, d] });
+    expect(summary(result.current.groups)).toEqual([
+      [false, ["b", "c"]],
+      [true, ["d"]],
+    ]);
+  });
+
+  it("keeps the clicked messages revealed after older pages merge and newer ones arrive", () => {
+    const { result, rerender } = renderHook(({ list }) => useMessageGroups(list, mockUser), {
+      initialProps: { list: [b, c] },
+    });
+    act(() => result.current.reveal(result.current.groups[0]!.msgs));
+    rerender({ list: [a, b, c, d] });
+    expect(summary(result.current.groups)).toEqual([
+      [true, ["a"]],
+      [false, ["b", "c"]],
+      [true, ["d"]],
+    ]);
   });
 });
