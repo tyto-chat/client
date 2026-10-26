@@ -1,7 +1,16 @@
-import { useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  type MouseEvent,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/Avatar";
+import { useConversationProfileCard } from "@/components/dm/ConversationProfileCard";
 import { avatarUrl } from "@/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotification } from "@/context/NotificationContext";
@@ -48,6 +57,7 @@ function LegacyConversationsSidebar() {
   const { notify } = useNotification();
   const { data: conversations = [], isLoading } = useConversations();
   const markAllDmsRead = useMarkAllDmsRead();
+  const { openProfile, profileCard } = useConversationProfileCard();
 
   const { navOpen, closeNav } = useMobileNav();
   const scrollRef = useAutoHideScrollbar<HTMLUListElement>();
@@ -96,7 +106,20 @@ function LegacyConversationsSidebar() {
           title={displayName}
         >
           {first && (
-            <span className="relative shrink-0">
+            <span
+              className="relative shrink-0"
+              {...(others.length === 1 && {
+                role: "button",
+                tabIndex: -1,
+                "data-testid": "dm-row-avatar",
+                "aria-label": first.profile!.name,
+                onClick: (e: MouseEvent) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openProfile(first.userId);
+                },
+              })}
+            >
               <Avatar
                 name={first.profile!.name}
                 colorKey={first.profile!["@id"] ?? `user:${first.userId}`}
@@ -141,6 +164,7 @@ function LegacyConversationsSidebar() {
         "md:static md:w-60",
       )}
     >
+      {profileCard}
       <div className="-mx-2 mb-2 flex h-14 shrink-0 items-center justify-between gap-2 border-b-2 border-[color-mix(in_srgb,var(--accent)_55%,transparent)] px-4">
         <h2 className="min-w-0 flex-1 text-[0.9375rem] font-bold text-fg">
           <span className="block cap-trim-truncate truncate">{t("direct_messages")}</span>

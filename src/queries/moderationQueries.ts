@@ -19,10 +19,12 @@ export function useModerationLog(
   type?: "warn" | "timeout" | "ban" | "server_ban",
   activeOnly?: boolean,
   targetUserId?: number,
+  enabled = true,
 ) {
   return useQuery({
     queryKey: [...queryKeys.moderationLog(communityId), page, type, activeOnly, targetUserId],
     queryFn: () => fetchModerationLog(communityId, page, type, activeOnly, targetUserId),
+    enabled,
     staleTime: StaleTime.short,
     placeholderData: (prev) => prev,
   });
