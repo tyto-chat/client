@@ -55,7 +55,7 @@ export function CanvasStillGif({
   height?: number;
   onError?: () => void;
 }) {
-  const [still, setStill] = useState<"pending" | "ready" | "unavailable">("pending");
+  const [still, setStill] = useState<"pending" | "ready" | "unavailable" | "failed">("pending");
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const captureFirstFrame = (img: HTMLImageElement) => {
@@ -78,7 +78,8 @@ export function CanvasStillGif({
     setStill("ready");
   };
 
-  const imageVisibility = playing ? "" : still === "ready" ? "invisible" : "opacity-0";
+  const imageVisibility =
+    playing || still === "failed" ? "" : still === "ready" ? "invisible" : "opacity-0";
 
   return (
     <>
@@ -90,7 +91,10 @@ export function CanvasStillGif({
         loading="lazy"
         decoding="async"
         onLoad={(e) => captureFirstFrame(e.currentTarget)}
-        onError={onError}
+        onError={() => {
+          setStill("failed");
+          onError?.();
+        }}
         style={style}
         className={`${className} ${imageVisibility}`}
       />

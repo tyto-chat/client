@@ -234,6 +234,22 @@ describe("ImageGallery GIF still frame", () => {
     expect(img.className).toContain("opacity-0");
   });
 
+  it("shows the broken image instead of a blank tile when the original fails", () => {
+    render(
+      <ImageGallery
+        images={[gif(null)]}
+        canDelete={false}
+        onDeleteAttachment={noop}
+        onOpen={noop}
+      />,
+      { wrapper: prefsWrapper(null) },
+    );
+    const img = document.querySelector("img")!;
+    fireEvent.error(img);
+    expect(img.className).not.toContain("opacity-0");
+    expect(screen.queryByTestId("gif-placeholder")).not.toBeInTheDocument();
+  });
+
   it("hides the still thumbnail once the playing original has loaded", () => {
     render(
       <ImageGallery
