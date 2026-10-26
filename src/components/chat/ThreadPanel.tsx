@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { uuidFromIri } from "@/api/hydra";
 import { channelThreadsTopic, conversationThreadsTopic } from "@/api/topics";
 import { useTranslation } from "react-i18next";
@@ -144,6 +144,9 @@ export function ThreadPanel({
       .catch(() => {});
   }, [replies, loadEarlier]);
 
+  const rootMessages = useMemo(() => (root ? [root] : EMPTY_REPLIES), [root]);
+  const { groups: rootGroups, reveal: revealRoot } = useMessageGroups(rootMessages, user);
+
   const { groups: replyGroups, reveal } = useMessageGroups(
     replies ?? EMPTY_REPLIES,
     user,
@@ -281,11 +284,15 @@ export function ThreadPanel({
           </div>
           {root && (
             <div className="border-b border-l-2 border-line border-l-[var(--accent)] bg-surface px-4 py-3.5">
-              <MessageGroup
-                group={{ isOwn: root.createdBy?.id === user?.id, msgs: [root] }}
-                groupIndex={0}
-                {...rootGroupProps}
-              />
+              {rootGroups.map((group) => (
+                <MessageGroup
+                  key={group.msgs[0]?.["@id"]}
+                  group={group}
+                  groupIndex={0}
+                  onShowBlocked={() => revealRoot(group.msgs)}
+                  {...rootGroupProps}
+                />
+              ))}
             </div>
           )}
         </div>

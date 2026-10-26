@@ -31,6 +31,7 @@ vi.mock("@/components/chat/MessageGroup", () => ({
     readOnly,
     canReact,
     writeLocked,
+    onShowBlocked,
   }: {
     group: { blocked?: boolean; msgs: Array<{ "@id": string; text: string | null }> };
     onToggleReaction: (iri: string, emoji: string) => void;
@@ -39,6 +40,7 @@ vi.mock("@/components/chat/MessageGroup", () => ({
     readOnly?: boolean;
     canReact?: boolean;
     writeLocked?: boolean;
+    onShowBlocked?: () => void;
   }) => (
     <div
       data-testid="msg"
@@ -52,6 +54,11 @@ vi.mock("@/components/chat/MessageGroup", () => ({
           {m.text}
         </span>
       ))}
+      {group.blocked && (
+        <button data-testid={`show-${group.msgs[0]!["@id"]}`} onClick={() => onShowBlocked?.()}>
+          show
+        </button>
+      )}
       {!readOnly && (
         <>
           {canReact !== false && (
@@ -446,6 +453,43 @@ describe("ThreadPanel", () => {
     await waitFor(() => expect(screen.getByText("from blocked")).toBeInTheDocument());
     const groups = screen.getAllByTestId("msg").filter((el) => el.textContent?.includes("from"));
     expect(groups.map((g) => g.getAttribute("data-blocked"))).toEqual(["true", "false"]);
+  });
+
+  it("collapses a root by a blocked author until Show", async () => {
+    blocked.ids = new Set([7]);
+    const blockedAuthor = {
+      ...mockUser,
+      "@id": "/api/users/7",
+      id: 7,
+      profile: { ...mockUser.profile, "@id": "/api/profiles/7" },
+    };
+    server.use(
+      http.get(`${BASE}${ROOT_IRI}`, () =>
+        HttpResponse.json(msg(ROOT_UUID, "blocked root", { createdBy: blockedAuthor })),
+      ),
+      http.get(`${BASE}${ROOT_IRI}/thread`, () => threadResponse([])),
+    );
+
+    render(
+      <ThreadPanel
+        communityId={COMMUNITY}
+        channelIdentifier={CHANNEL}
+        rootIri={ROOT_IRI}
+        members={[]}
+        channels={[]}
+        allowAttachments={false}
+        onClose={vi.fn()}
+      />,
+      { wrapper: makeWrapper() },
+    );
+
+    const rootGroup = () => screen.getByText("blocked root").closest("[data-testid='msg']");
+    await waitFor(() => expect(screen.getByText("blocked root")).toBeInTheDocument());
+    expect(rootGroup()?.getAttribute("data-blocked")).toBe("true");
+
+    await userEvent.click(screen.getByTestId(`show-/api/messages/${ROOT_UUID}`));
+
+    expect(rootGroup()?.getAttribute("data-blocked")).toBe("false");
   });
 
   it("locked thread hides the editor and shows the notice", async () => {

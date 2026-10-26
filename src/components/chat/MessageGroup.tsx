@@ -276,6 +276,10 @@ export function MessageGroup({
         onShow={() => onShowBlocked?.()}
         messageIri={first["@id"]}
         className={showDivider ? "border-t border-msg-divider" : groupIndex > 0 ? "mt-1.5" : ""}
+        threads={group.msgs
+          .filter((m) => (m.replyCount ?? 0) > 0)
+          .map((m) => ({ rootIri: m["@id"], replyCount: m.replyCount ?? 0 }))}
+        onOpenThread={readOnly ? undefined : onOpenThread}
       />
     );
   }

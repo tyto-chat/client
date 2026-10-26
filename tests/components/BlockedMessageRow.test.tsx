@@ -18,7 +18,7 @@ function Wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
 }
 
-function blockedMsg(id: string, text: string): Message {
+function blockedMsg(id: string, text: string, extra: Partial<Message> = {}): Message {
   return {
     "@id": `/api/messages/${id}`,
     "@type": "Message",
@@ -38,6 +38,7 @@ function blockedMsg(id: string, text: string): Message {
     } as User,
     reactions: null,
     pageNumber: 1,
+    ...extra,
   } as Message;
 }
 
@@ -97,5 +98,62 @@ describe("BlockedMessageRow", () => {
     expect(screen.queryByTestId(testIds.blockedMessageRow)).not.toBeInTheDocument();
     expect(await screen.findByText("first hidden")).toBeInTheDocument();
     expect(screen.getByText("second hidden")).toBeInTheDocument();
+  });
+
+  it("names each Show button after the row it reveals", () => {
+    render(
+      <>
+        <BlockedMessageRow count={1} onShow={noop} />
+        <BlockedMessageRow count={3} onShow={noop} />
+      </>,
+    );
+    expect(
+      screen.getByRole("button", { name: "Show: Message from a blocked user" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Show: 3 messages from a blocked user" }),
+    ).toBeInTheDocument();
+  });
+
+  function renderCollapsedRoot(onOpenThread: (iri: string) => void, readOnly = false) {
+    const group = {
+      isOwn: false,
+      blocked: true,
+      msgs: [blockedMsg("a", "hidden root", { replyCount: 2 })],
+    };
+    render(
+      <MessageGroup
+        group={group}
+        groupIndex={0}
+        user={mockUser}
+        isChannelModerator={false}
+        moderatorUserIds={new Set()}
+        groupsByUserId={new Map()}
+        timezone="UTC"
+        onToggleReaction={noop}
+        onDeleteMessage={noop}
+        onEditMessage={noop}
+        onViewHistory={noop}
+        onDeleteAttachment={noop}
+        onOpenThread={onOpenThread}
+        readOnly={readOnly}
+      />,
+      { wrapper: Wrapper },
+    );
+  }
+
+  it("keeps the reply count on a collapsed root and opens its thread", async () => {
+    const onOpenThread = vi.fn();
+    renderCollapsedRoot(onOpenThread);
+
+    expect(screen.queryByText("hidden root")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "2 replies" }));
+
+    expect(onOpenThread).toHaveBeenCalledWith("/api/messages/a");
+  });
+
+  it("omits the reply chip on a read-only collapsed root", () => {
+    renderCollapsedRoot(vi.fn(), true);
+    expect(screen.queryByRole("button", { name: "2 replies" })).not.toBeInTheDocument();
   });
 });
