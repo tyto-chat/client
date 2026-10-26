@@ -4,7 +4,7 @@ import type { TFunction } from "i18next";
 import { Avatar } from "@/components/Avatar";
 import { ModalTabs } from "@/components/ui";
 import { avatarUrl } from "@/api/client";
-import { Spinner } from "@/components/icons";
+import { ArrowLeftIcon, ArrowRightIcon, Spinner } from "@/components/icons";
 import { useModerationLog, useLiftModerationAction } from "@/queries/moderationQueries";
 import { useNotification } from "@/context/NotificationContext";
 import { useTimezone } from "@/context/TimezoneContext";
@@ -96,9 +96,10 @@ export function ModerationLogPanel({ communityId, canLift }: Props) {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1 || isFetching}
-            className="rounded px-3 py-1.5 text-sm text-fg-muted hover:bg-surface disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-sm text-fg-muted hover:bg-surface disabled:opacity-40"
           >
-            ← {t("moderation_log_prev")}
+            <ArrowLeftIcon />
+            {t("moderation_log_prev")}
           </button>
           <span className="text-xs text-fg-subtle">
             {page} / {totalPages}
@@ -107,9 +108,10 @@ export function ModerationLogPanel({ communityId, canLift }: Props) {
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages || isFetching}
-            className="rounded px-3 py-1.5 text-sm text-fg-muted hover:bg-surface disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-sm text-fg-muted hover:bg-surface disabled:opacity-40"
           >
-            {t("moderation_log_next")} →
+            {t("moderation_log_next")}
+            <ArrowRightIcon />
           </button>
         </div>
       )}
