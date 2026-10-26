@@ -68,7 +68,10 @@ export const queryKeys = {
   conversation: (identifier: string) => ["conversations", identifier] as const,
   conversationPages: (identifier: string) => ["conversations", identifier, "pages"] as const,
   conversationMessages: (identifier: string) => ["conversations", identifier, "messages"] as const,
-  invitableUsers: (search: string) => ["users", "invitable", search] as const,
+  invitableUsers: (search: string, purpose?: "dm") =>
+    ["users", "invitable", purpose ?? "any", search] as const,
+  blocks: () => ["me", "blocks"] as const,
+  blockStatus: (userId: number) => ["me", "blocks", userId] as const,
   userPresence: (userId: number) => ["presence", "user", userId] as const,
   communityPresenceSummary: (identifier: string) =>
     ["presence", "community", identifier, "summary"] as const,

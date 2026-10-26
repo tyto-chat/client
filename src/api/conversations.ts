@@ -28,9 +28,13 @@ export function markConversationRead(identifier: string): Promise<Conversation> 
   return apiClient.post<Conversation>(`/api/conversations/${identifier}/mark-read`, {});
 }
 
-export function fetchInvitableUsers(search?: string): Promise<InvitableUsersResponse> {
+export function fetchInvitableUsers(
+  search?: string,
+  purpose?: "dm",
+): Promise<InvitableUsersResponse> {
   const params = new URLSearchParams();
   if (search) params.set("search", search);
+  if (purpose) params.set("purpose", purpose);
   const qs = params.toString();
   return apiClient.getJson<InvitableUsersResponse>(`/api/me/invitable-users${qs ? `?${qs}` : ""}`);
 }

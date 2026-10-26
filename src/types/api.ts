@@ -258,6 +258,23 @@ export interface Conversation extends HydraResource {
   updatedAt: string;
   lastMessageAt: string | null;
   unreadCount: number;
+  readOnly: boolean;
+  readOnlyReason: "blocked" | "unavailable" | null;
+}
+
+export interface BlockedUser {
+  userId: number;
+  name: string | null;
+  avatarUrl: string | null;
+  blockedAt: string;
+  inEffect: boolean;
+}
+
+export interface BlockStatus {
+  userId: number;
+  blocked: boolean;
+  blockable: boolean;
+  inEffect: boolean;
 }
 
 export interface InvitableUser {

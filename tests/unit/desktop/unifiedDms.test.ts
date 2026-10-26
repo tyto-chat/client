@@ -25,6 +25,8 @@ function conversation(overrides: Partial<Conversation>): Conversation {
     updatedAt: "2026-08-01T00:00:00Z",
     lastMessageAt: "2026-08-01T00:00:00Z",
     unreadCount: 0,
+    readOnly: false,
+    readOnlyReason: null,
     ...overrides,
   };
 }

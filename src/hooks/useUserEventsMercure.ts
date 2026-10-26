@@ -102,6 +102,11 @@ export function useUserEventsMercure() {
           }
           return;
 
+        case "blocks.changed":
+          void queryClient.invalidateQueries({ queryKey: queryKeys.blocks() });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
+          return;
+
         case "role.changed":
           void queryClient.invalidateQueries({ queryKey: queryKeys.myMemberships() });
           if (data.communityIdentifier) {

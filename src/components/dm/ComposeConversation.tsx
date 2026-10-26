@@ -7,6 +7,7 @@ import { useTimezone } from "@/context/TimezoneContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useCreateConversation } from "@/queries/conversationQueries";
 import { queryKeys } from "@/queries/queryKeys";
+import { apiErrorText } from "@/api/client";
 import { createConversationMessage, fetchInvitableUsers } from "@/api/conversations";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Avatar } from "@/components/Avatar";
@@ -56,13 +57,17 @@ export function ComposeConversation() {
   const [isSending, setIsSending] = useState(false);
 
   const { data: invitable } = useQuery({
-    queryKey: [...queryKeys.invitableUsers(search), composeIdentityId ?? "local"],
+    queryKey: [...queryKeys.invitableUsers(search, "dm"), composeIdentityId ?? "local"],
     queryFn: () => {
       if (remoteCtx) {
-        const qs = search ? `?${new URLSearchParams({ search }).toString()}` : "";
-        return identityFetch<InvitableUsersResponse>(remoteCtx, `/me/invitable-users${qs}`);
+        const params = new URLSearchParams({ purpose: "dm" });
+        if (search) params.set("search", search);
+        return identityFetch<InvitableUsersResponse>(
+          remoteCtx,
+          `/me/invitable-users?${params.toString()}`,
+        );
       }
-      return fetchInvitableUsers(search);
+      return fetchInvitableUsers(search, "dm");
     },
     enabled: !isRemote || !!remoteCtx,
   });
@@ -144,8 +149,8 @@ export function ComposeConversation() {
           to: "/dm/$conversationId",
           params: { conversationId: conversation.identifier },
         });
-      } catch {
-        notify(t("create_failed"), "error");
+      } catch (error) {
+        notify(apiErrorText(error, t("create_failed")), "error");
         setIsSending(false);
       }
     },
