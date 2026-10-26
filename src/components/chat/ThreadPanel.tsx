@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { uuidFromIri } from "@/api/hydra";
 import { channelThreadsTopic, conversationThreadsTopic } from "@/api/topics";
 import { useTranslation } from "react-i18next";
@@ -19,14 +19,14 @@ import {
   useThreadReplies,
 } from "@/queries/threadQueries";
 import { useThreadMercure } from "@/hooks/useMercure";
-import { groupMessages } from "@/utils/messageGroups";
-import { useBlockedUserIds } from "@/queries/blockQueries";
+import { useMessageGroups } from "@/hooks/useMessageGroups";
 import { queryKeys } from "@/queries/queryKeys";
 import type { MemberItem } from "@/utils/userMentionExtension";
-import type { UserGroup } from "@/types/api";
+import type { Message, UserGroup } from "@/types/api";
 
 const EMPTY_MODS: Set<number> = new Set();
 const EMPTY_GROUPS: Map<number, UserGroup[]> = new Map();
+const EMPTY_REPLIES: Message[] = [];
 const noop = (): void => {};
 
 interface MentionableChannel {
@@ -99,7 +99,7 @@ export function ThreadPanel({
       ? queryKeys.conversationPages(conversationIdentifier)
       : queryKeys.channelPages(communityId ?? "", channelIdentifier ?? "");
 
-  const reply = useReplyToMessage(pagesKey, rootIri, user ?? null);
+  const reply = useReplyToMessage(pagesKey, rootIri, user ?? null, conversationIdentifier);
   const toggleReplyReaction = useToggleThreadReaction(rootIri, user?.id ?? 0);
   const editReply = useEditThreadReply(rootIri);
   const deleteReply = useDeleteThreadReply(rootIri);
@@ -144,10 +144,10 @@ export function ThreadPanel({
       .catch(() => {});
   }, [replies, loadEarlier]);
 
-  const blockedUserIds = useBlockedUserIds();
-  const replyGroups = useMemo(
-    () => groupMessages(replies ?? [], user, blockedUserIds),
-    [replies, user, blockedUserIds],
+  const { groups: replyGroups, reveal } = useMessageGroups(
+    replies ?? EMPTY_REPLIES,
+    user,
+    focusReplyId,
   );
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -270,6 +270,7 @@ export function ThreadPanel({
                   group={group}
                   groupIndex={i}
                   showDivider={i > 0}
+                  onShowBlocked={() => reveal(group.msgs)}
                   {...replyGroupProps}
                 />
               ))}

@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { groupMessages } from "@/utils/messageGroups";
-import { useBlockedUserIds } from "@/queries/blockQueries";
+import { useMessageGroups } from "@/hooks/useMessageGroups";
 import { useMessagePaneScroll } from "@/hooks/useMessagePaneScroll";
 import { MessageGroup } from "@/components/chat/MessageGroup";
 import { MessageEditor } from "@/components/chat/MessageEditor";
@@ -163,11 +162,7 @@ export function MessagePane({
     onAtBottom,
   });
 
-  const blockedUserIds = useBlockedUserIds();
-  const messageGroups = useMemo(
-    () => groupMessages(messages, user, blockedUserIds),
-    [messages, user, blockedUserIds],
-  );
+  const { groups: messageGroups, reveal } = useMessageGroups(messages, user, focusMessageId);
 
   const presenceUserIds = useMemo(() => {
     const ids = new Set<number>();
@@ -235,6 +230,7 @@ export function MessagePane({
               readOnly={readOnly}
               frozen={frozen}
               writeLocked={writeLocked}
+              onShowBlocked={() => reveal(group.msgs)}
               canReact={canReact}
               canPin={!readOnly && canPin}
               onPinMessage={onPinMessage}

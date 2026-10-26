@@ -5,11 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { BlockedMessageRow } from "@/components/chat/BlockedMessageRow";
 import { MessageGroup } from "@/components/chat/MessageGroup";
+import { useMessageGroups } from "@/hooks/useMessageGroups";
 import { testIds } from "../e2e/testIds";
 import { mockUser } from "../fixtures";
 import type { Message, User } from "@/types/api";
 
 vi.mock("@/context/NotificationContext", () => ({ useNotification: () => ({ notify: vi.fn() }) }));
+vi.mock("@/queries/blockQueries", () => ({ useBlockedUserIds: () => new Set([7]) }));
 
 function Wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -57,27 +59,33 @@ describe("BlockedMessageRow", () => {
   });
 
   it("renders the collapsed row with a count and reveals on Show", async () => {
-    render(
-      <MessageGroup
-        group={{
-          isOwn: false,
-          blocked: true,
-          msgs: [blockedMsg("a", "first hidden"), blockedMsg("b", "second hidden")],
-        }}
-        groupIndex={0}
-        user={mockUser}
-        isChannelModerator={false}
-        moderatorUserIds={new Set()}
-        groupsByUserId={new Map()}
-        timezone="UTC"
-        onToggleReaction={noop}
-        onDeleteMessage={noop}
-        onEditMessage={noop}
-        onViewHistory={noop}
-        onDeleteAttachment={noop}
-      />,
-      { wrapper: Wrapper },
-    );
+    const messages = [blockedMsg("a", "first hidden"), blockedMsg("b", "second hidden")];
+    function Harness() {
+      const { groups, reveal } = useMessageGroups(messages, mockUser);
+      return (
+        <>
+          {groups.map((group, i) => (
+            <MessageGroup
+              key={group.msgs[0]!["@id"]}
+              group={group}
+              groupIndex={i}
+              user={mockUser}
+              isChannelModerator={false}
+              moderatorUserIds={new Set()}
+              groupsByUserId={new Map()}
+              timezone="UTC"
+              onToggleReaction={noop}
+              onDeleteMessage={noop}
+              onEditMessage={noop}
+              onViewHistory={noop}
+              onDeleteAttachment={noop}
+              onShowBlocked={() => reveal(group.msgs)}
+            />
+          ))}
+        </>
+      );
+    }
+    render(<Harness />, { wrapper: Wrapper });
 
     expect(screen.getByTestId(testIds.blockedMessageRow)).toHaveTextContent(
       "2 messages from a blocked user",

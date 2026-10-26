@@ -13,6 +13,8 @@ import { MessageReactions } from "@/components/chat/MessageReactions";
 import type { Message } from "@/types/api";
 
 vi.mock("@/context/AuthContext", () => ({ useAuthContext: () => ({ user: null }) }));
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("@/context/NotificationContext", () => ({ useNotification: () => ({ notify }) }));
 
 function Wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({
@@ -22,6 +24,7 @@ function Wrapper({ children }: { children: ReactNode }) {
 }
 
 beforeEach(() => {
+  notify.mockClear();
   configureApiClient(BASE);
   setAccessToken("test-token");
 });
@@ -52,6 +55,17 @@ describe("ConversationReadOnlyBanner", () => {
     rerender(<ConversationReadOnlyBanner reason={null} otherUserId={null} />);
     expect(screen.getByText("You can't send messages in this conversation.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Unblock" })).not.toBeInTheDocument();
+  });
+});
+
+describe("ConversationReadOnlyBanner failure", () => {
+  it("shows an error toast when unblocking fails", async () => {
+    server.use(
+      http.delete(`${BASE}/api/v1/me/blocks/7`, () => new HttpResponse(null, { status: 500 })),
+    );
+    render(<ConversationReadOnlyBanner reason="blocked" otherUserId={7} />, { wrapper: Wrapper });
+    await userEvent.click(screen.getByRole("button", { name: "Unblock" }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith("Couldn't update the block", "error"));
   });
 });
 

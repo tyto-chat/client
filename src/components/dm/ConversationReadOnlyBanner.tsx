@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useUnblockUser } from "@/queries/blockQueries";
+import { useNotification } from "@/context/NotificationContext";
 import type { Conversation } from "@/types/api";
 
 interface Props {
@@ -8,7 +9,8 @@ interface Props {
 }
 
 export function ConversationReadOnlyBanner({ reason, otherUserId }: Props) {
-  const { t } = useTranslation("conversation");
+  const { t } = useTranslation(["conversation", "community"]);
+  const { notify } = useNotification();
   const unblock = useUnblockUser();
   const canUnblock = reason === "blocked" && otherUserId !== null;
 
@@ -24,7 +26,11 @@ export function ConversationReadOnlyBanner({ reason, otherUserId }: Props) {
         <button
           type="button"
           data-testid="conversation-read-only-unblock"
-          onClick={() => unblock.mutate(otherUserId)}
+          onClick={() =>
+            unblock.mutate(otherUserId, {
+              onError: () => notify(t("community:block_failed"), "error"),
+            })
+          }
           disabled={unblock.isPending}
           className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-fg hover:bg-surface disabled:opacity-50"
         >

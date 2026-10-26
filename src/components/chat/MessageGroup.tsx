@@ -48,6 +48,7 @@ export interface MessageGroupProps {
   readOnly?: boolean;
   frozen?: boolean;
   writeLocked?: boolean;
+  onShowBlocked?: () => void;
   canReact?: boolean;
   highlightTerms?: readonly string[];
   canPin?: boolean;
@@ -83,6 +84,7 @@ export function MessageGroup({
   readOnly = false,
   frozen = false,
   writeLocked = false,
+  onShowBlocked,
   canReact: allowReactions = true,
   highlightTerms,
   canPin = false,
@@ -105,7 +107,6 @@ export function MessageGroup({
     useMessagePopover();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sysPickerOpen, setSysPickerOpen] = useState(false);
-  const [revealed, setRevealed] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ key: string; x: number; y: number } | null>(
     null,
   );
@@ -268,11 +269,11 @@ export function MessageGroup({
     );
   }
 
-  if (group.blocked && !revealed) {
+  if (group.blocked) {
     return (
       <BlockedMessageRow
         count={group.msgs.length}
-        onShow={() => setRevealed(true)}
+        onShow={() => onShowBlocked?.()}
         messageIri={first["@id"]}
         className={showDivider ? "border-t border-msg-divider" : groupIndex > 0 ? "mt-1.5" : ""}
       />

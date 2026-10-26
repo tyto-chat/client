@@ -61,3 +61,15 @@ export function groupMessages(
     return groups;
   }, []);
 }
+
+export function revealGroups(
+  groups: MessageGroupData[],
+  user: User | null,
+  revealedIds: ReadonlySet<string>,
+): MessageGroupData[] {
+  return groups.flatMap((group) =>
+    group.blocked && group.msgs.some((m) => revealedIds.has(m["@id"]))
+      ? groupMessages(group.msgs, user)
+      : [group],
+  );
+}

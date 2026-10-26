@@ -473,4 +473,41 @@ describe("ThreadPanel", () => {
     const replyGroup = screen.getByText("first reply").closest("[data-testid='msg']");
     expect(replyGroup?.getAttribute("data-write-locked")).toBe("true");
   });
+
+  it("reveals a collapsed blocked reply when it is the focus target", async () => {
+    blocked.ids = new Set([7]);
+    const blockedAuthor = {
+      ...mockUser,
+      "@id": "/api/users/7",
+      id: 7,
+      profile: { ...mockUser.profile, "@id": "/api/profiles/7" },
+    };
+    server.use(
+      http.get(`${BASE}${ROOT_IRI}/thread`, () =>
+        threadResponse([
+          msg("blocked-1", "first blocked", { createdBy: blockedAuthor }),
+          msg("blocked-2", "second blocked", { createdBy: blockedAuthor }),
+        ]),
+      ),
+    );
+    Element.prototype.scrollIntoView = vi.fn() as unknown as Element["scrollIntoView"];
+
+    render(
+      <ThreadPanel
+        communityId={COMMUNITY}
+        channelIdentifier={CHANNEL}
+        rootIri={ROOT_IRI}
+        members={[]}
+        channels={[]}
+        allowAttachments={false}
+        onClose={vi.fn()}
+        focusReplyId="blocked-2"
+      />,
+      { wrapper: makeWrapper() },
+    );
+
+    await waitFor(() => expect(screen.getByText("second blocked")).toBeInTheDocument());
+    const group = screen.getByText("second blocked").closest("[data-testid='msg']");
+    expect(group?.getAttribute("data-blocked")).toBe("false");
+  });
 });
