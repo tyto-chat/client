@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { GroupIcon } from "@/components/GroupIcon";
+import { ArrowLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { GroupIconPicker } from "@/components/GroupIconPicker";
 import { useCommunity, useCommunityMembers } from "@/queries/communityQueries";
 import {
@@ -202,7 +203,7 @@ function GroupListView({
                     {t("hidden_badge")}
                   </span>
                 )}
-                <span className="shrink-0 text-fg-subtle">›</span>
+                <ChevronRightIcon className="shrink-0 text-fg-subtle" />
               </li>
             );
           })}
@@ -269,9 +270,10 @@ function GroupFormView({
       <button
         type="button"
         onClick={onBack}
-        className="text-sm text-fg-muted hover:text-fg dark:hover:text-white"
+        className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg dark:hover:text-white"
       >
-        ← {t("common:back")}
+        <ArrowLeftIcon />
+        {t("common:back")}
       </button>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="flex items-start gap-4">
@@ -459,9 +461,10 @@ function GroupDetailView({
       <button
         type="button"
         onClick={onBack}
-        className="text-sm text-fg-muted hover:text-fg dark:hover:text-white"
+        className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg dark:hover:text-white"
       >
-        ← {t("common:back")}
+        <ArrowLeftIcon />
+        {t("common:back")}
       </button>
       <div
         className="flex items-center gap-3.5 rounded-2xl p-4 ring-1 ring-inset ring-line"
@@ -552,9 +555,10 @@ function GroupDetailView({
             type="button"
             data-testid="group-channel-permissions"
             onClick={() => onChannels(currentGroup)}
-            className="text-xs font-semibold text-[var(--accent)] hover:underline"
+            className="inline-flex items-center gap-0.5 text-xs font-semibold text-[var(--accent)] hover:underline"
           >
-            {t("group_access_manage")} ›
+            {t("group_access_manage")}
+            <ChevronRightIcon size={12} />
           </button>
         </div>
         {permissions.length === 0 ? (
@@ -778,9 +782,10 @@ function GroupChannelPermissionsView({
       <button
         type="button"
         onClick={onBack}
-        className="text-sm text-fg-muted hover:text-fg dark:hover:text-white"
+        className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg dark:hover:text-white"
       >
-        ← {t("common:back")}
+        <ArrowLeftIcon />
+        {t("common:back")}
       </button>
 
       <p className="text-xs text-fg-subtle">{t("group_channels_hint")}</p>

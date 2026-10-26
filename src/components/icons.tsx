@@ -75,6 +75,8 @@ import {
   CloudOff,
   AlertTriangle,
   Monitor,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import type { LucideProps } from "lucide-react";
 
@@ -133,6 +135,8 @@ export const ManageUsersIcon = make(UserCog, 13);
 export const UsersIcon = make(Users, 13);
 export const ChatBubbleIcon = make(MessageSquare, 40, { strokeWidth: 1.5 });
 export const ArrowDownIcon = make(ArrowDown, 12);
+export const ArrowLeftIcon = make(ArrowLeft, 14);
+export const ArrowRightIcon = make(ArrowRight, 14);
 export const LogInIcon = make(LogIn, 18);
 export const PaperclipIcon = make(Paperclip, 14);
 export const SendIcon = make(Send, 16);

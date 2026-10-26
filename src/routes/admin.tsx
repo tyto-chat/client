@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, Link, redirect } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { fetchMe } from "@/api/users";
+import { ArrowLeftIcon } from "@/components/icons";
 import { queryKeys } from "@/queries/queryKeys";
 
 export const Route = createFileRoute("/admin")({
@@ -39,7 +40,8 @@ function AdminShell() {
           to="/"
           className="mb-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg max-md:mb-2 dark:hover:text-white"
         >
-          ← {t("back_to_app")}
+          <ArrowLeftIcon />
+          {t("back_to_app")}
         </Link>
 
         <h1 className="mb-3 px-2 text-sm font-bold uppercase tracking-wide text-fg-muted max-md:hidden">

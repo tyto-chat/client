@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/Modal";
 import { Avatar } from "@/components/Avatar";
-import { Spinner, StarFilledIcon } from "@/components/icons";
+import { ArrowLeftIcon, Spinner, StarFilledIcon } from "@/components/icons";
 import { TextInput } from "@/components/TextInput";
 import { GroupIcon } from "@/components/GroupIcon";
 import { GroupIconPicker } from "@/components/GroupIconPicker";
@@ -224,9 +224,10 @@ function MyGroupDetail({ group, onBack }: { group: MyGroupSummary; onBack: () =>
       <button
         type="button"
         onClick={onBack}
-        className="text-sm text-fg-muted hover:text-fg dark:hover:text-white"
+        className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg dark:hover:text-white"
       >
-        ← {t("common:back")}
+        <ArrowLeftIcon />
+        {t("common:back")}
       </button>
 
       <div className="rounded-2xl border border-line bg-canvas p-4">
