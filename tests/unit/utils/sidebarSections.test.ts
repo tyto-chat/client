@@ -42,7 +42,7 @@ describe("buildSidebarSections", () => {
       unreadIdentifiers: new Set(),
       labels,
     });
-    expect(result.map((s) => s.kind)).toEqual(["favorites", "real", "real", "hidden"]);
+    expect(result.map((s) => s.kind)).toEqual(["favorites", "real", "hidden"]);
     expect(result[0]!.channels.map((c) => c.id)).toEqual([10]);
     const textSection = result.find((s) => s.section?.id === 1);
     expect(textSection?.channels.map((c) => c.id)).toEqual([11]);
@@ -127,7 +127,7 @@ describe("buildSidebarSections", () => {
     expect(result.every((s) => s.kind !== "archived")).toBe(true);
   });
 
-  it("marks a real section non-empty even when its only channel is favorited, hidden or archived", () => {
+  it("omits a real section whose channels are all favorited, hidden or archived, but keeps a truly empty one", () => {
     const sections = [section(1, "Fav"), section(2, "Hid"), section(3, "Arch"), section(4, "Void")];
     const channels = [
       channel(10, "alpha", 1),
@@ -146,12 +146,40 @@ describe("buildSidebarSections", () => {
       unreadIdentifiers: new Set(),
       labels,
     });
-    const bySectionId = (id: number) => result.find((s) => s.section?.id === id)!;
-    expect(bySectionId(1).isEmpty).toBe(false);
-    expect(bySectionId(2).isEmpty).toBe(false);
-    expect(bySectionId(3).isEmpty).toBe(false);
-    expect(bySectionId(4).isEmpty).toBe(true);
-    expect(bySectionId(1).channels).toEqual([]);
+    const real = result.filter((s) => s.kind === "real");
+    expect(real.map((s) => s.section?.id)).toEqual([4]);
+    expect(real[0]!.isEmpty).toBe(true);
+  });
+
+  it("keeps such a section for people who manage sections, so its menu stays reachable", () => {
+    const result = buildSidebarSections({
+      sections: [section(1, "Fav")],
+      channels: [channel(10, "alpha", 1)],
+      communityId: "c1",
+      pinStateByChannelId: new Map([[10, "favorite"]]),
+      collapseMap: {},
+      unreadIdentifiers: new Set(),
+      labels,
+      keepSectionsWithoutListedChannels: true,
+    });
+    const real = result.find((s) => s.kind === "real");
+    expect(real?.channels).toEqual([]);
+    expect(real?.isEmpty).toBe(false);
+  });
+
+  it("keeps a real section while at least one of its channels is still listed in it", () => {
+    const result = buildSidebarSections({
+      sections: [section(1, "Text")],
+      channels: [channel(10, "alpha", 1), channel(11, "beta", 1)],
+      communityId: "c1",
+      pinStateByChannelId: new Map([[10, "favorite"]]),
+      collapseMap: {},
+      unreadIdentifiers: new Set(),
+      labels,
+    });
+    const real = result.find((s) => s.kind === "real");
+    expect(real?.channels.map((c) => c.id)).toEqual([11]);
+    expect(real?.isEmpty).toBe(false);
   });
 
   it("lists channels without a section in an unsectioned group before the real sections", () => {

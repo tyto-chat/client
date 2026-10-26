@@ -56,7 +56,9 @@ export function Menu({ trigger, label, children, align = "left", testId }: MenuP
     } else if (r.right > window.innerWidth - 8 && pos.right !== 8) {
       setPos({ top: pos.top, right: 8 });
     } else if (r.bottom > window.innerHeight - 8) {
-      const top = Math.max(8, window.innerHeight - 8 - r.height);
+      const triggerTop = triggerRef.current?.getBoundingClientRect().top ?? 0;
+      const above = triggerTop - 4 - r.height;
+      const top = above >= 8 ? above : Math.max(8, window.innerHeight - 8 - r.height);
       if (Math.abs(pos.top - top) > 1) setPos({ ...pos, top });
     }
   }, [open, pos]);

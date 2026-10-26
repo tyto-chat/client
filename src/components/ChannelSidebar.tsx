@@ -141,6 +141,7 @@ export function ChannelSidebar({ communityId }: Props) {
       hidden: t("hidden_section"),
       archived: t("archived_section"),
     },
+    keepSectionsWithoutListedChannels: isAdmin,
   });
   const hasRealSections = (community?.channelSections ?? []).length > 0;
 
