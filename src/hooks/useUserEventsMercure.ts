@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { userEventsTopic } from "@/api/topics";
 import { queryKeys } from "@/queries/queryKeys";
+import { invalidateBlockDependents } from "@/queries/blockQueries";
 import { useAuthContext } from "@/context/AuthContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useMercureSubscription } from "@/hooks/useMercureSubscription";
@@ -103,8 +104,7 @@ export function useUserEventsMercure() {
           return;
 
         case "blocks.changed":
-          void queryClient.invalidateQueries({ queryKey: queryKeys.blocks() });
-          void queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
+          void invalidateBlockDependents(queryClient);
           return;
 
         case "role.changed":
