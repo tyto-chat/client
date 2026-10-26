@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement } from "react";
 import type { ReactNode } from "react";
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse, delay } from "msw";
 import { server } from "../../mocks/server";
 import { configureApiClient } from "@/api/client";
 import { setAccessToken } from "@/api/tokenStore";
@@ -181,5 +181,37 @@ describe("blocked ids cache", () => {
     await act(() => result.current.unblock.mutateAsync(7));
 
     await waitFor(() => expect(result.current.ids.has(7)).toBe(false));
+  });
+
+  it("keeps a confirmed block when an older blocks read resolves afterwards", async () => {
+    let reads = 0;
+    server.use(
+      http.post(BLOCKS_URL, () => HttpResponse.json(entry)),
+      http.get(BLOCKS_URL, async () => {
+        reads++;
+        if (reads === 1) {
+          await delay(300);
+          return blocked([]);
+        }
+        return new HttpResponse(null, { status: 500 });
+      }),
+    );
+    const qc = makeClient();
+    qc.setQueryData(queryKeys.blocks(), [], { updatedAt: 0 });
+    const { result } = renderHook(() => useBlockUser(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: qc }, children),
+    });
+    const staleRead = prefetchBlockedUsers(qc);
+    await waitFor(() => expect(reads).toBe(1));
+
+    await act(() => result.current.mutateAsync(7));
+    await act(() => staleRead);
+    await act(() => new Promise((r) => setTimeout(r, 400)));
+
+    expect(qc.getQueryData<{ userId: number }[]>(queryKeys.blocks())?.map((b) => b.userId)).toEqual(
+      [7],
+    );
+    expect(renderIds(qc).result.current.has(7)).toBe(true);
   });
 });

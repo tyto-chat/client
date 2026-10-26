@@ -130,7 +130,8 @@ function useBlockMutation(mutationFn: (targetId: number) => Promise<BlockedUser 
   const userId = useOptionalAuthContext()?.user?.id ?? null;
   return useMutation({
     mutationFn,
-    onSuccess: (confirmed, targetId) => {
+    onSuccess: async (confirmed, targetId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.blocks() });
       applyConfirmedBlock(queryClient, userId, targetId, confirmed);
       return invalidateBlockDependents(queryClient);
     },
