@@ -24,5 +24,8 @@
   "mute_notifications": "Mettre les notifications en sourdine",
   "beginning_of_history": "Début de cette conversation",
   "no_messages": "Pas encore de messages",
-  "be_first": "Dis bonjour pour lancer la discussion."
+  "be_first": "Dis bonjour pour lancer la discussion.",
+  "read_only_blocked": "Tu as bloqué cette personne. Débloque-la pour envoyer des messages.",
+  "read_only_unavailable": "Tu ne peux pas envoyer de messages dans cette conversation.",
+  "read_only_unblock": "Débloquer"
 }

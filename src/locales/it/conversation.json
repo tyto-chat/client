@@ -24,5 +24,8 @@
   "mute_notifications": "Silenzia le notifiche",
   "beginning_of_history": "Inizio di questa conversazione",
   "no_messages": "Ancora nessun messaggio",
-  "be_first": "Saluta per rompere il ghiaccio."
+  "be_first": "Saluta per rompere il ghiaccio.",
+  "read_only_blocked": "Hai bloccato questa persona. Sbloccala per inviare messaggi.",
+  "read_only_unavailable": "Non puoi inviare messaggi in questa conversazione.",
+  "read_only_unblock": "Sblocca"
 }

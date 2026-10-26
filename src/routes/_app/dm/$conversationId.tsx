@@ -38,6 +38,7 @@ import { toMemberItems } from "@/utils/toMemberItems";
 import { MessageHistoryModal } from "@/components/chat/MessageHistoryModal";
 import { MessagePane } from "@/components/chat/MessagePane";
 import { ThreadPanel } from "@/components/chat/ThreadPanel";
+import { ConversationReadOnlyBanner } from "@/components/dm/ConversationReadOnlyBanner";
 import { Avatar } from "@/components/Avatar";
 import { avatarUrl } from "@/api/client";
 import { Menu, MenuStaticItem } from "@/components/ui/Menu";
@@ -185,6 +186,16 @@ function ConversationPage() {
   const isMember = !!me;
   const isMuted = !!me?.mutedUntil;
   const isGroup = (conversation?.members.length ?? 0) > 2;
+  const writeLocked = conversation?.readOnly === true;
+  const otherUserId = isGroup
+    ? null
+    : (conversation?.members.find((m) => m.userId !== user?.id)?.userId ?? null);
+  const readOnlyBanner = writeLocked ? (
+    <ConversationReadOnlyBanner
+      reason={conversation?.readOnlyReason ?? null}
+      otherUserId={otherUserId}
+    />
+  ) : undefined;
   const muteConversation = useMuteConversation(conversationId);
   const toggleMute = useCallback(
     () => muteConversation.mutate(isMuted ? null : MUTE_FOREVER().toISOString()),
@@ -430,6 +441,8 @@ function ConversationPage() {
           emptySubtitle={t("be_first")}
           beginningLabel={t("beginning_of_history")}
           onAtBottom={updateLastViewed}
+          footer={readOnlyBanner}
+          writeLocked={writeLocked}
           canReply={!!user}
           onOpenThread={setThreadRootIri}
           canReport={!!user}
@@ -454,6 +467,8 @@ function ConversationPage() {
           channels={[]}
           allowAttachments={true}
           canModerate={false}
+          writeLocked={writeLocked}
+          lockedNotice={readOnlyBanner}
           onViewReplyHistory={handleViewHistory}
           onClose={() => {
             setThreadRootIri(null);

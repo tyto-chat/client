@@ -204,5 +204,9 @@
   "copy_message": "Copia messaggio",
   "remote_content_load_image": "Carica immagine da {{host}}",
   "remote_content_load_preview": "Carica anteprima da {{host}}",
-  "remote_content_always_load": "Carica sempre da {{host}}"
+  "remote_content_always_load": "Carica sempre da {{host}}",
+  "blocked_message_collapsed_one": "Messaggio da un utente bloccato",
+  "blocked_message_collapsed_many": "{{count}} messaggi da un utente bloccato",
+  "blocked_message_collapsed_other": "{{count}} messaggi da un utente bloccato",
+  "blocked_message_show": "Mostra"
 }

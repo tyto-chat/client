@@ -24,5 +24,8 @@
   "mute_notifications": "Silenciar notificações",
   "beginning_of_history": "Início desta conversa",
   "no_messages": "Nenhuma mensagem ainda",
-  "be_first": "Diga oi para começar."
+  "be_first": "Diga oi para começar.",
+  "read_only_blocked": "Você bloqueou esta pessoa. Desbloqueie para enviar mensagens.",
+  "read_only_unavailable": "Você não pode enviar mensagens nesta conversa.",
+  "read_only_unblock": "Desbloquear"
 }

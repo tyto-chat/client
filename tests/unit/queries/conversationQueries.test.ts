@@ -12,6 +12,7 @@ import {
   useInfiniteConversationMessages,
   useMarkConversationRead,
   useMuteConversation,
+  useSendConversationMessage,
 } from "@/queries/conversationQueries";
 import { queryKeys } from "@/queries/queryKeys";
 import { getDmListRevision } from "@/platform/dmListRevision";
@@ -141,5 +142,27 @@ describe("useMuteConversation", () => {
     act(() => releaseReload());
     await waitFor(() => expect(result.current.mute.isPending).toBe(false));
     expect(result.current.conversation.data?.members[0]?.mutedUntil).toBe("2999-01-01T00:00:00Z");
+  });
+});
+
+describe("useSendConversationMessage", () => {
+  it("invalidates the conversation detail when the send is refused with 422", async () => {
+    server.use(
+      http.post(`${BASE}/api/v1/conversations/abc/messages`, () =>
+        HttpResponse.json({ error: "read only" }, { status: 422 }),
+      ),
+    );
+
+    const qc = makeQueryClient();
+    qc.setQueryData(queryKeys.conversation("abc"), { identifier: "abc", readOnly: false });
+    const { result } = renderHook(() => useSendConversationMessage("abc", null), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ text: "hi" }).catch(() => {});
+    });
+
+    expect(qc.getQueryState(queryKeys.conversation("abc"))?.isInvalidated).toBe(true);
   });
 });

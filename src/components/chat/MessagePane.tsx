@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { groupMessages } from "@/utils/messageGroups";
+import { useBlockedUserIds } from "@/queries/blockQueries";
 import { useMessagePaneScroll } from "@/hooks/useMessagePaneScroll";
 import { MessageGroup } from "@/components/chat/MessageGroup";
 import { MessageEditor } from "@/components/chat/MessageEditor";
@@ -75,6 +76,7 @@ interface MessagePaneProps {
   footerHidesWhenScrolled?: boolean;
   readOnly?: boolean;
   frozen?: boolean;
+  writeLocked?: boolean;
   canReact?: boolean;
 }
 
@@ -131,6 +133,7 @@ export function MessagePane({
   footerHidesWhenScrolled = false,
   readOnly = false,
   frozen = false,
+  writeLocked = false,
   canReact = true,
 }: MessagePaneProps) {
   const { t } = useTranslation("channel");
@@ -160,7 +163,11 @@ export function MessagePane({
     onAtBottom,
   });
 
-  const messageGroups = useMemo(() => groupMessages(messages, user), [messages, user]);
+  const blockedUserIds = useBlockedUserIds();
+  const messageGroups = useMemo(
+    () => groupMessages(messages, user, blockedUserIds),
+    [messages, user, blockedUserIds],
+  );
 
   const presenceUserIds = useMemo(() => {
     const ids = new Set<number>();
@@ -227,13 +234,14 @@ export function MessagePane({
               onDeleteAttachment={onDeleteAttachment}
               readOnly={readOnly}
               frozen={frozen}
+              writeLocked={writeLocked}
               canReact={canReact}
               canPin={!readOnly && canPin}
               onPinMessage={onPinMessage}
               canModerate={canModerate}
               canDeleteSystem={canDeleteSystem}
               onUnpinMessage={onUnpinMessage}
-              canReply={!readOnly && canReply}
+              canReply={!readOnly && !writeLocked && canReply}
               onOpenThread={onOpenThread}
               canEmbed={!readOnly && canEmbed}
               onEmbedMessage={onEmbedMessage}

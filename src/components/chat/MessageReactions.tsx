@@ -15,6 +15,7 @@ interface Props {
   currentUserId: number;
   communityIdentifier: string;
   disabled?: boolean;
+  removeOnly?: boolean;
   onToggle: (emoji: string, existingId?: number) => void;
 }
 
@@ -88,6 +89,7 @@ export function MessageReactions({
   currentUserId,
   communityIdentifier,
   disabled,
+  removeOnly = false,
   onToggle,
 }: Props) {
   const { t } = useTranslation("common");
@@ -109,16 +111,17 @@ export function MessageReactions({
       {/* Deliberately unsorted: sorting by count would reshuffle pills on every click. */}
       {Object.entries(reactions).map(([emoji, entries]) => {
         const myEntry = entries.find((e) => e.userId === currentUserId);
+        const chipDisabled = disabled || (removeOnly && !myEntry);
         return (
           <ReactionTooltip key={emoji} messageIri={message["@id"]} emoji={emoji}>
             <button
-              onClick={() => !disabled && onToggle(emoji, myEntry?.id)}
-              disabled={disabled}
+              onClick={() => !chipDisabled && onToggle(emoji, myEntry?.id)}
+              disabled={chipDisabled}
               className={`inline-flex min-h-6 items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold leading-none ring-1 ring-inset transition-colors ${
                 myEntry
                   ? "bg-accent-subtle text-accent ring-line hover:opacity-85"
                   : "text-fg-muted ring-line hover:bg-surface"
-              } ${disabled ? "cursor-default" : ""}`}
+              } ${chipDisabled ? "cursor-default" : ""}`}
             >
               <EmojiRenderer emoji={emoji} emojis={emojis} />{" "}
               {entries.length > 1 ? (
@@ -129,7 +132,7 @@ export function MessageReactions({
         );
       })}
 
-      {!disabled && (
+      {!disabled && !removeOnly && (
         <div
           className={`relative ${show || pickerOpen ? "inline-flex" : "hidden [@media(hover:hover)]:group-[:focus-visible,:focus-within:has(:focus-visible)]/msg:inline-flex"}`}
           ref={pickerRef}

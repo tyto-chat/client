@@ -24,5 +24,8 @@
   "mute_notifications": "Mute notifications",
   "beginning_of_history": "Beginning of this conversation",
   "no_messages": "No messages yet",
-  "be_first": "Say hi to get things started."
+  "be_first": "Say hi to get things started.",
+  "read_only_blocked": "You blocked this person. Unblock to send messages.",
+  "read_only_unavailable": "You can't send messages in this conversation.",
+  "read_only_unblock": "Unblock"
 }

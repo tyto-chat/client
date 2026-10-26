@@ -204,5 +204,8 @@
   "copy_message": "Bericht kopiëren",
   "remote_content_load_image": "Afbeelding van {{host}} laden",
   "remote_content_load_preview": "Voorbeeld van {{host}} laden",
-  "remote_content_always_load": "Altijd laden van {{host}}"
+  "remote_content_always_load": "Altijd laden van {{host}}",
+  "blocked_message_collapsed_one": "Bericht van een geblokkeerde gebruiker",
+  "blocked_message_collapsed_other": "{{count}} berichten van een geblokkeerde gebruiker",
+  "blocked_message_show": "Tonen"
 }

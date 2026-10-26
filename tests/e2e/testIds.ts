@@ -64,6 +64,10 @@ export const testIds = {
   profileBlockButton: "profile-block-button",
   profileUnblockButton: "profile-unblock-button",
   blockedUserRow: "blocked-user-row",
+  blockedMessageRow: "blocked-message-row",
+  blockedMessageShow: "blocked-message-show",
+  conversationReadOnlyBanner: "conversation-read-only-banner",
+  conversationReadOnlyUnblock: "conversation-read-only-unblock",
   msgDeleteConfirmBtn: "msg-delete-confirm-btn",
   msgEditSaveBtn: "msg-edit-save-btn",
 

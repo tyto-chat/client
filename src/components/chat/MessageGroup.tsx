@@ -28,9 +28,10 @@ import type { Message, User, UserGroup } from "@/types/api";
 
 import { MessageAttachments } from "@/components/chat/MessageAttachments";
 import { PurgedAttachmentsNote } from "@/components/chat/PurgedAttachmentsNote";
+import { BlockedMessageRow } from "@/components/chat/BlockedMessageRow";
 
 export interface MessageGroupProps {
-  group: { isOwn: boolean; msgs: Message[] };
+  group: { isOwn: boolean; blocked?: boolean; msgs: Message[] };
   groupIndex: number;
   communityId?: string;
   user: User | null;
@@ -46,6 +47,7 @@ export interface MessageGroupProps {
   onDeleteAttachment: (attachmentIri: string) => void;
   readOnly?: boolean;
   frozen?: boolean;
+  writeLocked?: boolean;
   canReact?: boolean;
   highlightTerms?: readonly string[];
   canPin?: boolean;
@@ -80,6 +82,7 @@ export function MessageGroup({
   onDeleteAttachment,
   readOnly = false,
   frozen = false,
+  writeLocked = false,
   canReact: allowReactions = true,
   highlightTerms,
   canPin = false,
@@ -102,6 +105,7 @@ export function MessageGroup({
     useMessagePopover();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sysPickerOpen, setSysPickerOpen] = useState(false);
+  const [revealed, setRevealed] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ key: string; x: number; y: number } | null>(
     null,
   );
@@ -124,7 +128,7 @@ export function MessageGroup({
   if (!first) return null;
 
   if (first.kind === "system") {
-    const canReact = allowReactions && !!user && !readOnly && !frozen;
+    const canReact = allowReactions && !!user && !readOnly && !frozen && !writeLocked;
     const canDelete = canDeleteSystem && !readOnly && !frozen;
     const sysKey = stableMessageKey(first["@id"]);
     const sysTouchOpen = isTouch && touchOwner === sysKey;
@@ -257,9 +261,21 @@ export function MessageGroup({
           currentUserId={user?.id ?? 0}
           communityIdentifier={communityId ?? ""}
           disabled={!user || readOnly || frozen || !allowReactions}
+          removeOnly={writeLocked}
           onToggle={(emoji, existingId) => onToggleReaction(first["@id"], emoji, existingId)}
         />
       </div>
+    );
+  }
+
+  if (group.blocked && !revealed) {
+    return (
+      <BlockedMessageRow
+        count={group.msgs.length}
+        onShow={() => setRevealed(true)}
+        messageIri={first["@id"]}
+        className={showDivider ? "border-t border-msg-divider" : groupIndex > 0 ? "mt-1.5" : ""}
+      />
     );
   }
 
@@ -360,13 +376,13 @@ export function MessageGroup({
           const hasTouchActions = !!user || !msg.isDeleted;
           const interactive = !readOnly && !isOptimisticMessage(msg["@id"]);
           const flags = {
-            canReact: allowReactions && !!user && !frozen,
-            canEdit: canEdit && !msg.isDeleted && !frozen,
+            canReact: allowReactions && !!user && !frozen && !writeLocked,
+            canEdit: canEdit && !msg.isDeleted && !frozen && !writeLocked,
             canDelete: canDelete && !msg.isDeleted && !frozen,
             canViewHistory: (isAdmin || canModerate) && (msg.edited || msg.isDeleted),
-            canPin: canPin && !msg.isDeleted && !frozen,
+            canPin: canPin && !msg.isDeleted && !frozen && !writeLocked,
             isPinned: !!msg.pinned,
-            canReply: canReply && !frozen,
+            canReply: canReply && !frozen && !writeLocked,
             canEmbed: canEmbed && !msg.isDeleted,
             canReport: canReport && !!user && !msg.isDeleted && msg.createdBy?.id !== user?.id,
           };
@@ -467,7 +483,7 @@ export function MessageGroup({
                   onClose={() => setContextMenu(null)}
                 />
               )}
-              {editingId === msg["@id"] ? (
+              {editingId === msg["@id"] && !writeLocked ? (
                 <MessageEditor
                   initialContent={msg.text ?? ""}
                   communityId={communityId}
@@ -530,6 +546,7 @@ export function MessageGroup({
                 currentUserId={user?.id ?? 0}
                 communityIdentifier={communityId ?? ""}
                 disabled={!user || readOnly || frozen || !allowReactions}
+                removeOnly={writeLocked}
                 onToggle={(emoji, existingId) => onToggleReaction(msg["@id"], emoji, existingId)}
               />
             </div>

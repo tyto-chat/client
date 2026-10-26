@@ -20,6 +20,7 @@ import {
 } from "@/queries/threadQueries";
 import { useThreadMercure } from "@/hooks/useMercure";
 import { groupMessages } from "@/utils/messageGroups";
+import { useBlockedUserIds } from "@/queries/blockQueries";
 import { queryKeys } from "@/queries/queryKeys";
 import type { MemberItem } from "@/utils/userMentionExtension";
 import type { UserGroup } from "@/types/api";
@@ -52,6 +53,8 @@ interface Props {
   onReplyFocusComplete?: () => void;
   frozen?: boolean;
   canParticipate?: boolean;
+  writeLocked?: boolean;
+  lockedNotice?: React.ReactNode;
 }
 
 export function ThreadPanel({
@@ -73,6 +76,8 @@ export function ThreadPanel({
   onReplyFocusComplete,
   frozen = false,
   canParticipate = true,
+  writeLocked = false,
+  lockedNotice,
 }: Props) {
   const { t } = useTranslation(["channel", "common"]);
   const { user } = useAuthContext();
@@ -139,7 +144,11 @@ export function ThreadPanel({
       .catch(() => {});
   }, [replies, loadEarlier]);
 
-  const replyGroups = useMemo(() => groupMessages(replies ?? [], user), [replies, user]);
+  const blockedUserIds = useBlockedUserIds();
+  const replyGroups = useMemo(
+    () => groupMessages(replies ?? [], user, blockedUserIds),
+    [replies, user, blockedUserIds],
+  );
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const focusDoneRef = useRef<string | null>(null);
@@ -203,6 +212,7 @@ export function ThreadPanel({
     onUserClick: noop,
     onDeleteAttachment: noop,
     frozen,
+    writeLocked,
     canReact: canParticipate,
     canModerate,
     canEmbed,
@@ -279,7 +289,10 @@ export function ThreadPanel({
           )}
         </div>
 
-        {!frozen && user && canParticipate && (
+        {!frozen && user && canParticipate && writeLocked && lockedNotice && (
+          <div className="absolute inset-x-0 bottom-0">{lockedNotice}</div>
+        )}
+        {!frozen && user && canParticipate && !writeLocked && (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 px-3 pb-2 pt-1">
             <div className="pointer-events-auto">
               <MessageEditor

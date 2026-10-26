@@ -24,5 +24,8 @@
   "mute_notifications": "Bildirimleri sessize al",
   "beginning_of_history": "Bu sohbetin başlangıcı",
   "no_messages": "Henüz mesaj yok",
-  "be_first": "Başlamak için merhaba de."
+  "be_first": "Başlamak için merhaba de.",
+  "read_only_blocked": "Bu kişiyi engelledin. Mesaj göndermek için engeli kaldır.",
+  "read_only_unavailable": "Bu sohbette mesaj gönderemezsin.",
+  "read_only_unblock": "Engeli kaldır"
 }

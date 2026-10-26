@@ -24,5 +24,8 @@
   "mute_notifications": "Wycisz powiadomienia",
   "beginning_of_history": "Początek tej rozmowy",
   "no_messages": "Jeszcze nie ma wiadomości",
-  "be_first": "Przywitaj się, żeby zacząć."
+  "be_first": "Przywitaj się, żeby zacząć.",
+  "read_only_blocked": "Ta osoba jest przez Ciebie zablokowana. Odblokuj ją, aby wysyłać wiadomości.",
+  "read_only_unavailable": "Nie możesz wysyłać wiadomości w tej rozmowie.",
+  "read_only_unblock": "Odblokuj"
 }
