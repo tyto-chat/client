@@ -33,6 +33,7 @@ import { usePrefetchMessagePermalinks } from "@/hooks/usePrefetchMessagePermalin
 import { useNotification } from "@/context/NotificationContext";
 import { useTimezone } from "@/context/TimezoneContext";
 import { queryKeys } from "@/queries/queryKeys";
+import { BLOCKS_LOADER_WAIT_MS, prefetchBlockedUsers } from "@/queries/blockQueries";
 import { ApiError } from "@/api/client";
 import { toMemberItems } from "@/utils/toMemberItems";
 import { MessageHistoryModal } from "@/components/chat/MessageHistoryModal";
@@ -67,7 +68,10 @@ export const Route = createFileRoute("/_app/dm/$conversationId")({
     return out;
   },
   loaderDeps: ({ search }) => ({ m: search.m }),
-  loader: async ({ context: { queryClient }, params, deps }) => {
+  loader: async ({ context: { queryClient, auth }, params, deps }) => {
+    const blocksReady = auth.token
+      ? prefetchBlockedUsers(queryClient, BLOCKS_LOADER_WAIT_MS)
+      : Promise.resolve();
     try {
       void queryClient.prefetchQuery({
         queryKey: queryKeys.conversation(params.conversationId),
@@ -123,6 +127,7 @@ export const Route = createFileRoute("/_app/dm/$conversationId")({
           { pages: [], pageParams: [] },
         );
       }
+      await blocksReady;
       return { latestPageNumber, focusMessageId, initialPageNumber };
     } catch (err) {
       if (

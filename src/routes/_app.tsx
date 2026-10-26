@@ -26,6 +26,7 @@ import { useServerInfo } from "@/hooks/useServerInfo";
 import { SetupWizard } from "@/components/onboarding/SetupWizard";
 import { WelcomeWizard } from "@/components/onboarding/WelcomeWizard";
 import { queryKeys } from "@/queries/queryKeys";
+import { prefetchBlockedUsers } from "@/queries/blockQueries";
 import { StaleTime } from "@/queries/staleTimes";
 import { fetchUnreadCounts } from "@/api/notifications";
 import { fetchMyCommunityMemberships } from "@/api/membership";
@@ -61,6 +62,7 @@ import { hostFromOrigin } from "@/utils/serverDisplay";
 export const Route = createFileRoute("/_app")({
   loader: ({ context: { queryClient, auth } }) => {
     if (!auth.token) return;
+    void prefetchBlockedUsers(queryClient);
     void queryClient.prefetchQuery({
       queryKey: queryKeys.myMemberships(),
       queryFn: fetchMyCommunityMemberships,

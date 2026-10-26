@@ -1,11 +1,32 @@
 import { useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { blockUser, fetchBlockedUsers, fetchBlockStatus, unblockUser } from "@/api/blocks";
 import { useHasAccessToken } from "@/api/tokenStore";
 import { queryKeys } from "@/queries/queryKeys";
 import { StaleTime } from "./staleTimes";
 
 const EMPTY_IDS: ReadonlySet<number> = new Set();
+
+export const BLOCKS_LOADER_WAIT_MS = 300;
+
+export async function prefetchBlockedUsers(
+  queryClient: QueryClient,
+  waitAtMostMs?: number,
+): Promise<void> {
+  const fetched = queryClient.prefetchQuery({
+    queryKey: queryKeys.blocks(),
+    queryFn: fetchBlockedUsers,
+    staleTime: StaleTime.long,
+    retry: false,
+  });
+  if (waitAtMostMs === undefined) return fetched;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const budget = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, waitAtMostMs);
+  });
+  await Promise.race([fetched, budget]);
+  clearTimeout(timer);
+}
 
 export function useBlockedUsers() {
   const hasToken = useHasAccessToken();

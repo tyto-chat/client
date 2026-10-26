@@ -20,6 +20,7 @@ import {
 import { fetchCommunity, fetchCommunityMembers } from "@/api/communities";
 import { fetchCommunityMembership } from "@/api/membership";
 import { queryKeys } from "@/queries/queryKeys";
+import { BLOCKS_LOADER_WAIT_MS, prefetchBlockedUsers } from "@/queries/blockQueries";
 import { StaleTime } from "@/queries/staleTimes";
 import { fetchCommunityEmojis } from "@/api/communityEmojis";
 import {
@@ -117,6 +118,7 @@ export const Route = createFileRoute("/_app/$communityId/$channelId")({
       const prefetches: Promise<unknown>[] = [];
       if (auth.token) {
         prefetches.push(
+          prefetchBlockedUsers(queryClient, BLOCKS_LOADER_WAIT_MS),
           queryClient.prefetchQuery({
             queryKey: queryKeys.communityMembers(params.communityId),
             queryFn: () => fetchCommunityMembers(params.communityId),
