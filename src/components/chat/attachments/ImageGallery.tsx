@@ -4,6 +4,14 @@ import { THUMB_BASE } from "@/utils/attachmentFormat";
 import { PreviewImage } from "./PreviewImage";
 import type { Attachment } from "@/types/api";
 
+function GifBadge() {
+  return (
+    <span className="pointer-events-none absolute bottom-1.5 left-1.5 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white">
+      GIF
+    </span>
+  );
+}
+
 function GalleryTile({
   att,
   canDelete,
@@ -36,6 +44,7 @@ function GalleryTile({
           className="h-full w-full object-cover"
         />
       </button>
+      {att.animated && <GifBadge />}
       {overlay}
       <AttachmentActions att={att} canDelete={canDelete} onDeleteAttachment={onDeleteAttachment} />
     </div>
@@ -80,6 +89,7 @@ export function ImageGallery({
             className="h-full w-auto object-contain"
           />
         </button>
+        {single.animated && <GifBadge />}
         <AttachmentActions
           att={single}
           canDelete={canDelete}
