@@ -234,6 +234,11 @@ export class WorldBuilder {
     return body as { identifier: string };
   }
 
+  async tryCreateConversation(memberUserIds: number[]): Promise<number> {
+    const res = await this.api.post("/api/v1/conversations", { data: { memberUserIds } });
+    return res.status();
+  }
+
   async setConversationMute(identifier: string, mutedUntil: string | null): Promise<void> {
     await this.apiPost(`/api/v1/conversations/${identifier}/mute`, { mutedUntil });
   }
