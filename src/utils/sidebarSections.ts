@@ -19,6 +19,7 @@ interface Params {
   collapseMap: Record<string, boolean>;
   unreadIdentifiers: Set<string>;
   labels: { favorites: string; hidden: string; archived: string };
+  keepSectionsWithoutListedChannels?: boolean;
 }
 
 function collapsedFor(
@@ -43,6 +44,7 @@ export function buildSidebarSections({
   collapseMap,
   unreadIdentifiers,
   labels,
+  keepSectionsWithoutListedChannels = false,
 }: Params): SidebarSection[] {
   const favorites: Channel[] = [];
   const hidden: Channel[] = [];
@@ -105,6 +107,8 @@ export function buildSidebarSections({
     const list = (realBySection.get(section.id) ?? [])
       .slice()
       .sort((a, b) => a.position - b.position);
+    const isEmpty = !channels.some((ch) => ch.section?.id === section.id);
+    if (list.length === 0 && !isEmpty && !keepSectionsWithoutListedChannels) continue;
     const key = section["@id"];
     out.push({
       key,
@@ -114,7 +118,7 @@ export function buildSidebarSections({
       channels: list,
       collapsed: collapsedFor(key, "real", collapseMap),
       hasUnread: hasUnread(list),
-      isEmpty: !channels.some((ch) => ch.section?.id === section.id),
+      isEmpty,
     });
   }
 

@@ -23,7 +23,7 @@ export function CodeBlockComponent({ node, updateAttributes }: NodeViewProps) {
 
   return (
     <NodeViewWrapper className="relative my-0.5">
-      <div contentEditable={false} className="absolute right-2 top-2 z-10">
+      <div contentEditable={false} className="absolute right-2 top-2 z-10 flex items-center gap-1">
         <select
           value={language ?? "auto"}
           onChange={(e) => {
@@ -39,8 +39,6 @@ export function CodeBlockComponent({ node, updateAttributes }: NodeViewProps) {
             </option>
           ))}
         </select>
-      </div>
-      <div contentEditable={false} className="absolute right-2 bottom-2 z-10">
         <button
           onClick={handleCopy}
           aria-label={t("copy_code")}

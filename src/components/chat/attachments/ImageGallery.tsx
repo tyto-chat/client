@@ -72,12 +72,12 @@ export function ImageGallery({
   const single = count === 1 ? images[0] : undefined;
   if (single) {
     return (
-      <div className="group relative h-48 w-fit max-w-xs overflow-hidden rounded-lg border border-line">
+      <div className="group relative w-fit max-w-xs overflow-hidden rounded-lg border border-line">
         <button
           type="button"
           onClick={() => onOpen(single)}
           aria-label={single.originalName || t("view_image")}
-          className="block h-full cursor-zoom-in"
+          className="block cursor-zoom-in"
         >
           <PreviewImage
             att={single}
@@ -86,7 +86,7 @@ export function ImageGallery({
             height={single.height ?? 192}
             loading="lazy"
             decoding="async"
-            className="h-full w-auto object-contain"
+            className="block h-auto max-h-48 w-auto max-w-full"
           />
         </button>
         {single.animated && <GifBadge />}
