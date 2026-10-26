@@ -1,4 +1,4 @@
-import { afterEach, describe, it, expect, beforeEach } from "vitest";
+import { afterEach, describe, it, expect, beforeEach, vi } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { server } from "../../mocks/server";
@@ -78,6 +78,45 @@ describe("prefetchMessagePermalinks", () => {
     await expect(
       prefetchMessagePermalinks(qc, [msg("host", `link ${origin}/m/${A}`)]),
     ).resolves.toBeUndefined();
+  });
+
+  it("does not retry a failed link even when queries retry by default", async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${BASE}/api/v1/messages/${A}`, () => {
+        calls++;
+        return new HttpResponse(null, { status: 404 });
+      }),
+    );
+
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: 3, retryDelay: 0 } },
+    });
+    const origin = window.location.origin;
+    await prefetchMessagePermalinks(qc, [msg("host", `link ${origin}/m/${A}`)]);
+
+    expect(calls).toBe(1);
+  });
+
+  it("stops waiting after the budget and still fills the cache later", async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get(`${BASE}/api/v1/messages/${A}`, async () => {
+        await gate;
+        return HttpResponse.json(msg(A, "slow"));
+      }),
+    );
+
+    const qc = new QueryClient();
+    const origin = window.location.origin;
+    await prefetchMessagePermalinks(qc, [msg("host", `link ${origin}/m/${A}`)], 20);
+    expect(qc.getQueryData(queryKeys.message(A))).toBeUndefined();
+
+    release();
+    await vi.waitFor(() => expect(qc.getQueryData(queryKeys.message(A))).toBeTruthy());
   });
 });
 

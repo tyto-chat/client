@@ -13,7 +13,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchChannelPage, fetchChannelPages } from "@/api/pages";
 import { fetchMessage } from "@/api/messages";
-import { prefetchMessagePermalinks } from "@/utils/prefetchMessagePermalinks";
+import {
+  PERMALINK_LOADER_WAIT_MS,
+  prefetchMessagePermalinks,
+} from "@/utils/prefetchMessagePermalinks";
 import { fetchCommunity, fetchCommunityMembers } from "@/api/communities";
 import { fetchCommunityMembership } from "@/api/membership";
 import { queryKeys } from "@/queries/queryKeys";
@@ -172,7 +175,11 @@ export const Route = createFileRoute("/_app/$communityId/$channelId")({
                   queryKeys.channelPages(params.communityId, params.channelId),
                   { pages: [pageData], pageParams: [initialPageNumber] },
                 );
-                await prefetchMessagePermalinks(queryClient, pageData.messages ?? []);
+                await prefetchMessagePermalinks(
+                  queryClient,
+                  pageData.messages ?? [],
+                  PERMALINK_LOADER_WAIT_MS,
+                );
               },
             ),
           );
