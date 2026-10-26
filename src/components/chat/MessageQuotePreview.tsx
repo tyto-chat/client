@@ -17,6 +17,7 @@ import { formatMessageTime, formatMessageTooltip } from "@/utils/dateFormat";
 import { useTimezone } from "@/context/TimezoneContext";
 import { MessageContent } from "./MessageContent";
 import { isImageMime } from "@/utils/attachmentFormat";
+import { PreviewImage } from "@/components/chat/attachments/PreviewImage";
 
 const MAX_PREVIEW_IMAGES = 2;
 
@@ -132,9 +133,9 @@ export function MessageQuotePreview({ target, selfMessageIri, hostCommunityId }:
       {images.length > 0 && (
         <div className="mt-1.5 flex gap-1.5">
           {images.map((image) => (
-            <img
+            <PreviewImage
               key={image["@id"]}
-              src={image.contentUrl ?? undefined}
+              att={image}
               alt={image.originalName ?? ""}
               loading="lazy"
               className="h-16 w-24 rounded border border-line object-cover"
