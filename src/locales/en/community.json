@@ -355,7 +355,7 @@
   "block_action": "Block",
   "unblock_action": "Unblock",
   "block_confirm_title": "Block {{name}}?",
-  "block_confirm_body": "They won't be able to message you privately and you won't get notifications from them. Their messages in shared channels will be collapsed for you. They won't be told.",
+  "block_confirm_body": "They won't be able to message you privately and you won't get notifications from them. Their messages in shared channels will be collapsed for you. They won't get a notification, but they may notice if they try to message you.",
   "block_confirm_button": "Block",
   "block_success": "{{name}} is blocked",
   "unblock_success": "{{name}} is unblocked",

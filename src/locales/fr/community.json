@@ -355,7 +355,7 @@
   "block_action": "Bloquer",
   "unblock_action": "Débloquer",
   "block_confirm_title": "Bloquer {{name}} ?",
-  "block_confirm_body": "Cette personne ne pourra plus t'écrire en privé et tu ne recevras plus de notifications de sa part. Ses messages dans les salons partagés seront réduits pour toi. Elle n'en sera pas informée.",
+  "block_confirm_body": "Cette personne ne pourra plus t'écrire en privé et tu ne recevras plus de notifications de sa part. Ses messages dans les salons partagés seront réduits pour toi. Elle ne recevra pas de notification, mais elle pourrait s'en apercevoir si elle essaie de t'écrire.",
   "block_confirm_button": "Bloquer",
   "block_success": "{{name}} est bloqué(e)",
   "unblock_success": "{{name}} est débloqué(e)",

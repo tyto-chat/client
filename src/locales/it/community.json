@@ -355,7 +355,7 @@
   "block_action": "Blocca",
   "unblock_action": "Sblocca",
   "block_confirm_title": "Bloccare {{name}}?",
-  "block_confirm_body": "Non potrà scriverti in privato e non riceverai notifiche da lei. I suoi messaggi nei canali condivisi saranno compressi per te. Non verrà avvisata.",
+  "block_confirm_body": "Non potrà scriverti in privato e non riceverai notifiche da lei. I suoi messaggi nei canali condivisi saranno compressi per te. Non riceverà alcuna notifica, ma potrebbe accorgersene se prova a scriverti.",
   "block_confirm_button": "Blocca",
   "block_success": "{{name}} è bloccato",
   "unblock_success": "{{name}} è sbloccato",

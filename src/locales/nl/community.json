@@ -355,7 +355,7 @@
   "block_action": "Blokkeren",
   "unblock_action": "Deblokkeren",
   "block_confirm_title": "{{name}} blokkeren?",
-  "block_confirm_body": "Deze persoon kan je niet meer privé berichten sturen en je krijgt geen meldingen van hem of haar. Berichten in gedeelde kanalen worden voor jou samengevouwen. Deze persoon krijgt hier geen melding van.",
+  "block_confirm_body": "Deze persoon kan je niet meer privé berichten sturen en je krijgt geen meldingen van hem of haar. Berichten in gedeelde kanalen worden voor jou samengevouwen. Deze persoon krijgt geen melding, maar merkt het mogelijk wel als hij of zij je probeert te berichten.",
   "block_confirm_button": "Blokkeren",
   "block_success": "{{name}} is geblokkeerd",
   "unblock_success": "{{name}} is gedeblokkeerd",

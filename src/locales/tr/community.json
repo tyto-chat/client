@@ -355,7 +355,7 @@
   "block_action": "Engelle",
   "unblock_action": "Engeli kaldır",
   "block_confirm_title": "{{name}} engellensin mi?",
-  "block_confirm_body": "Bu kişi sana özel mesaj gönderemez ve ondan bildirim almazsın. Ortak kanallardaki mesajları senin için daraltılır. Kendisine haber verilmez.",
+  "block_confirm_body": "Bu kişi sana özel mesaj gönderemez ve ondan bildirim almazsın. Ortak kanallardaki mesajları senin için daraltılır. Kendisine bildirim gitmez, ancak sana mesaj atmaya çalışırsa fark edebilir.",
   "block_confirm_button": "Engelle",
   "block_success": "{{name}} engellendi",
   "unblock_success": "{{name}} engeli kaldırıldı",

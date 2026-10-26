@@ -355,7 +355,7 @@
   "block_action": "Bloquear",
   "unblock_action": "Desbloquear",
   "block_confirm_title": "¿Bloquear a {{name}}?",
-  "block_confirm_body": "No podrá enviarte mensajes privados y no recibirás notificaciones suyas. Sus mensajes en los canales compartidos se mostrarán contraídos para ti. No se le avisará.",
+  "block_confirm_body": "No podrá enviarte mensajes privados y no recibirás notificaciones suyas. Sus mensajes en los canales compartidos se mostrarán contraídos para ti. No se le avisará, pero puede darse cuenta si intenta escribirte.",
   "block_confirm_button": "Bloquear",
   "block_success": "{{name}} está bloqueado",
   "unblock_success": "{{name}} está desbloqueado",
