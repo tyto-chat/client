@@ -1,5 +1,5 @@
 import { apiClient } from "@/api/client";
-import type { CommunityLocale } from "@/types/api";
+import type { CommunityLocale, EncryptedDmsMode } from "@/types/api";
 
 export interface AdminServerConfig {
   serverName: string;
@@ -34,6 +34,9 @@ export interface AdminServerConfig {
   rateAttachmentUploadIntervalSeconds: number;
   rateSearchLimit: number;
   rateSearchIntervalSeconds: number;
+  rateKeyPackageClaimLimit: number;
+  rateKeyPackageClaimIntervalSeconds: number;
+  encryptedDmsMode: EncryptedDmsMode;
   smtpHost: string | null;
   smtpPort: number | null;
   smtpUsername: string | null;

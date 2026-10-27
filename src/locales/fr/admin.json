@@ -496,5 +496,15 @@
   "setup_summary_skipped": "ignoré",
   "setup_summary_tested": "test envoyé",
   "setup_summary_configured": "configuré",
-  "setup_run_wizard": "Lancer l'assistant de configuration"
+  "setup_run_wizard": "Lancer l'assistant de configuration",
+  "section_encrypted_dms": "Messages privés chiffrés",
+  "encrypted_dms_disabled": "Désactivés",
+  "encrypted_dms_disabled_hint": "Aucune nouvelle conversation chiffrée ne peut être lancée et personne ne peut configurer le chiffrement. Les conversations chiffrées existantes continuent de fonctionner.",
+  "encrypted_dms_enabled": "Autorisés",
+  "encrypted_dms_enabled_hint": "Les utilisateurs de l'application de bureau peuvent lancer des messages privés chiffrés. Les messages privés classiques continuent de fonctionner pour tous.",
+  "encrypted_dms_required": "Obligatoires",
+  "encrypted_dms_required_hint": "Chaque nouveau message privé doit être chiffré. Les messages privés de groupe ne sont pas disponibles. Les personnes qui utilisent uniquement l'application web ne peuvent ni lancer ni rejoindre de messages privés.",
+  "encrypted_dms_required_unavailable": "Disponible dès la sortie des messages privés chiffrés.",
+  "rate_key_package_claim_limit": "Limite de demandes de clés",
+  "rate_key_package_claim_interval": "Intervalle des demandes de clés (s)"
 }

@@ -496,5 +496,15 @@
   "setup_summary_skipped": "omitido",
   "setup_summary_tested": "prueba entregada",
   "setup_summary_configured": "configurado",
-  "setup_run_wizard": "Iniciar el asistente de configuración"
+  "setup_run_wizard": "Iniciar el asistente de configuración",
+  "section_encrypted_dms": "Mensajes directos cifrados",
+  "encrypted_dms_disabled": "Desactivados",
+  "encrypted_dms_disabled_hint": "No se pueden iniciar nuevas conversaciones cifradas ni configurar el cifrado. Las conversaciones cifradas existentes siguen funcionando.",
+  "encrypted_dms_enabled": "Permitidos",
+  "encrypted_dms_enabled_hint": "Los usuarios de la aplicación de escritorio pueden iniciar mensajes directos cifrados. Los mensajes directos normales siguen funcionando para todos.",
+  "encrypted_dms_required": "Obligatorios",
+  "encrypted_dms_required_hint": "Todo mensaje directo nuevo debe estar cifrado. Los mensajes directos de grupo no están disponibles. Quienes solo usan la aplicación web no pueden iniciar ni unirse a mensajes directos.",
+  "encrypted_dms_required_unavailable": "Disponible cuando lleguen los mensajes directos cifrados.",
+  "rate_key_package_claim_limit": "Límite de solicitudes de claves",
+  "rate_key_package_claim_interval": "Intervalo de solicitudes de claves (s)"
 }

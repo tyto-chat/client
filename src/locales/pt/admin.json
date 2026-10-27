@@ -496,5 +496,15 @@
   "setup_summary_skipped": "pulado",
   "setup_summary_tested": "teste entregue",
   "setup_summary_configured": "configurado",
-  "setup_run_wizard": "Executar assistente de configuração"
+  "setup_run_wizard": "Executar assistente de configuração",
+  "section_encrypted_dms": "Mensagens diretas cifradas",
+  "encrypted_dms_disabled": "Desativadas",
+  "encrypted_dms_disabled_hint": "Não é possível iniciar novas conversas cifradas nem configurar a cifragem. As conversas cifradas existentes continuam a funcionar.",
+  "encrypted_dms_enabled": "Permitidas",
+  "encrypted_dms_enabled_hint": "Os utilizadores da aplicação de computador podem iniciar mensagens diretas cifradas. As mensagens diretas normais continuam a funcionar para todos.",
+  "encrypted_dms_required": "Obrigatórias",
+  "encrypted_dms_required_hint": "Todas as novas mensagens diretas têm de ser cifradas. As mensagens diretas de grupo não estão disponíveis. Quem usa apenas a aplicação web não pode iniciar nem participar em mensagens diretas.",
+  "encrypted_dms_required_unavailable": "Disponível quando as mensagens diretas cifradas forem lançadas.",
+  "rate_key_package_claim_limit": "Limite de pedidos de chaves",
+  "rate_key_package_claim_interval": "Intervalo de pedidos de chaves (s)"
 }

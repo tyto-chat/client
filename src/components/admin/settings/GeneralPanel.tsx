@@ -4,6 +4,7 @@ import type { AdminServerConfig } from "@/api/adminServerConfig";
 import type { CommunityLocale } from "@/types/api";
 import { SUPPORTED_LANGUAGES } from "@/i18n";
 import { usePanelForm } from "./usePanelForm";
+import { EncryptedDmsModeField } from "./EncryptedDmsModeField";
 import { Section, Field, ToggleField, inputClass } from "./types";
 
 const KEYS = [
@@ -17,6 +18,7 @@ const KEYS = [
   "notificationRetentionDays",
   "archivedChannelRetentionDays",
   "defaultWelcomeChannelName",
+  "encryptedDmsMode",
 ] as const;
 
 export function GeneralPanel({
@@ -145,6 +147,13 @@ export function GeneralPanel({
             className={inputClass}
           />
         </Field>
+      </Section>
+
+      <Section title={t("section_encrypted_dms")}>
+        <EncryptedDmsModeField
+          value={current.encryptedDmsMode}
+          onChange={(mode) => set("encryptedDmsMode", mode)}
+        />
       </Section>
 
       <div className="flex items-center gap-3">

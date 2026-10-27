@@ -496,5 +496,15 @@
   "setup_summary_skipped": "skipped",
   "setup_summary_tested": "test delivered",
   "setup_summary_configured": "configured",
-  "setup_run_wizard": "Run setup wizard"
+  "setup_run_wizard": "Run setup wizard",
+  "section_encrypted_dms": "Encrypted direct messages",
+  "encrypted_dms_disabled": "Off",
+  "encrypted_dms_disabled_hint": "No new encrypted conversations can be started and nobody can set up encryption. Existing encrypted conversations keep working.",
+  "encrypted_dms_enabled": "Allowed",
+  "encrypted_dms_enabled_hint": "Desktop app users can start encrypted direct messages. Regular direct messages keep working for everyone.",
+  "encrypted_dms_required": "Required",
+  "encrypted_dms_required_hint": "Every new direct message must be encrypted. Group direct messages are not available. Users who use only the web app cannot start or join direct messages.",
+  "encrypted_dms_required_unavailable": "Available once encrypted DMs ship.",
+  "rate_key_package_claim_limit": "Encryption key requests limit",
+  "rate_key_package_claim_interval": "Encryption key requests interval (s)"
 }

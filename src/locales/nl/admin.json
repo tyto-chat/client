@@ -496,5 +496,15 @@
   "setup_summary_skipped": "overgeslagen",
   "setup_summary_tested": "test bezorgd",
   "setup_summary_configured": "geconfigureerd",
-  "setup_run_wizard": "Installatiewizard starten"
+  "setup_run_wizard": "Installatiewizard starten",
+  "section_encrypted_dms": "Versleutelde privéberichten",
+  "encrypted_dms_disabled": "Uit",
+  "encrypted_dms_disabled_hint": "Er kunnen geen nieuwe versleutelde gesprekken worden gestart en niemand kan versleuteling instellen. Bestaande versleutelde gesprekken blijven werken.",
+  "encrypted_dms_enabled": "Toegestaan",
+  "encrypted_dms_enabled_hint": "Gebruikers van de desktopapp kunnen versleutelde privéberichten starten. Gewone privéberichten blijven voor iedereen werken.",
+  "encrypted_dms_required": "Verplicht",
+  "encrypted_dms_required_hint": "Elk nieuw privébericht moet versleuteld zijn. Groepsprivéberichten zijn niet beschikbaar. Wie alleen de webapp gebruikt, kan geen privéberichten starten of eraan deelnemen.",
+  "encrypted_dms_required_unavailable": "Beschikbaar zodra versleutelde privéberichten verschijnen.",
+  "rate_key_package_claim_limit": "Limiet sleutelaanvragen",
+  "rate_key_package_claim_interval": "Interval sleutelaanvragen (s)"
 }

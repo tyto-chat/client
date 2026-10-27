@@ -496,5 +496,15 @@
   "setup_summary_skipped": "atlandı",
   "setup_summary_tested": "test teslim edildi",
   "setup_summary_configured": "yapılandırıldı",
-  "setup_run_wizard": "Kurulum sihirbazını çalıştır"
+  "setup_run_wizard": "Kurulum sihirbazını çalıştır",
+  "section_encrypted_dms": "Şifreli doğrudan mesajlar",
+  "encrypted_dms_disabled": "Kapalı",
+  "encrypted_dms_disabled_hint": "Yeni şifreli konuşma başlatılamaz ve kimse şifrelemeyi kuramaz. Mevcut şifreli konuşmalar çalışmaya devam eder.",
+  "encrypted_dms_enabled": "İzinli",
+  "encrypted_dms_enabled_hint": "Masaüstü uygulaması kullanıcıları şifreli doğrudan mesaj başlatabilir. Normal doğrudan mesajlar herkes için çalışmaya devam eder.",
+  "encrypted_dms_required": "Zorunlu",
+  "encrypted_dms_required_hint": "Her yeni doğrudan mesaj şifreli olmalıdır. Grup doğrudan mesajları kullanılamaz. Yalnızca web uygulamasını kullananlar doğrudan mesaj başlatamaz veya katılamaz.",
+  "encrypted_dms_required_unavailable": "Şifreli doğrudan mesajlar yayımlandığında kullanılabilir.",
+  "rate_key_package_claim_limit": "Anahtar isteği sınırı",
+  "rate_key_package_claim_interval": "Anahtar isteği aralığı (sn)"
 }

@@ -432,6 +432,8 @@ export interface PublicCommunityStats {
   channelCount: number;
 }
 
+export type EncryptedDmsMode = "disabled" | "enabled" | "required";
+
 export interface ServerInfo {
   name: string;
   description: string;
@@ -439,6 +441,7 @@ export interface ServerInfo {
   mercureUrl: string;
   liveKitUrl: string;
   voiceEnabled: boolean;
+  encryptedDmsMode?: EncryptedDmsMode;
   webPushPublicKey: string;
   uploads: UploadConstraints | null;
   communities: Community[];

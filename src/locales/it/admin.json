@@ -496,5 +496,15 @@
   "setup_summary_skipped": "saltato",
   "setup_summary_tested": "test consegnato",
   "setup_summary_configured": "configurato",
-  "setup_run_wizard": "Avvia la configurazione guidata"
+  "setup_run_wizard": "Avvia la configurazione guidata",
+  "section_encrypted_dms": "Messaggi diretti cifrati",
+  "encrypted_dms_disabled": "Disattivati",
+  "encrypted_dms_disabled_hint": "Non è possibile avviare nuove conversazioni cifrate né configurare la cifratura. Le conversazioni cifrate esistenti continuano a funzionare.",
+  "encrypted_dms_enabled": "Consentiti",
+  "encrypted_dms_enabled_hint": "Gli utenti dell'app desktop possono avviare messaggi diretti cifrati. I messaggi diretti normali continuano a funzionare per tutti.",
+  "encrypted_dms_required": "Obbligatori",
+  "encrypted_dms_required_hint": "Ogni nuovo messaggio diretto deve essere cifrato. I messaggi diretti di gruppo non sono disponibili. Chi usa solo l'app web non può avviare né partecipare a messaggi diretti.",
+  "encrypted_dms_required_unavailable": "Disponibile quando arriveranno i messaggi diretti cifrati.",
+  "rate_key_package_claim_limit": "Limite richieste di chiavi",
+  "rate_key_package_claim_interval": "Intervallo richieste di chiavi (s)"
 }

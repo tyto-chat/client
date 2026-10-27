@@ -496,5 +496,15 @@
   "setup_summary_skipped": "übersprungen",
   "setup_summary_tested": "Test zugestellt",
   "setup_summary_configured": "konfiguriert",
-  "setup_run_wizard": "Einrichtungsassistent starten"
+  "setup_run_wizard": "Einrichtungsassistent starten",
+  "section_encrypted_dms": "Verschlüsselte Direktnachrichten",
+  "encrypted_dms_disabled": "Aus",
+  "encrypted_dms_disabled_hint": "Es können keine neuen verschlüsselten Unterhaltungen begonnen und keine Verschlüsselung eingerichtet werden. Bestehende verschlüsselte Unterhaltungen funktionieren weiter.",
+  "encrypted_dms_enabled": "Erlaubt",
+  "encrypted_dms_enabled_hint": "Nutzer der Desktop-App können verschlüsselte Direktnachrichten beginnen. Normale Direktnachrichten funktionieren für alle weiter.",
+  "encrypted_dms_required": "Verpflichtend",
+  "encrypted_dms_required_hint": "Jede neue Direktnachricht muss verschlüsselt sein. Gruppen-Direktnachrichten sind nicht verfügbar. Wer nur die Web-App nutzt, kann keine Direktnachrichten beginnen oder ihnen beitreten.",
+  "encrypted_dms_required_unavailable": "Verfügbar, sobald verschlüsselte Direktnachrichten erscheinen.",
+  "rate_key_package_claim_limit": "Limit für Schlüsselabrufe",
+  "rate_key_package_claim_interval": "Intervall für Schlüsselabrufe (s)"
 }

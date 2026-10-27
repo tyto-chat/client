@@ -496,5 +496,15 @@
   "setup_summary_skipped": "pominięto",
   "setup_summary_tested": "test dostarczony",
   "setup_summary_configured": "skonfigurowano",
-  "setup_run_wizard": "Uruchom kreatora konfiguracji"
+  "setup_run_wizard": "Uruchom kreatora konfiguracji",
+  "section_encrypted_dms": "Szyfrowane wiadomości prywatne",
+  "encrypted_dms_disabled": "Wyłączone",
+  "encrypted_dms_disabled_hint": "Nie można rozpocząć nowych szyfrowanych rozmów ani skonfigurować szyfrowania. Istniejące szyfrowane rozmowy działają dalej.",
+  "encrypted_dms_enabled": "Dozwolone",
+  "encrypted_dms_enabled_hint": "Użytkownicy aplikacji desktopowej mogą rozpoczynać szyfrowane wiadomości prywatne. Zwykłe wiadomości prywatne działają dalej dla wszystkich.",
+  "encrypted_dms_required": "Wymagane",
+  "encrypted_dms_required_hint": "Każda nowa wiadomość prywatna musi być szyfrowana. Grupowe wiadomości prywatne są niedostępne. Użytkownicy korzystający tylko z wersji przeglądarkowej nie mogą rozpoczynać ani dołączać do wiadomości prywatnych.",
+  "encrypted_dms_required_unavailable": "Dostępne, gdy pojawią się szyfrowane wiadomości prywatne.",
+  "rate_key_package_claim_limit": "Limit pobrań kluczy szyfrowania",
+  "rate_key_package_claim_interval": "Interwał pobrań kluczy szyfrowania (s)"
 }

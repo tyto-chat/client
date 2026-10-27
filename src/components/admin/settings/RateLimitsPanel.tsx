@@ -19,6 +19,8 @@ const KEYS = [
   "rateAttachmentUploadIntervalSeconds",
   "rateSearchLimit",
   "rateSearchIntervalSeconds",
+  "rateKeyPackageClaimLimit",
+  "rateKeyPackageClaimIntervalSeconds",
 ] as const;
 
 export function RateLimitsPanel({
@@ -106,6 +108,16 @@ export function RateLimitsPanel({
           interval={current.rateSearchIntervalSeconds}
           onLimit={(v) => set("rateSearchLimit", v)}
           onInterval={(v) => set("rateSearchIntervalSeconds", v)}
+          maxLimit={10000}
+          inputClass={inputClass}
+        />
+        <RateLimitPair
+          labelLimit={t("rate_key_package_claim_limit")}
+          labelInterval={t("rate_key_package_claim_interval")}
+          limit={current.rateKeyPackageClaimLimit}
+          interval={current.rateKeyPackageClaimIntervalSeconds}
+          onLimit={(v) => set("rateKeyPackageClaimLimit", v)}
+          onInterval={(v) => set("rateKeyPackageClaimIntervalSeconds", v)}
           maxLimit={10000}
           inputClass={inputClass}
         />
