@@ -37,10 +37,10 @@ export function useConversation(identifier: string | undefined) {
   });
 }
 
-export function useInvitableUsers(search: string, purpose?: "dm") {
+export function useInvitableUsers(search: string, includeBlocked = false) {
   return useQuery({
-    queryKey: queryKeys.invitableUsers(search, purpose),
-    queryFn: () => fetchInvitableUsers(search, purpose),
+    queryKey: queryKeys.invitableUsers(search, includeBlocked),
+    queryFn: () => fetchInvitableUsers(search, includeBlocked),
     staleTime: StaleTime.short,
   });
 }

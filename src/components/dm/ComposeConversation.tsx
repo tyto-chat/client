@@ -57,17 +57,17 @@ export function ComposeConversation() {
   const [isSending, setIsSending] = useState(false);
 
   const { data: invitable } = useQuery({
-    queryKey: [...queryKeys.invitableUsers(search, "dm"), composeIdentityId ?? "local"],
+    queryKey: [...queryKeys.invitableUsers(search), composeIdentityId ?? "local"],
     queryFn: () => {
       if (remoteCtx) {
-        const params = new URLSearchParams({ purpose: "dm" });
+        const params = new URLSearchParams();
         if (search) params.set("search", search);
         return identityFetch<InvitableUsersResponse>(
           remoteCtx,
           `/me/invitable-users?${params.toString()}`,
         );
       }
-      return fetchInvitableUsers(search, "dm");
+      return fetchInvitableUsers(search);
     },
     enabled: !isRemote || !!remoteCtx,
   });

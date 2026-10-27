@@ -30,11 +30,11 @@ export function markConversationRead(identifier: string): Promise<Conversation> 
 
 export function fetchInvitableUsers(
   search?: string,
-  purpose?: "dm",
+  includeBlocked = false,
 ): Promise<InvitableUsersResponse> {
   const params = new URLSearchParams();
   if (search) params.set("search", search);
-  if (purpose) params.set("purpose", purpose);
+  if (includeBlocked) params.set("includeBlocked", "true");
   const qs = params.toString();
   return apiClient.getJson<InvitableUsersResponse>(`/api/me/invitable-users${qs ? `?${qs}` : ""}`);
 }

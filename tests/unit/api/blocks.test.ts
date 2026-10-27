@@ -23,11 +23,11 @@ describe("blocks api", () => {
     expect(await fetchBlockedUsers()).toEqual([{ userId: 2 }]);
   });
 
-  it("compose search requests purpose=dm", async () => {
+  it("invitable search keeps blocked users only when asked", async () => {
     const getJson = vi.spyOn(apiClient, "getJson").mockResolvedValue({ items: [], total: 0 });
-    await fetchInvitableUsers("bo", "dm");
-    expect(getJson.mock.calls[0]![0]).toContain("purpose=dm");
     await fetchInvitableUsers("bo");
-    expect(getJson.mock.calls[1]![0]).not.toContain("purpose");
+    expect(getJson.mock.calls[0]![0]).not.toContain("includeBlocked");
+    await fetchInvitableUsers("bo", true);
+    expect(getJson.mock.calls[1]![0]).toContain("includeBlocked=true");
   });
 });

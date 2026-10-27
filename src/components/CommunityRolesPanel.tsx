@@ -190,7 +190,7 @@ function AddMemberSection({
   const { notify } = useNotification();
   const [query, setQuery] = useState("");
   const addMember = useAddCommunityMember(communityId);
-  const { data: invitable } = useInvitableUsers(query.trim());
+  const { data: invitable } = useInvitableUsers(query.trim(), true);
 
   const memberIdSet = useMemo(() => new Set(memberUserIds), [memberUserIds]);
 
