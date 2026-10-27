@@ -41,6 +41,7 @@ export function createMlsEngine(
     discard: (staged) => mls.discard(staged.id),
     encrypt: (state, groupId, data) => mls.encrypt(scope, state, groupId, data),
     decrypt: (state, groupId, message) => mls.decrypt(scope, state, groupId, message),
+    acknowledgeDecrypt: (receipt) => mls.acknowledgeDecrypt(scope, receipt),
     signKeyPackageUpload: (upload) => mls.signKeyPackageUpload(scope, upload),
     signRevocation: (revocation) => mls.signRevocation(scope, revocation),
   };

@@ -65,6 +65,15 @@ describe("createMlsEngine", () => {
     expect(encrypt).toHaveBeenCalledWith(scope, Uint8Array.of(1), "conv-1", Uint8Array.of(7));
   });
 
+  it("acknowledges a received message under the account scope", async () => {
+    const acknowledgeDecrypt = vi.fn().mockResolvedValue(undefined);
+    const engine = createMlsEngine(scope, bridgeWith({ acknowledgeDecrypt }));
+
+    await engine.acknowledgeDecrypt("ab".repeat(32));
+
+    expect(acknowledgeDecrypt).toHaveBeenCalledWith(scope, "ab".repeat(32));
+  });
+
   it("merges and discards a stage by its id only", async () => {
     const merge = vi.fn().mockResolvedValue({ state: Uint8Array.of(3) });
     const discard = vi.fn().mockResolvedValue(undefined);
@@ -144,5 +153,27 @@ describe("fake MLS engine", () => {
     expect(Array.from(received.data)).toEqual([42]);
     expect(received.sender.deviceId).toBe("a");
     expect(added.added.map((m) => m.credential.deviceId)).toEqual(["b"]);
+  });
+
+  it("hands a received message back until it is acknowledged, like the shell", async () => {
+    const alice = createFakeMlsEngine(device(1, "a"));
+    const bob = createFakeMlsEngine(device(2, "b"));
+    let aliceState = (await alice.generateDevice(device(1, "a"))).state;
+    let bobState = (await bob.generateDevice(device(2, "b"))).state;
+    const packages = await bob.createKeyPackages(bobState, 1, 3600);
+    bobState = packages.state;
+    aliceState = (await alice.merge(await alice.createGroup(aliceState, "conv-1"))).state;
+    const added = await alice.addMembers(aliceState, "conv-1", packages.packages);
+    aliceState = (await alice.merge(added)).state;
+    bobState = (await bob.merge(await bob.joinFromWelcome(bobState, added.welcomes[0]!))).state;
+    const sent = await alice.encrypt(aliceState, "conv-1", Uint8Array.of(42));
+
+    const first = await bob.decrypt(bobState, "conv-1", sent.message);
+    const again = await bob.decrypt(bobState, "conv-1", sent.message);
+
+    expect(Array.from(again.data)).toEqual([42]);
+    expect(again.receipt).toBe(first.receipt);
+    await bob.acknowledgeDecrypt(again.receipt);
+    await expect(bob.decrypt(again.state, "conv-1", sent.message)).rejects.toThrow();
   });
 });

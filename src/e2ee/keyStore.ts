@@ -35,6 +35,7 @@ const DEVICE_STATE = "deviceState";
 const MESSAGE_KEYS = "messageKeys";
 const OUTBOX = "outbox";
 const STORE_KEY_PREFIX = "e2ee-store-key:";
+const STRICT: IDBTransactionOptions = { durability: "strict" };
 
 function scopeKey(scope: KeyStoreScope): string {
   return JSON.stringify([scope.serverOrigin, scope.serverUserId, scope.profileId]);
@@ -64,36 +65,16 @@ function completion(tx: IDBTransaction): Promise<void> {
   });
 }
 
+export interface ScopeLocks {
+  request<T>(name: string, task: () => Promise<T>): Promise<T>;
+}
+
 let outboxSequence = 0;
 
 const keyLoads = new Map<string, Promise<CryptoKey>>();
-const scopeQueues = new Map<string, Promise<unknown>>();
 
-function inProcessOrder<T>(key: string, task: () => Promise<T>): Promise<T> {
-  const previous = scopeQueues.get(key) ?? Promise.resolve();
-  const result = previous.then(task, task);
-  const tail = result.catch(() => undefined);
-  scopeQueues.set(key, tail);
-  void tail.then(() => {
-    if (scopeQueues.get(key) === tail) scopeQueues.delete(key);
-  });
-  return result;
-}
-
-function inScopeOrder<T>(key: string, task: () => Promise<T>): Promise<T> {
-  const locks = lockManager();
-  return locks
-    ? (locks.request(`tyto-e2ee-scope:${key}`, task) as Promise<T>)
-    : inProcessOrder(key, task);
-}
-
-function lockManager(): LockManager | null | undefined {
-  return typeof navigator === "undefined" ? undefined : navigator.locks;
-}
-
-function withOriginLock<T>(name: string, task: () => Promise<T>): Promise<T> {
-  const locks = lockManager();
-  return locks ? (locks.request(name, task) as Promise<T>) : task();
+function browserLocks(): ScopeLocks | null {
+  return typeof navigator === "undefined" ? null : (navigator.locks ?? null);
 }
 
 export class KeyStore {
@@ -103,18 +84,37 @@ export class KeyStore {
   private readonly secrets: Secrets;
   private readonly factory: IDBFactory;
   private readonly keyRange: typeof IDBKeyRange;
+  private readonly locks: ScopeLocks | null;
 
   constructor(
     secrets: Secrets,
     factory: IDBFactory = indexedDB,
     keyRange: typeof IDBKeyRange = IDBKeyRange,
+    locks: ScopeLocks | null = browserLocks(),
   ) {
     this.secrets = secrets;
     this.factory = factory;
     this.keyRange = keyRange;
+    this.locks = locks;
+  }
+
+  private requireLocks(): ScopeLocks {
+    if (this.locks === null) {
+      throw new Error("the key store needs Web Locks to keep its keys consistent");
+    }
+    return this.locks;
+  }
+
+  private async withLock<T>(name: string, task: () => Promise<T>): Promise<T> {
+    return this.requireLocks().request(name, task);
+  }
+
+  private inScopeOrder<T>(key: string, task: () => Promise<T>): Promise<T> {
+    return this.withLock(`tyto-e2ee-scope:${key}`, task);
   }
 
   async loadDeviceState(scope: KeyStoreScope): Promise<Uint8Array | null> {
+    this.requireLocks();
     const key = scopeKey(scope);
     const db = await this.open();
     const record = await request<SealedRecord | undefined>(
@@ -133,16 +133,17 @@ export class KeyStore {
     key: Uint8Array,
     sender: MessageKeySender,
   ): Promise<void> {
-    return inScopeOrder(scopeKey(scope), async () => {
+    return this.inScopeOrder(scopeKey(scope), async () => {
       const sealed = await this.sealMessageKey(scope, ref, key, sender);
       const db = await this.open();
-      const tx = db.transaction(MESSAGE_KEYS, "readwrite");
+      const tx = db.transaction(MESSAGE_KEYS, "readwrite", STRICT);
       tx.objectStore(MESSAGE_KEYS).put(sealed, [scopeKey(scope), ref.id, ref.rev]);
       await completion(tx);
     });
   }
 
   async getMessageKey(scope: KeyStoreScope, ref: MessageKeyRef): Promise<StoredMessageKey | null> {
+    this.requireLocks();
     const db = await this.open();
     const record = await request<SealedRecord | undefined>(
       db
@@ -160,6 +161,7 @@ export class KeyStore {
   }
 
   async pendingBackupRecords(scope: KeyStoreScope): Promise<Uint8Array[]> {
+    this.requireLocks();
     const key = scopeKey(scope);
     const db = await this.open();
     const records = await request<SealedRecord[]>(
@@ -169,7 +171,7 @@ export class KeyStore {
   }
 
   commitTransaction(scope: KeyStoreScope, change: KeyStoreTransaction): Promise<void> {
-    return inScopeOrder(scopeKey(scope), () => this.writeTransaction(scope, change));
+    return this.inScopeOrder(scopeKey(scope), () => this.writeTransaction(scope, change));
   }
 
   private async writeTransaction(scope: KeyStoreScope, change: KeyStoreTransaction): Promise<void> {
@@ -189,7 +191,7 @@ export class KeyStore {
     );
 
     const db = await this.open();
-    const tx = db.transaction([DEVICE_STATE, MESSAGE_KEYS, OUTBOX], "readwrite");
+    const tx = db.transaction([DEVICE_STATE, MESSAGE_KEYS, OUTBOX], "readwrite", STRICT);
     const done = completion(tx);
     try {
       if (deviceState !== undefined) tx.objectStore(DEVICE_STATE).put(deviceState, key);
@@ -200,7 +202,7 @@ export class KeyStore {
         outboxSequence += 1;
         tx.objectStore(OUTBOX).add(sealed, [
           key,
-          `${Date.now().toString(36).padStart(10, "0")}-${outboxSequence.toString(36).padStart(6, "0")}`,
+          `${Date.now().toString(36).padStart(10, "0")}-${outboxSequence.toString(36).padStart(6, "0")}-${crypto.randomUUID()}`,
         ]);
       }
     } catch (error) {
@@ -213,14 +215,14 @@ export class KeyStore {
 
   deleteScope(scope: KeyStoreScope): Promise<void> {
     const key = scopeKey(scope);
-    return inScopeOrder(key, async () => {
+    return this.inScopeOrder(key, async () => {
       const db = await this.open();
-      const tx = db.transaction([DEVICE_STATE, MESSAGE_KEYS, OUTBOX], "readwrite");
+      const tx = db.transaction([DEVICE_STATE, MESSAGE_KEYS, OUTBOX], "readwrite", STRICT);
       tx.objectStore(DEVICE_STATE).delete(key);
       tx.objectStore(MESSAGE_KEYS).delete(this.scopeRange(key));
       tx.objectStore(OUTBOX).delete(this.scopeRange(key));
       await completion(tx);
-      await withOriginLock(`${STORE_KEY_PREFIX}${key}`, () =>
+      await this.withLock(`${STORE_KEY_PREFIX}${key}`, () =>
         this.secrets.delete(`${STORE_KEY_PREFIX}${key}`),
       );
     });
@@ -279,7 +281,7 @@ export class KeyStore {
     const key = scopeKey(scope);
     let pending = keyLoads.get(key);
     if (pending === undefined) {
-      pending = withOriginLock(`${STORE_KEY_PREFIX}${key}`, () => this.loadOrCreateKey(key));
+      pending = this.withLock(`${STORE_KEY_PREFIX}${key}`, () => this.loadOrCreateKey(key));
       keyLoads.set(key, pending);
       const settled = () => {
         if (keyLoads.get(key) === pending) keyLoads.delete(key);

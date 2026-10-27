@@ -41,6 +41,8 @@ let tokens = 0;
 export function createFakeMlsEngine(self: Credential): MlsEngine & { latest: () => Uint8Array } {
   let latest: FakeState | null = null;
   const staged = new Map<string, { groupId: string; state: FakeState; base: string }>();
+  const held = new Map<string, { data: Uint8Array; sender: Credential }>();
+  const consumed = new Set<string>();
 
   const fresh = (groups: Record<string, FakeGroup>): FakeState => ({
     token: `t${(tokens += 1)}`,
@@ -264,6 +266,10 @@ export function createFakeMlsEngine(self: Credential): MlsEngine & { latest: () 
       };
     },
     decrypt: async (state, groupId, message) => {
+      const receipt = `${groupId}:${Array.from(message).join(",")}`;
+      const kept = held.get(receipt);
+      if (kept !== undefined && latest !== null) return { ...kept, state: encode(latest), receipt };
+      if (consumed.has(receipt)) throw new Error("message was already decrypted");
       const current = open(state);
       requireSettled(groupId);
       const { epoch, members } = group(current, groupId);
@@ -277,12 +283,12 @@ export function createFakeMlsEngine(self: Credential): MlsEngine & { latest: () 
         throw new Error("message is not for this epoch");
       if (!members.some((m) => m.credential.deviceId === parsed.sender.deviceId))
         throw new Error("No member found");
-      return {
-        state: accept(fresh(current.groups)),
-        data: Uint8Array.from(parsed.data),
-        sender: unwire(parsed.sender),
-      };
+      const result = { data: Uint8Array.from(parsed.data), sender: unwire(parsed.sender) };
+      held.set(receipt, result);
+      consumed.add(receipt);
+      return { ...result, state: accept(fresh(current.groups)), receipt };
     },
+    acknowledgeDecrypt: async (receipt) => void held.delete(receipt),
     signKeyPackageUpload: async () => new Uint8Array(64),
     signRevocation: async () => new Uint8Array(64),
   };

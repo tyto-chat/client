@@ -1,5 +1,5 @@
-import { IDBFactory, IDBKeyRange } from "fake-indexeddb";
-import { beforeEach, describe, expect, it } from "vitest";
+import { IDBDatabase, IDBFactory, IDBKeyRange } from "fake-indexeddb";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { KeyStore, type KeyStoreScope, type MessageKeySender } from "@/e2ee/keyStore";
 
 class MemorySecrets {
@@ -14,15 +14,31 @@ const alice: KeyStoreScope = { serverOrigin: ORIGIN, serverUserId: 1, profileId:
 const bob: KeyStoreScope = { serverOrigin: ORIGIN, serverUserId: 2, profileId: "p1" };
 const sender: MessageKeySender = { userId: 1, accountKeyFingerprint: "fp", deviceId: "d1" };
 
+class MemoryLocks {
+  readonly names: string[] = [];
+  private readonly tails = new Map<string, Promise<unknown>>();
+  request = <T>(name: string, task: () => Promise<T>): Promise<T> => {
+    this.names.push(name);
+    const result = (this.tails.get(name) ?? Promise.resolve()).then(task, task);
+    this.tails.set(
+      name,
+      result.catch(() => undefined),
+    );
+    return result;
+  };
+}
+
 let idb: IDBFactory;
 let secrets: MemorySecrets;
+let locks: MemoryLocks;
 
 beforeEach(() => {
   idb = new IDBFactory();
   secrets = new MemorySecrets();
+  locks = new MemoryLocks();
 });
 
-const store = () => new KeyStore(secrets, idb, IDBKeyRange);
+const store = () => new KeyStore(secrets, idb, IDBKeyRange, locks);
 
 function readAll(): Promise<unknown[]> {
   return new Promise((resolve, reject) => {
@@ -151,7 +167,7 @@ describe("KeyStore", () => {
 
     await Promise.all(
       [0, 1].map((i) =>
-        new KeyStore(wrapper(), idb, IDBKeyRange).saveMessageKey(
+        new KeyStore(wrapper(), idb, IDBKeyRange, locks).saveMessageKey(
           scope,
           { id: `m-${i}`, rev: 0 },
           new Uint8Array(32).fill(i),
@@ -160,7 +176,7 @@ describe("KeyStore", () => {
       ),
     );
 
-    const fresh = new KeyStore(wrapper(), idb, IDBKeyRange);
+    const fresh = new KeyStore(wrapper(), idb, IDBKeyRange, locks);
     expect((await fresh.getMessageKey(scope, { id: "m-0", rev: 0 }))?.key).toEqual(
       new Uint8Array(32).fill(0),
     );
@@ -189,25 +205,63 @@ describe("KeyStore", () => {
     expect(containsBytes(await readAll(), new Uint8Array(32).fill(3))).toBe(false);
   });
 
-  it("orders saves and deletion through the browser lock manager when one exists", async () => {
-    const names: string[] = [];
-    const locks = {
-      request: (name: string, task: () => Promise<unknown>) => {
-        names.push(name);
-        return task();
-      },
-    };
-    Object.defineProperty(navigator, "locks", { value: locks, configurable: true });
+  it("orders saves and deletion through the browser lock manager", async () => {
+    const keys = store();
+    await keys.saveMessageKey(alice, { id: "m-1", rev: 0 }, new Uint8Array(32), sender);
+    await keys.deleteScope(alice);
+
+    expect(locks.names.filter((name) => name.startsWith("tyto-e2ee-scope:"))).toHaveLength(2);
+    expect(locks.names.some((name) => name.startsWith("e2ee-store-key:"))).toBe(true);
+  });
+
+  it("keeps backup records from two windows apart even within the same millisecond", async () => {
+    const now = vi.spyOn(Date, "now").mockReturnValue(1_800_000_000_000);
+    try {
+      const windows = [];
+      for (let i = 0; i < 2; i++) {
+        vi.resetModules();
+        const { KeyStore: Fresh } = await import("@/e2ee/keyStore");
+        windows.push(new Fresh(secrets, idb, IDBKeyRange, locks));
+      }
+
+      await windows[0]!.commitTransaction(alice, { backupRecords: [Uint8Array.of(1)] });
+      await windows[1]!.commitTransaction(alice, {
+        deviceState: Uint8Array.of(7),
+        backupRecords: [Uint8Array.of(2)],
+      });
+
+      expect(await store().loadDeviceState(alice)).toEqual(Uint8Array.of(7));
+      expect(await store().pendingBackupRecords(alice)).toHaveLength(2);
+    } finally {
+      now.mockRestore();
+    }
+  });
+
+  it("waits for every key write to reach disk before reporting it saved", async () => {
+    const transaction = vi.spyOn(IDBDatabase.prototype, "transaction");
     try {
       const keys = store();
+      await keys.saveDeviceState(alice, Uint8Array.of(1));
       await keys.saveMessageKey(alice, { id: "m-1", rev: 0 }, new Uint8Array(32), sender);
       await keys.deleteScope(alice);
-    } finally {
-      Object.defineProperty(navigator, "locks", { value: null, configurable: true });
-    }
 
-    expect(names.filter((name) => name.startsWith("tyto-e2ee-scope:"))).toHaveLength(2);
-    expect(names.some((name) => name.startsWith("e2ee-store-key:"))).toBe(true);
+      const writes = transaction.mock.results
+        .map((r) => r.value as IDBTransaction)
+        .filter((tx) => tx.mode === "readwrite");
+      expect(writes.length).toBeGreaterThanOrEqual(3);
+      expect(writes.every((tx) => tx.durability === "strict")).toBe(true);
+    } finally {
+      transaction.mockRestore();
+    }
+  });
+
+  it("refuses to run without cross-context locks instead of risking two keys", async () => {
+    const unlocked = new KeyStore(secrets, idb, IDBKeyRange, null);
+
+    await expect(unlocked.saveDeviceState(alice, Uint8Array.of(1))).rejects.toThrow("Web Locks");
+    await expect(unlocked.loadDeviceState(alice)).rejects.toThrow("Web Locks");
+    await expect(unlocked.deleteScope(alice)).rejects.toThrow("Web Locks");
+    expect(secrets.values.size).toBe(0);
   });
 
   it("fails closed instead of replacing a key it cannot read while records exist", async () => {

@@ -51,7 +51,8 @@ export interface MlsEngine {
     state: Uint8Array,
     groupId: string,
     message: Uint8Array,
-  ): Promise<{ state: Uint8Array; data: Uint8Array; sender: Credential }>;
+  ): Promise<{ state: Uint8Array; data: Uint8Array; sender: Credential; receipt: string }>;
+  acknowledgeDecrypt(receipt: string): Promise<void>;
   signKeyPackageUpload(upload: KeyPackageUpload): Promise<Uint8Array>;
   signRevocation(revocation: Revocation): Promise<Uint8Array>;
 }
