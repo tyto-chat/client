@@ -21,6 +21,7 @@ import { ApiError, getBaseUrl } from "@/api/client";
 import { finishAuthRestore, getAccessToken, setAccessToken } from "@/api/tokenStore";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 import { decodeJwtPayload } from "@/utils/jwtPayload";
+import { clearStoredBlockedIds } from "@/utils/blockedIdsStore";
 import type { RealtimeScope } from "@/api/realtimeToken";
 import {
   realtimeRefreshDelay,
@@ -451,6 +452,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRefreshExecutor(null);
     }
 
+    const signedOutUserId = userRef.current?.id;
+    if (signedOutUserId !== undefined) clearStoredBlockedIds(signedOutUserId);
     clearRefreshTimer();
     clearMercureTimer();
     sessionEpochRef.current += 1;

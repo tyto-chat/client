@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/Modal";
 import { Spinner } from "@/components/icons";
+import { useAuth } from "@/hooks/useAuth";
 import { useCreateReport } from "@/queries/reportQueries";
+import { useBlockStatus, useBlockUser } from "@/queries/blockQueries";
 import { useNotification } from "@/context/NotificationContext";
 import type { ReportCategory } from "@/types/api";
 
@@ -16,18 +18,35 @@ const CATEGORIES: ReportCategory[] = [
 
 interface Props {
   target: { messageId: string } | { userId: number; communityIdentifier?: string };
+  blockUserId?: number;
   onClose: () => void;
 }
 
-export function ReportModal({ target, onClose }: Props) {
+export function ReportModal({ target, blockUserId, onClose }: Props) {
   const { t } = useTranslation(["reports", "common"]);
+  const { t: tCommunity } = useTranslation("community");
   const { notify } = useNotification();
   const createReport = useCreateReport();
   const [category, setCategory] = useState<ReportCategory>("harassment");
   const [comment, setComment] = useState("");
+  const { user: currentUser } = useAuth();
+  const blockCandidateId =
+    blockUserId !== undefined && blockUserId !== currentUser?.id ? blockUserId : null;
+  const { data: blockStatus } = useBlockStatus(blockCandidateId);
+  const blockUser = useBlockUser();
+  const [alsoBlock, setAlsoBlock] = useState(true);
+  const offerBlock = !!blockStatus?.blockable && !blockStatus.blocked;
 
   const commentRequired = category === "other";
   const canSubmit = !commentRequired || comment.trim().length > 0;
+
+  async function blockAfterReport(userId: number) {
+    try {
+      await blockUser.mutateAsync(userId);
+    } catch {
+      notify(tCommunity("block_failed"), "error");
+    }
+  }
 
   function handleSubmit(close: () => void) {
     createReport.mutate(
@@ -41,6 +60,9 @@ export function ReportModal({ target, onClose }: Props) {
       {
         onSuccess: () => {
           notify(t("submitted_toast"), "success");
+          if (offerBlock && alsoBlock && blockCandidateId !== null) {
+            void blockAfterReport(blockCandidateId);
+          }
           close();
         },
         onError: () => notify(t("submit_failed"), "error"),
@@ -88,6 +110,16 @@ export function ReportModal({ target, onClose }: Props) {
               className="w-full rounded-md bg-canvas px-3 py-1.5 text-sm ring-1 ring-inset ring-line"
             />
           </div>
+          {offerBlock && (
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-fg">
+              <input
+                type="checkbox"
+                checked={alsoBlock}
+                onChange={(e) => setAlsoBlock(e.target.checked)}
+              />
+              {t("also_block")}
+            </label>
+          )}
           <div className="flex justify-end gap-2">
             <button type="button" onClick={close} className="text-sm text-fg-muted hover:text-fg">
               {t("common:cancel")}

@@ -20,9 +20,13 @@
   "message_placeholder": "Повідомлення для {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Ти",
+  "open_profile": "Відкрити профіль {{name}}",
   "muted": "Без звуку",
   "mute_notifications": "Вимкнути сповіщення",
   "beginning_of_history": "Початок цієї розмови",
   "no_messages": "Повідомлень ще немає",
-  "be_first": "Привітайся, щоб почати."
+  "be_first": "Привітайся, щоб почати.",
+  "read_only_blocked": "Цю людину заблоковано. Розблокуй, щоб надсилати повідомлення.",
+  "read_only_unavailable": "Ти не можеш надсилати повідомлення в цій розмові.",
+  "read_only_unblock": "Розблокувати"
 }

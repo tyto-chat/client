@@ -381,8 +381,30 @@ export function useConversationActivityMercure(userId: number | undefined) {
         type?: string;
         conversationIdentifier?: string;
         lastMessageAt?: string | null;
+        readOnly?: boolean;
+        readOnlyReason?: Conversation["readOnlyReason"];
       }>(event);
-      if (!data || data.type !== "conversation.activity" || !data.conversationIdentifier) return;
+      if (!data?.conversationIdentifier) return;
+      if (data.type === "conversation.policy") {
+        const policy = {
+          readOnly: data.readOnly ?? false,
+          readOnlyReason: data.readOnlyReason ?? null,
+        };
+        queryClient.setQueryData<Conversation>(
+          queryKeys.conversation(data.conversationIdentifier),
+          (old) => (old ? { ...old, ...policy } : old),
+        );
+        queryClient.setQueryData<Conversation[]>(queryKeys.conversations(), (old) =>
+          old?.map((c) => (c.identifier === data.conversationIdentifier ? { ...c, ...policy } : c)),
+        );
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.conversation(data.conversationIdentifier),
+          exact: true,
+        });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.conversations(), exact: true });
+        return;
+      }
+      if (data.type !== "conversation.activity") return;
       queryClient.setQueryData<Conversation[]>(queryKeys.conversations(), (old) => {
         if (!old) return old;
         return old.map((c) =>

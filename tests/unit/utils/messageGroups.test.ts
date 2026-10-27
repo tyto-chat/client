@@ -79,6 +79,49 @@ describe("groupMessages", () => {
     expect(out[0]?.isOwn).toBe(true);
   });
 
+  it("marks groups of blocked authors and merges them across the time window", () => {
+    const blocked = new Set([999]);
+    const out = groupMessages(
+      [
+        msg("a", "/api/profiles/7", "2026-05-20T10:00:00Z"),
+        msg("b", "/api/profiles/7", "2026-05-20T10:10:00Z"),
+        msg("c", "/api/profiles/7", "2026-05-20T10:20:00Z"),
+      ],
+      mockUser,
+      blocked,
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0]?.blocked).toBe(true);
+    expect(out[0]?.msgs.map((m) => m.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("keeps a blocked author's group separate from others", () => {
+    const blocked = new Set([999]);
+    const other = msg("b", "/api/profiles/8", T_PLUS_4MIN);
+    other.createdBy = { ...other.createdBy!, id: 8 };
+    const out = groupMessages(
+      [msg("a", "/api/profiles/7", T0), other, msg("c", "/api/profiles/7", T_PLUS_6MIN)],
+      mockUser,
+      blocked,
+    );
+    expect(out.map((g) => g.blocked)).toEqual([true, false, true]);
+    expect(out.map((g) => g.msgs.length)).toEqual([1, 1, 1]);
+  });
+
+  it("never marks a system message blocked", () => {
+    const out = groupMessages(
+      [msg("a", "/api/profiles/7", T0, { kind: "system" })],
+      mockUser,
+      new Set([999]),
+    );
+    expect(out[0]?.blocked).toBe(false);
+  });
+
+  it("marks nothing blocked without a set", () => {
+    const out = groupMessages([msg("a", "/api/profiles/7", T0)], mockUser);
+    expect(out[0]?.blocked).toBe(false);
+  });
+
   it("GROUP_THRESHOLD_MS is 5 minutes", () => {
     expect(GROUP_THRESHOLD_MS).toBe(5 * 60 * 1000);
   });

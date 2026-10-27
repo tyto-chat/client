@@ -351,5 +351,13 @@
   "nav_group_communities": "Communitys",
   "presence_chart_members": "Mitglieder",
   "presence_chart_guests": "Gäste",
-  "presence_chart_empty": "Noch keine Aktivitätsdaten"
+  "presence_chart_empty": "Noch keine Aktivitätsdaten",
+  "block_action": "Blockieren",
+  "unblock_action": "Blockierung aufheben",
+  "block_confirm_title": "{{name}} blockieren?",
+  "block_confirm_body": "Die Person kann dir keine privaten Nachrichten mehr schicken, und du erhältst keine Benachrichtigungen von ihr. Ihre Nachrichten in gemeinsamen Kanälen werden für dich eingeklappt. Sie wird nicht benachrichtigt, bemerkt es aber möglicherweise, wenn sie versucht, dir zu schreiben.",
+  "block_confirm_button": "Blockieren",
+  "block_success": "{{name}} ist blockiert",
+  "unblock_success": "Blockierung von {{name}} aufgehoben",
+  "block_failed": "Die Blockierung konnte nicht aktualisiert werden"
 }

@@ -20,9 +20,13 @@
   "message_placeholder": "Bericht aan {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Jij",
+  "open_profile": "Profiel van {{name}} openen",
   "muted": "Gedempt",
   "mute_notifications": "Meldingen dempen",
   "beginning_of_history": "Begin van dit gesprek",
   "no_messages": "Nog geen berichten",
-  "be_first": "Zeg hallo om te beginnen."
+  "be_first": "Zeg hallo om te beginnen.",
+  "read_only_blocked": "Je hebt deze persoon geblokkeerd. Deblokkeer om berichten te sturen.",
+  "read_only_unavailable": "Je kunt in dit gesprek geen berichten sturen.",
+  "read_only_unblock": "Deblokkeren"
 }

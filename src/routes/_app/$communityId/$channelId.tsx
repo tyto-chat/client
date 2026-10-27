@@ -20,6 +20,7 @@ import {
 import { fetchCommunity, fetchCommunityMembers } from "@/api/communities";
 import { fetchCommunityMembership } from "@/api/membership";
 import { queryKeys } from "@/queries/queryKeys";
+import { BLOCKS_LOADER_WAIT_MS, prefetchBlockedUsers } from "@/queries/blockQueries";
 import { StaleTime } from "@/queries/staleTimes";
 import { fetchCommunityEmojis } from "@/api/communityEmojis";
 import {
@@ -43,6 +44,8 @@ import type { MemberItem } from "@/utils/userMentionExtension";
 import { useChannelMercure } from "@/hooks/useMercure";
 import { usePrefetchMessagePermalinks } from "@/hooks/usePrefetchMessagePermalinks";
 import { useAuth } from "@/hooks/useAuth";
+import { useThreadReplies } from "@/queries/threadQueries";
+import { findMessageAuthorId } from "@/utils/messageAuthor";
 import { useServerInfo } from "@/hooks/useServerInfo";
 import { getAccessToken } from "@/api/tokenStore";
 import { useTimezone } from "@/context/TimezoneContext";
@@ -115,6 +118,7 @@ export const Route = createFileRoute("/_app/$communityId/$channelId")({
       const prefetches: Promise<unknown>[] = [];
       if (auth.token) {
         prefetches.push(
+          prefetchBlockedUsers(queryClient, BLOCKS_LOADER_WAIT_MS),
           queryClient.prefetchQuery({
             queryKey: queryKeys.communityMembers(params.communityId),
             queryFn: () => fetchCommunityMembers(params.communityId),
@@ -404,6 +408,7 @@ function ChannelPage() {
   const [threadRootIri, setThreadRootIri] = useState<string | null>(null);
   const [embedMessageIri, setEmbedMessageIri] = useState<string | null>(null);
   const [reportMessageIri, setReportMessageIri] = useState<string | null>(null);
+  const { data: threadReplies } = useThreadReplies(threadRootIri);
   const { t: searchT } = Route.useSearch();
   if (searchT && focusMessageId && !threadRootIri) {
     setThreadRootIri(focusMessageId);
@@ -693,6 +698,7 @@ function ChannelPage() {
       {reportMessageIri && (
         <ReportModal
           target={{ messageId: uuidFromIri(reportMessageIri) }}
+          blockUserId={findMessageAuthorId(reportMessageIri, messages, threadReplies)}
           onClose={() => setReportMessageIri(null)}
         />
       )}

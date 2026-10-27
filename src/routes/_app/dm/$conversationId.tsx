@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type InfiniteData } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useThreadReplies } from "@/queries/threadQueries";
+import { findMessageAuthorId } from "@/utils/messageAuthor";
 import { fetchConversation } from "@/api/conversations";
 import {
   useConversation,
@@ -31,14 +33,17 @@ import { usePrefetchMessagePermalinks } from "@/hooks/usePrefetchMessagePermalin
 import { useNotification } from "@/context/NotificationContext";
 import { useTimezone } from "@/context/TimezoneContext";
 import { queryKeys } from "@/queries/queryKeys";
+import { BLOCKS_LOADER_WAIT_MS, prefetchBlockedUsers } from "@/queries/blockQueries";
 import { ApiError } from "@/api/client";
 import { toMemberItems } from "@/utils/toMemberItems";
 import { MessageHistoryModal } from "@/components/chat/MessageHistoryModal";
 import { MessagePane } from "@/components/chat/MessagePane";
 import { ThreadPanel } from "@/components/chat/ThreadPanel";
+import { useConversationProfileCard } from "@/components/dm/ConversationProfileCard";
+import { ConversationReadOnlyBanner } from "@/components/dm/ConversationReadOnlyBanner";
 import { Avatar } from "@/components/Avatar";
 import { avatarUrl } from "@/api/client";
-import { Menu, MenuStaticItem } from "@/components/ui/Menu";
+import { Menu, MenuItem, MenuStaticItem } from "@/components/ui/Menu";
 import { ReportModal } from "@/components/ReportModal";
 import { uuidFromIri } from "@/api/hydra";
 import { BellIcon, BellOffIcon, ChatBubbleIcon, SearchIcon } from "@/components/icons";
@@ -64,7 +69,10 @@ export const Route = createFileRoute("/_app/dm/$conversationId")({
     return out;
   },
   loaderDeps: ({ search }) => ({ m: search.m }),
-  loader: async ({ context: { queryClient }, params, deps }) => {
+  loader: async ({ context: { queryClient, auth }, params, deps }) => {
+    const blocksReady = auth.token
+      ? prefetchBlockedUsers(queryClient, BLOCKS_LOADER_WAIT_MS)
+      : Promise.resolve();
     try {
       void queryClient.prefetchQuery({
         queryKey: queryKeys.conversation(params.conversationId),
@@ -120,6 +128,7 @@ export const Route = createFileRoute("/_app/dm/$conversationId")({
           { pages: [], pageParams: [] },
         );
       }
+      await blocksReady;
       return { latestPageNumber, focusMessageId, initialPageNumber };
     } catch (err) {
       if (
@@ -183,6 +192,16 @@ function ConversationPage() {
   const isMember = !!me;
   const isMuted = !!me?.mutedUntil;
   const isGroup = (conversation?.members.length ?? 0) > 2;
+  const writeLocked = conversation?.readOnly === true;
+  const otherUserId = isGroup
+    ? null
+    : (conversation?.members.find((m) => m.userId !== user?.id)?.userId ?? null);
+  const readOnlyBanner = writeLocked ? (
+    <ConversationReadOnlyBanner
+      reason={conversation?.readOnlyReason ?? null}
+      otherUserId={otherUserId}
+    />
+  ) : undefined;
   const muteConversation = useMuteConversation(conversationId);
   const toggleMute = useCallback(
     () => muteConversation.mutate(isMuted ? null : MUTE_FOREVER().toISOString()),
@@ -232,6 +251,8 @@ function ConversationPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [threadRootIri, setThreadRootIri] = useState<string | null>(null);
   const [reportMessageIri, setReportMessageIri] = useState<string | null>(null);
+  const { openProfile, profileCard } = useConversationProfileCard();
+  const { data: threadReplies } = useThreadReplies(threadRootIri);
   const { t: searchT } = Route.useSearch();
   if (searchT && focusMessageId && !threadRootIri) {
     setThreadRootIri(focusMessageId);
@@ -269,7 +290,6 @@ function ConversationPage() {
     (iri: string) => deleteAttachmentMutation.mutate(iri),
     [deleteAttachmentMutation],
   );
-  const handleUserClick = useCallback(() => {}, []);
   const handleFetchPreviousPage = useCallback(() => {
     void fetchPreviousPage();
   }, [fetchPreviousPage]);
@@ -341,8 +361,8 @@ function ConversationPage() {
                 <MenuStaticItem className="font-semibold uppercase tracking-wide">
                   {t("members")} ({conversation.members.length})
                 </MenuStaticItem>
-                {conversation.members.map((m) => (
-                  <MenuStaticItem key={m.id} className="text-sm text-fg">
+                {conversation.members.map((m) => {
+                  const label = (
                     <span className="flex items-center gap-2">
                       <Avatar
                         name={m.profile?.name ?? `#${m.userId}`}
@@ -357,9 +377,31 @@ function ConversationPage() {
                         )}
                       </span>
                     </span>
-                  </MenuStaticItem>
-                ))}
+                  );
+                  return m.userId === user?.id ? (
+                    <MenuStaticItem key={m.id} className="text-sm text-fg">
+                      {label}
+                    </MenuStaticItem>
+                  ) : (
+                    <MenuItem
+                      key={m.id}
+                      testId={`dm-member-${m.userId}`}
+                      onSelect={() => openProfile(m.userId)}
+                    >
+                      {label}
+                    </MenuItem>
+                  );
+                })}
               </Menu>
+            ) : otherUserId !== null ? (
+              <button
+                type="button"
+                data-testid="dm-header-profile"
+                onClick={() => openProfile(otherUserId)}
+                className="cap-trim rounded px-1 -mx-1 hover:bg-surface"
+              >
+                {title}
+              </button>
             ) : (
               <span className="block cap-trim">{title}</span>
             )}
@@ -385,6 +427,7 @@ function ConversationPage() {
           </h1>
         </header>
 
+        {profileCard}
         {historyMessageIri && (
           <MessageHistoryModal
             messageIri={historyMessageIri}
@@ -394,6 +437,7 @@ function ConversationPage() {
         {reportMessageIri && (
           <ReportModal
             target={{ messageId: uuidFromIri(reportMessageIri) }}
+            blockUserId={findMessageAuthorId(reportMessageIri, messages, threadReplies)}
             onClose={() => setReportMessageIri(null)}
           />
         )}
@@ -414,7 +458,7 @@ function ConversationPage() {
           onDeleteMessage={handleDeleteMessage}
           onToggleReaction={handleToggleReaction}
           onViewHistory={handleViewHistory}
-          onUserClick={handleUserClick}
+          onUserClick={user ? openProfile : undefined}
           onDeleteAttachment={handleDeleteAttachment}
           user={user}
           members={memberItems}
@@ -426,6 +470,8 @@ function ConversationPage() {
           emptySubtitle={t("be_first")}
           beginningLabel={t("beginning_of_history")}
           onAtBottom={updateLastViewed}
+          footer={readOnlyBanner}
+          writeLocked={writeLocked}
           canReply={!!user}
           onOpenThread={setThreadRootIri}
           canReport={!!user}
@@ -450,6 +496,8 @@ function ConversationPage() {
           channels={[]}
           allowAttachments={true}
           canModerate={false}
+          writeLocked={writeLocked}
+          lockedNotice={readOnlyBanner}
           onViewReplyHistory={handleViewHistory}
           onClose={() => {
             setThreadRootIri(null);

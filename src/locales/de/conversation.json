@@ -20,9 +20,13 @@
   "message_placeholder": "Nachricht an {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Du",
+  "open_profile": "Profil von {{name}} öffnen",
   "muted": "Stummgeschaltet",
   "mute_notifications": "Benachrichtigungen stummschalten",
   "beginning_of_history": "Beginn dieser Unterhaltung",
   "no_messages": "Noch keine Nachrichten",
-  "be_first": "Sag Hallo, um loszulegen."
+  "be_first": "Sag Hallo, um loszulegen.",
+  "read_only_blocked": "Du hast diese Person blockiert. Hebe die Blockierung auf, um Nachrichten zu senden.",
+  "read_only_unavailable": "Du kannst in dieser Unterhaltung keine Nachrichten senden.",
+  "read_only_unblock": "Blockierung aufheben"
 }

@@ -206,5 +206,10 @@
   "copy_message": "Копіювати повідомлення",
   "remote_content_load_image": "Завантажити зображення з {{host}}",
   "remote_content_load_preview": "Завантажити попередній перегляд з {{host}}",
-  "remote_content_always_load": "Завжди завантажувати з {{host}}"
+  "remote_content_always_load": "Завжди завантажувати з {{host}}",
+  "blocked_message_collapsed_one": "Повідомлення від заблокованого користувача",
+  "blocked_message_collapsed_few": "{{count}} повідомлення від заблокованого користувача",
+  "blocked_message_collapsed_many": "{{count}} повідомлень від заблокованого користувача",
+  "blocked_message_collapsed_other": "{{count}} повідомлення від заблокованого користувача",
+  "blocked_message_show": "Показати"
 }

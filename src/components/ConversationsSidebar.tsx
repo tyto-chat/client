@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useState, useSyncExternalS
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/Avatar";
+import { useConversationProfileCard } from "@/components/dm/ConversationProfileCard";
 import { avatarUrl } from "@/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotification } from "@/context/NotificationContext";
@@ -48,6 +49,7 @@ function LegacyConversationsSidebar() {
   const { notify } = useNotification();
   const { data: conversations = [], isLoading } = useConversations();
   const markAllDmsRead = useMarkAllDmsRead();
+  const { openProfile, profileCard } = useConversationProfileCard();
 
   const { navOpen, closeNav } = useMobileNav();
   const scrollRef = useAutoHideScrollbar<HTMLUListElement>();
@@ -82,7 +84,7 @@ function LegacyConversationsSidebar() {
     const others = c.members.filter((m) => m.userId !== user?.id && m.profile);
     const first = others[0];
     return (
-      <li key={c["@id"]}>
+      <li key={c["@id"]} className="relative">
         <Link
           to="/dm/$conversationId"
           params={{ conversationId: c.identifier }}
@@ -128,6 +130,15 @@ function LegacyConversationsSidebar() {
             </span>
           )}
         </Link>
+        {first && others.length === 1 && (
+          <button
+            type="button"
+            data-testid="dm-row-avatar"
+            aria-label={t("open_profile", { name: first.profile!.name })}
+            onClick={() => openProfile(first.userId)}
+            className="absolute left-2.5 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full"
+          />
+        )}
       </li>
     );
   }
@@ -141,6 +152,7 @@ function LegacyConversationsSidebar() {
         "md:static md:w-60",
       )}
     >
+      {profileCard}
       <div className="-mx-2 mb-2 flex h-14 shrink-0 items-center justify-between gap-2 border-b-2 border-[color-mix(in_srgb,var(--accent)_55%,transparent)] px-4">
         <h2 className="min-w-0 flex-1 text-[0.9375rem] font-bold text-fg">
           <span className="block cap-trim-truncate truncate">{t("direct_messages")}</span>

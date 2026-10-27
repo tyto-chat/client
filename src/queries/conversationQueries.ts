@@ -10,6 +10,7 @@ import {
   muteConversation,
 } from "@/api/conversations";
 import { fetchConversationPage } from "@/api/pages";
+import { ApiError } from "@/api/client";
 import {
   useSendMessageForKey,
   useEditMessageForKey,
@@ -36,10 +37,10 @@ export function useConversation(identifier: string | undefined) {
   });
 }
 
-export function useInvitableUsers(search: string) {
+export function useInvitableUsers(search: string, includeBlocked = false) {
   return useQuery({
-    queryKey: queryKeys.invitableUsers(search),
-    queryFn: () => fetchInvitableUsers(search),
+    queryKey: queryKeys.invitableUsers(search, includeBlocked),
+    queryFn: () => fetchInvitableUsers(search, includeBlocked),
     staleTime: StaleTime.short,
   });
 }
@@ -110,9 +111,19 @@ export function useSendConversationMessage(
   currentUser: User | null,
   onRateLimit?: () => void,
 ) {
+  const queryClient = useQueryClient();
   return useSendMessageForKey(
     queryKeys.conversationPages(identifier),
-    ({ text, attachmentIris }) => createConversationMessage(identifier, text, attachmentIris ?? []),
+    async ({ text, attachmentIris }) => {
+      try {
+        return await createConversationMessage(identifier, text, attachmentIris ?? []);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 422) {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.conversation(identifier) });
+        }
+        throw err;
+      }
+    },
     currentUser,
     onRateLimit,
   );

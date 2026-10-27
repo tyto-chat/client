@@ -19,13 +19,14 @@ import {
   useThreadReplies,
 } from "@/queries/threadQueries";
 import { useThreadMercure } from "@/hooks/useMercure";
-import { groupMessages } from "@/utils/messageGroups";
+import { useMessageGroups } from "@/hooks/useMessageGroups";
 import { queryKeys } from "@/queries/queryKeys";
 import type { MemberItem } from "@/utils/userMentionExtension";
-import type { UserGroup } from "@/types/api";
+import type { Message, UserGroup } from "@/types/api";
 
 const EMPTY_MODS: Set<number> = new Set();
 const EMPTY_GROUPS: Map<number, UserGroup[]> = new Map();
+const EMPTY_REPLIES: Message[] = [];
 const noop = (): void => {};
 
 interface MentionableChannel {
@@ -52,6 +53,8 @@ interface Props {
   onReplyFocusComplete?: () => void;
   frozen?: boolean;
   canParticipate?: boolean;
+  writeLocked?: boolean;
+  lockedNotice?: React.ReactNode;
 }
 
 export function ThreadPanel({
@@ -73,6 +76,8 @@ export function ThreadPanel({
   onReplyFocusComplete,
   frozen = false,
   canParticipate = true,
+  writeLocked = false,
+  lockedNotice,
 }: Props) {
   const { t } = useTranslation(["channel", "common"]);
   const { user } = useAuthContext();
@@ -94,7 +99,7 @@ export function ThreadPanel({
       ? queryKeys.conversationPages(conversationIdentifier)
       : queryKeys.channelPages(communityId ?? "", channelIdentifier ?? "");
 
-  const reply = useReplyToMessage(pagesKey, rootIri, user ?? null);
+  const reply = useReplyToMessage(pagesKey, rootIri, user ?? null, conversationIdentifier);
   const toggleReplyReaction = useToggleThreadReaction(rootIri, user?.id ?? 0);
   const editReply = useEditThreadReply(rootIri);
   const deleteReply = useDeleteThreadReply(rootIri);
@@ -139,7 +144,14 @@ export function ThreadPanel({
       .catch(() => {});
   }, [replies, loadEarlier]);
 
-  const replyGroups = useMemo(() => groupMessages(replies ?? [], user), [replies, user]);
+  const rootMessages = useMemo(() => (root ? [root] : EMPTY_REPLIES), [root]);
+  const { groups: rootGroups, reveal: revealRoot } = useMessageGroups(rootMessages, user);
+
+  const { groups: replyGroups, reveal } = useMessageGroups(
+    replies ?? EMPTY_REPLIES,
+    user,
+    focusReplyId,
+  );
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const focusDoneRef = useRef<string | null>(null);
@@ -203,6 +215,7 @@ export function ThreadPanel({
     onUserClick: noop,
     onDeleteAttachment: noop,
     frozen,
+    writeLocked,
     canReact: canParticipate,
     canModerate,
     canEmbed,
@@ -260,6 +273,7 @@ export function ThreadPanel({
                   group={group}
                   groupIndex={i}
                   showDivider={i > 0}
+                  onShowBlocked={() => reveal(group.msgs)}
                   {...replyGroupProps}
                 />
               ))}
@@ -270,16 +284,23 @@ export function ThreadPanel({
           </div>
           {root && (
             <div className="border-b border-l-2 border-line border-l-[var(--accent)] bg-surface px-4 py-3.5">
-              <MessageGroup
-                group={{ isOwn: root.createdBy?.id === user?.id, msgs: [root] }}
-                groupIndex={0}
-                {...rootGroupProps}
-              />
+              {rootGroups.map((group) => (
+                <MessageGroup
+                  key={group.msgs[0]?.["@id"]}
+                  group={group}
+                  groupIndex={0}
+                  onShowBlocked={() => revealRoot(group.msgs)}
+                  {...rootGroupProps}
+                />
+              ))}
             </div>
           )}
         </div>
 
-        {!frozen && user && canParticipate && (
+        {!frozen && user && canParticipate && writeLocked && lockedNotice && (
+          <div className="absolute inset-x-0 bottom-0">{lockedNotice}</div>
+        )}
+        {!frozen && user && canParticipate && !writeLocked && (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 px-3 pb-2 pt-1">
             <div className="pointer-events-auto">
               <MessageEditor

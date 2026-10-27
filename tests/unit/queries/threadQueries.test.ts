@@ -358,3 +358,28 @@ describe("useLoadEarlierReplies", () => {
     ]);
   });
 });
+
+describe("useReplyToMessage in a conversation", () => {
+  it("invalidates the conversation detail when the reply is refused with 422", async () => {
+    server.use(
+      http.post(`${BASE}${ROOT_IRI}/replies`, () =>
+        HttpResponse.json({ error: "read only" }, { status: 422 }),
+      ),
+    );
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    qc.setQueryData(queryKeys.conversation("dm-1"), { identifier: "dm-1", readOnly: false });
+
+    const { result } = renderHook(
+      () => useReplyToMessage(queryKeys.conversationPages("dm-1"), ROOT_IRI, mockUser, "dm-1"),
+      { wrapper: makeWrapper(qc) },
+    );
+
+    await act(async () => {
+      await result.current.mutateAsync({ text: "re" }).catch(() => {});
+    });
+
+    expect(qc.getQueryState(queryKeys.conversation("dm-1"))?.isInvalidated).toBe(true);
+  });
+});

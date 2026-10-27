@@ -357,5 +357,13 @@
   "nav_group_communities": "Społeczności",
   "presence_chart_members": "Członkowie",
   "presence_chart_guests": "Goście",
-  "presence_chart_empty": "Brak danych o aktywności"
+  "presence_chart_empty": "Brak danych o aktywności",
+  "block_action": "Zablokuj",
+  "unblock_action": "Odblokuj",
+  "block_confirm_title": "Zablokować {{name}}?",
+  "block_confirm_body": "Ta osoba nie będzie mogła pisać do Ciebie prywatnie, a Ty nie dostaniesz od niej powiadomień. Jej wiadomości we wspólnych kanałach będą dla Ciebie zwinięte. Nie dostanie powiadomienia, ale może to zauważyć, gdy spróbuje do Ciebie napisać.",
+  "block_confirm_button": "Zablokuj",
+  "block_success": "Zablokowano: {{name}}",
+  "unblock_success": "Odblokowano: {{name}}",
+  "block_failed": "Nie udało się zaktualizować blokady"
 }

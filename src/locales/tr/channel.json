@@ -204,5 +204,8 @@
   "copy_message": "Mesajı kopyala",
   "remote_content_load_image": "{{host}} kaynaklı görseli yükle",
   "remote_content_load_preview": "{{host}} kaynaklı önizlemeyi yükle",
-  "remote_content_always_load": "{{host}} kaynağından her zaman yükle"
+  "remote_content_always_load": "{{host}} kaynağından her zaman yükle",
+  "blocked_message_collapsed_one": "Engellenen bir kullanıcıdan mesaj",
+  "blocked_message_collapsed_other": "Engellenen bir kullanıcıdan {{count}} mesaj",
+  "blocked_message_show": "Göster"
 }

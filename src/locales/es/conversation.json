@@ -20,9 +20,13 @@
   "message_placeholder": "Enviar mensaje a {{name}}",
   "compact_overflow_suffix": "+{{count}}",
   "you": "Tú",
+  "open_profile": "Abrir el perfil de {{name}}",
   "muted": "Silenciada",
   "mute_notifications": "Silenciar notificaciones",
   "beginning_of_history": "Inicio de esta conversación",
   "no_messages": "Aún no hay mensajes",
-  "be_first": "Saluda para romper el hielo."
+  "be_first": "Saluda para romper el hielo.",
+  "read_only_blocked": "Has bloqueado a esta persona. Desbloquéala para enviar mensajes.",
+  "read_only_unavailable": "No puedes enviar mensajes en esta conversación.",
+  "read_only_unblock": "Desbloquear"
 }

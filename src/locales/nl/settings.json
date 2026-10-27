@@ -243,5 +243,11 @@
   "remote_content_hosts_hint": "Afbeeldingen en voorbeelden van deze sites laden zonder te vragen.",
   "remote_content_add_host": "Site toevoegen…",
   "remote_content_add": "Toevoegen",
-  "remote_content_remove_host": "{{host}} verwijderen"
+  "remote_content_remove_host": "{{host}} verwijderen",
+  "nav_privacy": "Privacy",
+  "blocked_users_heading": "Geblokkeerde gebruikers",
+  "blocked_users_empty": "Je hebt niemand geblokkeerd.",
+  "blocked_users_since": "Geblokkeerd op {{date}}",
+  "blocked_users_not_in_effect": "Niet actief zolang deze persoon moderator of beheerder is",
+  "blocked_users_unblock": "Deblokkeren"
 }

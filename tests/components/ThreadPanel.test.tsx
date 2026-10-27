@@ -17,6 +17,8 @@ const ROOT_IRI = `/api/v1/messages/${ROOT_UUID}`;
 vi.mock("@/context/AuthContext", () => ({ useAuthContext: () => ({ user: mockUser }) }));
 vi.mock("@/context/TimezoneContext", () => ({ useTimezone: () => ({ timezone: "UTC" }) }));
 vi.mock("@/hooks/useMercure", () => ({ useThreadMercure: () => {} }));
+const blocked = vi.hoisted(() => ({ ids: new Set<number>() as ReadonlySet<number> }));
+vi.mock("@/queries/blockQueries", () => ({ useBlockedUserIds: () => blocked.ids }));
 // Mock MessageGroup so reaction wiring can be probed without rendering the
 // full pipeline (DOMPurify, Tiptap state, etc.). The reaction button is only
 // surfaced when the group is interactive (replies), not read-only (root).
@@ -28,15 +30,23 @@ vi.mock("@/components/chat/MessageGroup", () => ({
     onDeleteMessage,
     readOnly,
     canReact,
+    writeLocked,
+    onShowBlocked,
   }: {
-    group: { msgs: Array<{ "@id": string; text: string | null }> };
+    group: { blocked?: boolean; msgs: Array<{ "@id": string; text: string | null }> };
     onToggleReaction: (iri: string, emoji: string) => void;
     onEditMessage: (iri: string, text: string) => void;
     onDeleteMessage: (iri: string) => void;
     readOnly?: boolean;
     canReact?: boolean;
+    writeLocked?: boolean;
+    onShowBlocked?: () => void;
   }) => (
-    <div data-testid="msg">
+    <div
+      data-testid="msg"
+      data-blocked={group.blocked ? "true" : "false"}
+      data-write-locked={writeLocked ? "true" : "false"}
+    >
       {/* Mirror the real MessageGroup's per-row `data-message-id`, which the
        *  focus effect queries by IRI suffix. */}
       {group.msgs.map((m) => (
@@ -44,6 +54,11 @@ vi.mock("@/components/chat/MessageGroup", () => ({
           {m.text}
         </span>
       ))}
+      {group.blocked && (
+        <button data-testid={`show-${group.msgs[0]!["@id"]}`} onClick={() => onShowBlocked?.()}>
+          show
+        </button>
+      )}
       {!readOnly && (
         <>
           {canReact !== false && (
@@ -113,6 +128,7 @@ function threadResponse(items: unknown[]) {
 }
 
 beforeEach(() => {
+  blocked.ids = new Set();
   configureApiClient(BASE);
   server.use(
     http.get(`${BASE}${ROOT_IRI}`, () =>
@@ -402,5 +418,140 @@ describe("ThreadPanel", () => {
     expect(onReplyFocusComplete).toHaveBeenCalledTimes(1);
 
     vi.useRealTimers();
+  });
+
+  it("thread replies from a blocked user collapse", async () => {
+    blocked.ids = new Set([7]);
+    const blockedAuthor = {
+      ...mockUser,
+      "@id": "/api/users/7",
+      id: 7,
+      profile: { ...mockUser.profile, "@id": "/api/profiles/7" },
+    };
+    server.use(
+      http.get(`${BASE}${ROOT_IRI}/thread`, () =>
+        threadResponse([
+          msg("a", "from blocked", { createdBy: blockedAuthor }),
+          msg("b", "from me", { createdAt: "2026-05-19T10:01:00Z" }),
+        ]),
+      ),
+    );
+
+    render(
+      <ThreadPanel
+        communityId={COMMUNITY}
+        channelIdentifier={CHANNEL}
+        rootIri={ROOT_IRI}
+        members={[]}
+        channels={[]}
+        allowAttachments={false}
+        onClose={vi.fn()}
+      />,
+      { wrapper: makeWrapper() },
+    );
+
+    await waitFor(() => expect(screen.getByText("from blocked")).toBeInTheDocument());
+    const groups = screen.getAllByTestId("msg").filter((el) => el.textContent?.includes("from"));
+    expect(groups.map((g) => g.getAttribute("data-blocked"))).toEqual(["true", "false"]);
+  });
+
+  it("collapses a root by a blocked author until Show", async () => {
+    blocked.ids = new Set([7]);
+    const blockedAuthor = {
+      ...mockUser,
+      "@id": "/api/users/7",
+      id: 7,
+      profile: { ...mockUser.profile, "@id": "/api/profiles/7" },
+    };
+    server.use(
+      http.get(`${BASE}${ROOT_IRI}`, () =>
+        HttpResponse.json(msg(ROOT_UUID, "blocked root", { createdBy: blockedAuthor })),
+      ),
+      http.get(`${BASE}${ROOT_IRI}/thread`, () => threadResponse([])),
+    );
+
+    render(
+      <ThreadPanel
+        communityId={COMMUNITY}
+        channelIdentifier={CHANNEL}
+        rootIri={ROOT_IRI}
+        members={[]}
+        channels={[]}
+        allowAttachments={false}
+        onClose={vi.fn()}
+      />,
+      { wrapper: makeWrapper() },
+    );
+
+    const rootGroup = () => screen.getByText("blocked root").closest("[data-testid='msg']");
+    await waitFor(() => expect(screen.getByText("blocked root")).toBeInTheDocument());
+    expect(rootGroup()?.getAttribute("data-blocked")).toBe("true");
+
+    await userEvent.click(screen.getByTestId(`show-/api/messages/${ROOT_UUID}`));
+
+    expect(rootGroup()?.getAttribute("data-blocked")).toBe("false");
+  });
+
+  it("locked thread hides the editor and shows the notice", async () => {
+    server.use(
+      http.get(`${BASE}${ROOT_IRI}/thread`, () => threadResponse([msg("a", "first reply")])),
+    );
+
+    render(
+      <ThreadPanel
+        conversationIdentifier="dm-1"
+        rootIri={ROOT_IRI}
+        members={[]}
+        channels={[]}
+        allowAttachments={false}
+        onClose={vi.fn()}
+        writeLocked
+        lockedNotice={<p>locked-notice</p>}
+      />,
+      { wrapper: makeWrapper() },
+    );
+
+    await waitFor(() => expect(screen.getByText("first reply")).toBeInTheDocument());
+    expect(screen.queryByText("send-stub")).not.toBeInTheDocument();
+    expect(screen.getByText("locked-notice")).toBeInTheDocument();
+    const replyGroup = screen.getByText("first reply").closest("[data-testid='msg']");
+    expect(replyGroup?.getAttribute("data-write-locked")).toBe("true");
+  });
+
+  it("reveals a collapsed blocked reply when it is the focus target", async () => {
+    blocked.ids = new Set([7]);
+    const blockedAuthor = {
+      ...mockUser,
+      "@id": "/api/users/7",
+      id: 7,
+      profile: { ...mockUser.profile, "@id": "/api/profiles/7" },
+    };
+    server.use(
+      http.get(`${BASE}${ROOT_IRI}/thread`, () =>
+        threadResponse([
+          msg("blocked-1", "first blocked", { createdBy: blockedAuthor }),
+          msg("blocked-2", "second blocked", { createdBy: blockedAuthor }),
+        ]),
+      ),
+    );
+    Element.prototype.scrollIntoView = vi.fn() as unknown as Element["scrollIntoView"];
+
+    render(
+      <ThreadPanel
+        communityId={COMMUNITY}
+        channelIdentifier={CHANNEL}
+        rootIri={ROOT_IRI}
+        members={[]}
+        channels={[]}
+        allowAttachments={false}
+        onClose={vi.fn()}
+        focusReplyId="blocked-2"
+      />,
+      { wrapper: makeWrapper() },
+    );
+
+    await waitFor(() => expect(screen.getByText("second blocked")).toBeInTheDocument());
+    const group = screen.getByText("second blocked").closest("[data-testid='msg']");
+    expect(group?.getAttribute("data-blocked")).toBe("false");
   });
 });

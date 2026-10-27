@@ -204,5 +204,8 @@
   "copy_message": "Nachricht kopieren",
   "remote_content_load_image": "Bild von {{host}} laden",
   "remote_content_load_preview": "Vorschau von {{host}} laden",
-  "remote_content_always_load": "Immer von {{host}} laden"
+  "remote_content_always_load": "Immer von {{host}} laden",
+  "blocked_message_collapsed_one": "Nachricht von einer blockierten Person",
+  "blocked_message_collapsed_other": "{{count}} Nachrichten von einer blockierten Person",
+  "blocked_message_show": "Anzeigen"
 }

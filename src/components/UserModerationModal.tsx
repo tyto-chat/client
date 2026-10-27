@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ShieldBan } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useNavigate } from "@tanstack/react-router";
@@ -6,7 +7,7 @@ import { Modal } from "@/components/Modal";
 import { ModalTabs } from "@/components/ui";
 import { Avatar } from "@/components/Avatar";
 import { PresenceDot } from "@/components/PresenceDot";
-import { avatarUrl } from "@/api/client";
+import { apiErrorText, avatarUrl } from "@/api/client";
 import { getUserTextColor } from "@/utils/userColor";
 import { toSafeHttpUrl } from "@/utils/safeUrl";
 import { usePresenceSubscription, useUserPresence } from "@/queries/presenceQueries";
@@ -27,6 +28,8 @@ import { useUser } from "@/queries/userQueries";
 import { useCommunity } from "@/queries/communityQueries";
 import { useCommunityMembership } from "@/queries/membershipQueries";
 import { useCreateConversation } from "@/queries/conversationQueries";
+import { useBlockStatus, useBlockUser, useUnblockUser } from "@/queries/blockQueries";
+import { useConfirm } from "@/hooks/useConfirm";
 import {
   useActiveModeration,
   useCreateModerationAction,
@@ -60,11 +63,11 @@ type Tab = "profile" | "actions" | "notes";
 
 interface Props {
   userId: number;
-  communityId: string;
+  communityId?: string;
   channelRole?: "member" | "moderator";
   canModerate: boolean;
-  callerIsChannelMod: boolean;
-  currentChannelId: string;
+  callerIsChannelMod?: boolean;
+  currentChannelId?: string;
   onClose: () => void;
 }
 
@@ -72,11 +75,14 @@ export function UserModerationModal({
   userId,
   communityId,
   channelRole,
-  canModerate,
-  callerIsChannelMod,
-  currentChannelId,
+  canModerate: canModerateProp,
+  callerIsChannelMod = false,
+  currentChannelId = "",
   onClose,
 }: Props) {
+  const scoped = !!communityId;
+  const canModerate = canModerateProp && scoped;
+  const cid = communityId ?? "";
   const { t, i18n } = useTranslation("community");
   const { t: tc } = useTranslation("common");
   const { t: tConv } = useTranslation("conversation");
@@ -85,10 +91,15 @@ export function UserModerationModal({
   const { timezone } = useTimezone();
   const { data: user, isLoading } = useUser(userId);
   const { data: community } = useCommunity(communityId);
-  const { data: membership } = useCommunityMembership(communityId);
+  const { data: membership } = useCommunityMembership(cid);
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const createConversation = useCreateConversation();
+  const isOther = !!currentUser && currentUser.id !== userId;
+  const { data: blockStatus } = useBlockStatus(isOther ? userId : null);
+  const blockUser = useBlockUser();
+  const unblockUser = useUnblockUser();
+  const { confirm, confirmDialog } = useConfirm();
   usePresenceSubscription([userId]);
   const presenceState = useUserPresence(userId);
 
@@ -100,35 +111,58 @@ export function UserModerationModal({
         to: "/dm/$conversationId",
         params: { conversationId: conversation.identifier },
       });
+    } catch (err) {
+      notify(apiErrorText(err, tConv("create_failed")), "error");
+    }
+  }
+
+  async function handleBlock(name: string) {
+    const ok = await confirm({
+      title: t("block_confirm_title", { name }),
+      message: t("block_confirm_body"),
+      confirmLabel: t("block_confirm_button"),
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await blockUser.mutateAsync(userId);
+      notify(t("block_success", { name }), "success");
     } catch {
-      notify(tConv("create_failed"), "error");
+      notify(t("block_failed"), "error");
+    }
+  }
+
+  async function handleUnblock(name: string) {
+    try {
+      await unblockUser.mutateAsync(userId);
+      notify(t("unblock_success", { name }), "success");
+    } catch {
+      notify(t("block_failed"), "error");
     }
   }
 
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [reportOpen, setReportOpen] = useState(false);
 
-  const { data: activeActions = [] } = useActiveModeration(
-    communityId,
-    canModerate ? userId : null,
-  );
+  const { data: activeActions = [] } = useActiveModeration(cid, canModerate ? userId : null);
   const { data: actionHistory } = useModerationLog(
-    communityId,
+    cid,
     1,
     undefined,
     undefined,
     canModerate && activeTab === "actions" ? userId : undefined,
+    canModerate,
   );
   const { data: notes = [] } = useModeratorNotes(
-    communityId,
+    cid,
     canModerate && activeTab === "notes" ? userId : null,
   );
 
-  const createAction = useCreateModerationAction(communityId);
-  const liftAction = useLiftModerationAction(communityId, userId);
-  const createNote = useCreateModeratorNote(communityId, userId);
-  const updateNote = useUpdateModeratorNote(communityId, userId);
-  const deleteNote = useDeleteModeratorNote(communityId, userId);
+  const createAction = useCreateModerationAction(cid);
+  const liftAction = useLiftModerationAction(cid, userId);
+  const createNote = useCreateModeratorNote(cid, userId);
+  const updateNote = useUpdateModeratorNote(cid, userId);
+  const deleteNote = useDeleteModeratorNote(cid, userId);
 
   const isGlobalAdmin = currentUser?.roles?.includes("ROLE_ADMIN") ?? false;
   const isCommunityAdmin = membership?.role === "admin";
@@ -228,9 +262,11 @@ export function UserModerationModal({
           {reportOpen && (
             <ReportModal
               target={{ userId, communityIdentifier: communityId }}
+              blockUserId={userId}
               onClose={() => setReportOpen(false)}
             />
           )}
+          {confirmDialog}
           {isLoading && <p className="text-sm text-fg-muted">{tc("loading")}</p>}
           {user && (
             <>
@@ -282,37 +318,63 @@ export function UserModerationModal({
                 )}
               </div>
 
+              {currentUser && currentUser.id !== userId && (
+                <div data-testid="profile-actions" className="flex flex-wrap items-center gap-1.5">
+                  {!blockStatus?.blocked && (
+                    <button
+                      type="button"
+                      onClick={handleSendDm}
+                      disabled={createConversation.isPending}
+                      title={tConv("write_private_message")}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-accent-subtle px-3 py-1.5 text-sm font-medium text-accent transition-opacity hover:opacity-80 disabled:opacity-50"
+                    >
+                      <ChatBubbleIcon size={14} />
+                      {tConv("message_tab")}
+                    </button>
+                  )}
+                  {blockStatus?.blocked ? (
+                    <button
+                      type="button"
+                      data-testid="profile-unblock-button"
+                      onClick={() => void handleUnblock(user.profile.name)}
+                      disabled={unblockUser.isPending}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted transition-colors hover:bg-surface hover:text-fg disabled:opacity-50"
+                    >
+                      <ShieldBan size={14} />
+                      {t("unblock_action")}
+                    </button>
+                  ) : (
+                    blockStatus?.blockable && (
+                      <button
+                        type="button"
+                        data-testid="profile-block-button"
+                        onClick={() => void handleBlock(user.profile.name)}
+                        disabled={blockUser.isPending}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted transition-colors hover:bg-danger-subtle hover:text-danger disabled:opacity-50"
+                      >
+                        <ShieldBan size={14} />
+                        {t("block_action")}
+                      </button>
+                    )
+                  )}
+                  {!user?.isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setReportOpen(true)}
+                      title={tReports("report_user")}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted transition-colors hover:bg-danger-subtle hover:text-danger"
+                    >
+                      <FlagIcon size={14} />
+                      {tReports("report_action")}
+                    </button>
+                  )}
+                </div>
+              )}
+
               <ModalTabs
                 testIdPrefix="mod-tab-"
                 active={activeTab}
                 onChange={(key) => setActiveTab(key as typeof activeTab)}
-                leading={
-                  currentUser && currentUser.id !== userId ? (
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={handleSendDm}
-                        disabled={createConversation.isPending}
-                        title={tConv("write_private_message")}
-                        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-accent-subtle px-3 py-1.5 text-sm font-medium text-accent transition-opacity hover:opacity-80 disabled:opacity-50"
-                      >
-                        <ChatBubbleIcon size={14} />
-                        {tConv("message_tab")}
-                      </button>
-                      {!user?.isAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => setReportOpen(true)}
-                          title={tReports("report_user")}
-                          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted transition-colors hover:bg-danger-subtle hover:text-danger"
-                        >
-                          <FlagIcon size={14} />
-                          {tReports("report_action")}
-                        </button>
-                      )}
-                    </div>
-                  ) : undefined
-                }
                 tabs={(canModerate
                   ? (["profile", "actions", "notes"] as const)
                   : (["profile"] as const)

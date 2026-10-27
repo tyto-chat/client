@@ -135,6 +135,25 @@ describe("useUserEventsMercure", () => {
     expect(inval).toHaveBeenCalledWith({ queryKey: queryKeys.community("c1") });
   });
 
+  it("blocks.changed refetches blocks and the conversation list and details, not DM pages", () => {
+    inval.mockRestore();
+    const keys = {
+      blocks: queryKeys.blocks(),
+      list: queryKeys.conversations(),
+      detail: queryKeys.conversation("dm1"),
+      pages: queryKeys.conversationPages("dm1"),
+      messages: queryKeys.conversationMessages("dm1"),
+    };
+    for (const key of Object.values(keys)) qc.setQueryData(key, []);
+    fire({ type: "user.event", event: "blocks.changed" });
+    const invalidated = (key: readonly unknown[]) => qc.getQueryState(key)?.isInvalidated;
+    expect(invalidated(keys.blocks)).toBe(true);
+    expect(invalidated(keys.list)).toBe(true);
+    expect(invalidated(keys.detail)).toBe(true);
+    expect(invalidated(keys.pages)).toBe(false);
+    expect(invalidated(keys.messages)).toBe(false);
+  });
+
   it("role.changed invalidates without navigating", () => {
     fire({ type: "user.event", event: "role.changed", communityIdentifier: "c1" });
     expect(navigate).not.toHaveBeenCalled();

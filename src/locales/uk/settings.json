@@ -243,5 +243,11 @@
   "remote_content_hosts_hint": "Зображення та попередній перегляд із цих сайтів завантажуються без запиту.",
   "remote_content_add_host": "Додати сайт…",
   "remote_content_add": "Додати",
-  "remote_content_remove_host": "Видалити {{host}}"
+  "remote_content_remove_host": "Видалити {{host}}",
+  "nav_privacy": "Конфіденційність",
+  "blocked_users_heading": "Заблоковані користувачі",
+  "blocked_users_empty": "Ви нікого не блокували.",
+  "blocked_users_since": "Заблоковано {{date}}",
+  "blocked_users_not_in_effect": "Не діє, поки ця людина є модератором або адміністратором",
+  "blocked_users_unblock": "Розблокувати"
 }

@@ -6,6 +6,7 @@ import { createThreadReply, fetchThreadReplies } from "@/api/threads";
 import { patchMessageInPages, makeOptimisticMessage } from "@/queries/messageQueries";
 import { queryKeys } from "@/queries/queryKeys";
 import { uuidFromIri } from "@/api/hydra";
+import { ApiError } from "@/api/client";
 import type { ChannelPage, Message, User } from "@/types/api";
 
 export const THREAD_PAGE_SIZE = 50;
@@ -19,7 +20,12 @@ export function useThreadReplies(rootIri: string | null) {
   });
 }
 
-export function useReplyToMessage(pagesKey: QueryKey, rootIri: string, currentUser: User | null) {
+export function useReplyToMessage(
+  pagesKey: QueryKey,
+  rootIri: string,
+  currentUser: User | null,
+  conversationIdentifier?: string,
+) {
   const queryClient = useQueryClient();
   const threadKey = queryKeys.threadReplies(rootIri);
 
@@ -46,9 +52,14 @@ export function useReplyToMessage(pagesKey: QueryKey, rootIri: string, currentUs
 
       return { previousThread, previousPages };
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previousThread) queryClient.setQueryData(threadKey, context.previousThread);
       if (context?.previousPages) queryClient.setQueryData(pagesKey, context.previousPages);
+      if (conversationIdentifier && err instanceof ApiError && err.status === 422) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.conversation(conversationIdentifier),
+        });
+      }
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: threadKey });
