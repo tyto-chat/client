@@ -13,12 +13,18 @@ export type KeyPackageUpload = BridgeKeyPackageUpload;
 export type Revocation = BridgeRevocation;
 
 export type CredentialCheck =
-  "ok" | "unpinned" | "chain_invalid" | "revoked" | "wrong_server" | "not_a_participant";
+  | "ok"
+  | "unpinned"
+  | "identity_changed"
+  | "chain_invalid"
+  | "revoked"
+  | "wrong_server"
+  | "not_a_participant";
 
 export type CredentialValidator = (
   credential: Credential,
   context: { conversationId: number; expectedUserIds: number[] },
-) => CredentialCheck;
+) => Promise<CredentialCheck>;
 
 export interface MlsEngine {
   createDeviceKey(): Promise<{ devicePublicKey: Uint8Array }>;

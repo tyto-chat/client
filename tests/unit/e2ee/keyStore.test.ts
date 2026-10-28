@@ -296,11 +296,67 @@ describe("KeyStore", () => {
     await keys.saveDeviceState(alice, Uint8Array.of(1));
     await keys.saveMessageKey(alice, { id: "m-1", rev: 0 }, new Uint8Array(32), sender);
 
+    await keys.putRecords(alice, "pins", [{ id: "7", data: Uint8Array.of(9) }]);
+
     await keys.deleteScope(alice);
 
+    expect(await store().loadRecords(alice, "pins")).toEqual([]);
     expect(await store().loadDeviceState(alice)).toBeNull();
     expect(await store().getMessageKey(alice, { id: "m-1", rev: 0 })).toBeNull();
     expect([...secrets.values.keys()]).toEqual([]);
+  });
+
+  it("keeps pins and revocations encrypted and apart per account", async () => {
+    const pin = new Uint8Array(40).map((_, i) => (i * 11 + 5) % 256);
+    const revocation = new Uint8Array(40).map((_, i) => (i * 13 + 1) % 256);
+
+    await store().putRecords(alice, "pins", [{ id: "7", data: pin }]);
+    await store().putRecords(alice, "revocations", [{ id: "7/d/1", data: revocation }]);
+
+    expect(await store().loadRecords(alice, "pins")).toEqual([{ id: "7", data: pin }]);
+    expect(await store().loadRecords(alice, "revocations")).toEqual([
+      { id: "7/d/1", data: revocation },
+    ]);
+    expect(await store().loadRecords(bob, "pins")).toEqual([]);
+    expect(containsBytes(await readAll(), pin)).toBe(false);
+    expect(containsBytes(await readAll(), revocation)).toBe(false);
+  });
+
+  it("upgrades a database created before pins existed", async () => {
+    (await openVersionOne()).close();
+
+    await store().putRecords(alice, "pins", [{ id: "7", data: Uint8Array.of(1) }]);
+    await store().saveDeviceState(alice, Uint8Array.of(2));
+
+    expect(await store().loadRecords(alice, "pins")).toEqual([{ id: "7", data: Uint8Array.of(1) }]);
+    expect(await store().loadDeviceState(alice)).toEqual(Uint8Array.of(2));
+  });
+
+  it("fails instead of waiting when an older window blocks the upgrade", async () => {
+    const old = await openVersionOne();
+    const keys = store();
+
+    await expect(keys.loadRecords(alice, "pins")).rejects.toThrow(/close other windows/);
+
+    old.close();
+    await expect(keys.loadRecords(alice, "pins")).resolves.toEqual([]);
+  });
+
+  it("steps aside when a newer version needs the database", async () => {
+    const keys = store();
+    await keys.saveDeviceState(alice, Uint8Array.of(1));
+
+    const newer = await new Promise<string>((resolve) => {
+      const open = idb.open(KeyStore.DATABASE, 3);
+      open.onblocked = () => resolve("blocked");
+      open.onsuccess = () => {
+        open.result.close();
+        resolve("opened");
+      };
+    });
+
+    expect(newer).toBe("opened");
+    await expect(keys.loadDeviceState(alice)).rejects.toThrow();
   });
 
   it("refuses records copied from another account", async () => {
@@ -324,6 +380,19 @@ describe("KeyStore", () => {
     ).toBe(false);
   });
 });
+
+function openVersionOne(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const open = idb.open(KeyStore.DATABASE, 1);
+    open.onupgradeneeded = () => {
+      for (const name of ["deviceState", "messageKeys", "outbox"]) {
+        open.result.createObjectStore(name);
+      }
+    };
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => resolve(open.result);
+  });
+}
 
 function swapDeviceStates(): Promise<void> {
   return new Promise((resolve, reject) => {

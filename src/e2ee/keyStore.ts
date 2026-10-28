@@ -26,6 +26,13 @@ export interface KeyStoreTransaction {
 
 type Secrets = PlatformBridge["secrets"];
 
+export type RecordKind = typeof PINS | typeof REVOCATIONS;
+
+export interface KeyedRecord {
+  id: string;
+  data: Uint8Array;
+}
+
 interface SealedRecord {
   iv: Uint8Array;
   data: Uint8Array;
@@ -34,6 +41,9 @@ interface SealedRecord {
 const DEVICE_STATE = "deviceState";
 const MESSAGE_KEYS = "messageKeys";
 const OUTBOX = "outbox";
+const PINS = "pins";
+const REVOCATIONS = "revocations";
+const ALL_STORES = [DEVICE_STATE, MESSAGE_KEYS, OUTBOX, PINS, REVOCATIONS];
 const STORE_KEY_PREFIX = "e2ee-store-key:";
 const STRICT: IDBTransactionOptions = { durability: "strict" };
 
@@ -213,14 +223,85 @@ export class KeyStore {
     await done;
   }
 
+  async loadRecords(scope: KeyStoreScope, kind: RecordKind): Promise<KeyedRecord[]> {
+    this.requireLocks();
+    const key = scopeKey(scope);
+    const db = await this.open();
+    const store = db.transaction(kind).objectStore(kind);
+    const [keys, records] = await Promise.all([
+      request(store.getAllKeys(this.scopeRange(key))),
+      request<SealedRecord[]>(store.getAll(this.scopeRange(key))),
+    ]);
+    return Promise.all(
+      records.map(async (record, i) => {
+        const id = String((keys[i] as [string, string])[1]);
+        return { id, data: await this.unseal(scope, this.recordContext(key, kind, id), record) };
+      }),
+    );
+  }
+
+  async getRecord(scope: KeyStoreScope, kind: RecordKind, id: string): Promise<Uint8Array | null> {
+    this.requireLocks();
+    const key = scopeKey(scope);
+    const db = await this.open();
+    const stored = await request<SealedRecord | undefined>(
+      db.transaction(kind).objectStore(kind).get([key, id]),
+    );
+    return stored === undefined
+      ? null
+      : this.unseal(scope, this.recordContext(key, kind, id), stored);
+  }
+
+  putRecords(scope: KeyStoreScope, kind: RecordKind, records: KeyedRecord[]): Promise<void> {
+    const key = scopeKey(scope);
+    return this.inScopeOrder(key, async () => {
+      const sealed = await Promise.all(
+        records.map(async ({ id, data }) => ({
+          id,
+          record: await this.seal(scope, this.recordContext(key, kind, id), data),
+        })),
+      );
+      const db = await this.open();
+      const tx = db.transaction(kind, "readwrite", STRICT);
+      for (const { id, record } of sealed) tx.objectStore(kind).put(record, [key, id]);
+      await completion(tx);
+    });
+  }
+
+  updateRecord<R>(
+    scope: KeyStoreScope,
+    kind: RecordKind,
+    id: string,
+    change: (current: Uint8Array | null) => { data: Uint8Array | null; result: R },
+  ): Promise<R> {
+    const key = scopeKey(scope);
+    const context = this.recordContext(key, kind, id);
+    return this.inScopeOrder(key, async () => {
+      const db = await this.open();
+      const stored = await request<SealedRecord | undefined>(
+        db.transaction(kind).objectStore(kind).get([key, id]),
+      );
+      const current = stored === undefined ? null : await this.unseal(scope, context, stored);
+      const { data, result } = change(current);
+      if (data !== null) {
+        const sealed = await this.seal(scope, context, data);
+        const tx = db.transaction(kind, "readwrite", STRICT);
+        tx.objectStore(kind).put(sealed, [key, id]);
+        await completion(tx);
+      }
+      return result;
+    });
+  }
+
   deleteScope(scope: KeyStoreScope): Promise<void> {
     const key = scopeKey(scope);
     return this.inScopeOrder(key, async () => {
       const db = await this.open();
-      const tx = db.transaction([DEVICE_STATE, MESSAGE_KEYS, OUTBOX], "readwrite", STRICT);
+      const tx = db.transaction(ALL_STORES, "readwrite", STRICT);
       tx.objectStore(DEVICE_STATE).delete(key);
-      tx.objectStore(MESSAGE_KEYS).delete(this.scopeRange(key));
-      tx.objectStore(OUTBOX).delete(this.scopeRange(key));
+      for (const store of ALL_STORES.slice(1)) {
+        tx.objectStore(store).delete(this.scopeRange(key));
+      }
       await completion(tx);
       await this.withLock(`${STORE_KEY_PREFIX}${key}`, () =>
         this.secrets.delete(`${STORE_KEY_PREFIX}${key}`),
@@ -230,6 +311,10 @@ export class KeyStore {
 
   private scopeRange(key: string): IDBKeyRange {
     return this.keyRange.bound([key], [key, []]);
+  }
+
+  private recordContext(key: string, kind: RecordKind, id: string): string {
+    return `${key}|${kind}|${JSON.stringify(id)}`;
   }
 
   private messageKeyContext(scope: KeyStoreScope, ref: MessageKeyRef): string {
@@ -308,27 +393,48 @@ export class KeyStore {
 
   private async hasRecords(key: string): Promise<boolean> {
     const db = await this.open();
-    const tx = db.transaction([DEVICE_STATE, MESSAGE_KEYS, OUTBOX]);
+    const tx = db.transaction(ALL_STORES);
     const counts = await Promise.all([
       request(tx.objectStore(DEVICE_STATE).count(key)),
-      request(tx.objectStore(MESSAGE_KEYS).count(this.scopeRange(key))),
-      request(tx.objectStore(OUTBOX).count(this.scopeRange(key))),
+      ...ALL_STORES.slice(1).map((store) =>
+        request(tx.objectStore(store).count(this.scopeRange(key))),
+      ),
     ]);
     return counts.some((count) => count > 0);
   }
 
   private open(): Promise<IDBDatabase> {
     if (this.db === null) {
-      this.db = new Promise((resolve, reject) => {
-        const req = this.factory.open(KeyStore.DATABASE, 1);
+      const opening = new Promise<IDBDatabase>((resolve, reject) => {
+        let gaveUp = false;
+        const req = this.factory.open(KeyStore.DATABASE, 2);
         req.onupgradeneeded = () => {
           const db = req.result;
-          db.createObjectStore(DEVICE_STATE);
-          db.createObjectStore(MESSAGE_KEYS);
-          db.createObjectStore(OUTBOX);
+          for (const store of ALL_STORES) {
+            if (!db.objectStoreNames.contains(store)) db.createObjectStore(store);
+          }
         };
-        req.onsuccess = () => resolve(req.result);
+        req.onblocked = () => {
+          gaveUp = true;
+          reject(new Error("the key store is being upgraded; close other windows and reload"));
+        };
+        req.onsuccess = () => {
+          const db = req.result;
+          if (gaveUp) {
+            db.close();
+            return;
+          }
+          db.onversionchange = () => {
+            db.close();
+            if (this.db === opening) this.db = null;
+          };
+          resolve(db);
+        };
         req.onerror = () => reject(req.error ?? new Error("IndexedDB open failed"));
+      });
+      this.db = opening;
+      opening.catch(() => {
+        if (this.db === opening) this.db = null;
       });
     }
     return this.db;
