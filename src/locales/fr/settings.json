@@ -249,5 +249,16 @@
   "blocked_users_empty": "Tu n'as bloqué personne.",
   "blocked_users_since": "Bloqué le {{date}}",
   "blocked_users_not_in_effect": "Inactif tant que cette personne est modérateur ou administrateur",
-  "blocked_users_unblock": "Débloquer"
+  "blocked_users_unblock": "Débloquer",
+  "direct_messages_section": "Messages privés",
+  "refuse_plain_dms": "Ne participer qu'aux messages privés chiffrés de bout en bout",
+  "refuse_plain_dms_hint": "Activé, tu ne participes qu'aux messages privés chiffrés. Ils nécessitent l'application de bureau tyto.chat.",
+  "refuse_plain_dms_consequence": "Tu ne participeras plus aux messages privés non chiffrés, y compris en groupe. Tes conversations non chiffrées existantes passeront en lecture seule, et un nouveau message privé avec toi ne pourra commencer que s'il peut être chiffré. Les messages privés chiffrés nécessitent l'application de bureau tyto.chat.",
+  "refuse_plain_dms_confirm_title": "N'utiliser que des messages privés chiffrés ?",
+  "refuse_plain_dms_confirm": "Activer",
+  "refuse_plain_dms_disabled": "Ce serveur a désactivé les messages privés chiffrés : impossible de l'activer. S'il est activé, tu peux le désactiver.",
+  "refuse_plain_dms_required": "Ce serveur exige que tous les messages privés soient chiffrés.",
+  "refuse_plain_dms_save_failed": "Impossible d'enregistrer ce réglage.",
+  "refuse_plain_dms_check_failed": "Impossible de vérifier ce qui est enregistré : l'interrupteur reste verrouillé.",
+  "refuse_plain_dms_retry": "Réessayer"
 }

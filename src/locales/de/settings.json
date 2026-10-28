@@ -249,5 +249,16 @@
   "blocked_users_empty": "Du hast niemanden blockiert.",
   "blocked_users_since": "Blockiert am {{date}}",
   "blocked_users_not_in_effect": "Nicht wirksam, solange diese Person Moderator oder Administrator ist",
-  "blocked_users_unblock": "Blockierung aufheben"
+  "blocked_users_unblock": "Blockierung aufheben",
+  "direct_messages_section": "Direktnachrichten",
+  "refuse_plain_dms": "Nur an Ende-zu-Ende-verschlüsselten Direktnachrichten teilnehmen",
+  "refuse_plain_dms_hint": "Wenn aktiv, nimmst du nur an verschlüsselten Direktnachrichten teil. Sie brauchen die tyto.chat-Desktop-App.",
+  "refuse_plain_dms_consequence": "Du nimmst nicht mehr an unverschlüsselten Direktnachrichten teil, auch nicht in Gruppen. Deine bestehenden unverschlüsselten Unterhaltungen werden schreibgeschützt, und eine neue Direktnachricht mit dir kann nur beginnen, wenn sie verschlüsselt werden kann. Verschlüsselte Direktnachrichten brauchen die tyto.chat-Desktop-App.",
+  "refuse_plain_dms_confirm_title": "Nur verschlüsselte Direktnachrichten verwenden?",
+  "refuse_plain_dms_confirm": "Aktivieren",
+  "refuse_plain_dms_disabled": "Dieser Server hat verschlüsselte Direktnachrichten abgeschaltet, daher lässt sich das nicht aktivieren. Ist es aktiv, kannst du es ausschalten.",
+  "refuse_plain_dms_required": "Dieser Server verlangt, dass alle Direktnachrichten verschlüsselt sind.",
+  "refuse_plain_dms_save_failed": "Diese Einstellung konnte nicht gespeichert werden.",
+  "refuse_plain_dms_check_failed": "Der gespeicherte Wert konnte nicht geprüft werden, daher bleibt der Schalter gesperrt.",
+  "refuse_plain_dms_retry": "Erneut versuchen"
 }

@@ -249,5 +249,16 @@
   "blocked_users_empty": "No has bloqueado a nadie.",
   "blocked_users_since": "Bloqueado el {{date}}",
   "blocked_users_not_in_effect": "Sin efecto mientras esta persona sea moderadora o administradora",
-  "blocked_users_unblock": "Desbloquear"
+  "blocked_users_unblock": "Desbloquear",
+  "direct_messages_section": "Mensajes directos",
+  "refuse_plain_dms": "Participar solo en mensajes directos cifrados de extremo a extremo",
+  "refuse_plain_dms_hint": "Si está activado, solo participas en mensajes directos cifrados. Necesitan la aplicación de escritorio de tyto.chat.",
+  "refuse_plain_dms_consequence": "Dejarás de participar en mensajes directos sin cifrar, también en grupo. Tus conversaciones sin cifrar existentes pasarán a ser de solo lectura, y solo se podrá iniciar un nuevo mensaje directo contigo si puede cifrarse. Los mensajes directos cifrados necesitan la aplicación de escritorio de tyto.chat.",
+  "refuse_plain_dms_confirm_title": "¿Usar solo mensajes directos cifrados?",
+  "refuse_plain_dms_confirm": "Activar",
+  "refuse_plain_dms_disabled": "Este servidor ha desactivado los mensajes directos cifrados, así que no se puede activar. Si está activado, puedes desactivarlo.",
+  "refuse_plain_dms_required": "Este servidor exige que todos los mensajes directos estén cifrados.",
+  "refuse_plain_dms_save_failed": "No se pudo guardar este ajuste.",
+  "refuse_plain_dms_check_failed": "No se pudo comprobar lo que está guardado, así que el interruptor sigue bloqueado.",
+  "refuse_plain_dms_retry": "Reintentar"
 }

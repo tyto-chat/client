@@ -40,6 +40,7 @@ export function useUpdateUserPreference() {
       if (ctx?.previous) {
         queryClient.setQueryData(queryKeys.userPreferences(), ctx.previous);
       }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.userPreferences() });
     },
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.userPreferences(), data);

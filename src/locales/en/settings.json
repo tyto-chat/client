@@ -249,5 +249,16 @@
   "blocked_users_empty": "You haven't blocked anyone.",
   "blocked_users_since": "Blocked {{date}}",
   "blocked_users_not_in_effect": "Not in effect while this person is a moderator or administrator",
-  "blocked_users_unblock": "Unblock"
+  "blocked_users_unblock": "Unblock",
+  "direct_messages_section": "Direct messages",
+  "refuse_plain_dms": "Only take part in end-to-end encrypted direct messages",
+  "refuse_plain_dms_hint": "When on, you take part only in encrypted direct messages. Encrypted direct messages need the tyto.chat desktop app.",
+  "refuse_plain_dms_consequence": "You will no longer take part in unencrypted direct messages, including group DMs. Your existing unencrypted conversations become read-only, and a new direct message with you can only be started if it can be encrypted. Encrypted direct messages need the tyto.chat desktop app.",
+  "refuse_plain_dms_confirm_title": "Only use encrypted direct messages?",
+  "refuse_plain_dms_confirm": "Turn on",
+  "refuse_plain_dms_disabled": "This server has turned off encrypted direct messages, so this can't be turned on. If it is on, you can turn it off.",
+  "refuse_plain_dms_required": "This server requires all direct messages to be encrypted.",
+  "refuse_plain_dms_save_failed": "Could not save this setting.",
+  "refuse_plain_dms_check_failed": "Could not check what is stored, so the switch stays locked.",
+  "refuse_plain_dms_retry": "Try again"
 }

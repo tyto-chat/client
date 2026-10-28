@@ -18,6 +18,7 @@ export interface UserPreferences {
   remoteContent: RemoteContentLevel | null;
   remoteContentHosts: string[] | null;
   autoplayGifs: boolean | null;
+  refusePlainDms: boolean | null;
   updatedAt: string;
 }
 

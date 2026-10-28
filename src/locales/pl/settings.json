@@ -251,5 +251,16 @@
   "blocked_users_empty": "Nikogo nie zablokowałeś.",
   "blocked_users_since": "Zablokowano {{date}}",
   "blocked_users_not_in_effect": "Nieaktywne, dopóki ta osoba jest moderatorem lub administratorem",
-  "blocked_users_unblock": "Odblokuj"
+  "blocked_users_unblock": "Odblokuj",
+  "direct_messages_section": "Wiadomości prywatne",
+  "refuse_plain_dms": "Uczestnicz tylko w wiadomościach prywatnych szyfrowanych end-to-end",
+  "refuse_plain_dms_hint": "Po włączeniu uczestniczysz tylko w szyfrowanych wiadomościach prywatnych. Wymagają one aplikacji desktopowej tyto.chat.",
+  "refuse_plain_dms_consequence": "Nie będziesz już uczestniczyć w nieszyfrowanych wiadomościach prywatnych, także grupowych. Twoje istniejące nieszyfrowane rozmowy staną się tylko do odczytu, a nową rozmowę z Tobą będzie można zacząć tylko wtedy, gdy da się ją zaszyfrować. Szyfrowane wiadomości prywatne wymagają aplikacji desktopowej tyto.chat.",
+  "refuse_plain_dms_confirm_title": "Używać tylko szyfrowanych wiadomości prywatnych?",
+  "refuse_plain_dms_confirm": "Włącz",
+  "refuse_plain_dms_disabled": "Ten serwer wyłączył szyfrowane wiadomości prywatne, więc nie można tego włączyć. Jeśli jest włączone, możesz to wyłączyć.",
+  "refuse_plain_dms_required": "Ten serwer wymaga szyfrowania wszystkich wiadomości prywatnych.",
+  "refuse_plain_dms_save_failed": "Nie udało się zapisać tego ustawienia.",
+  "refuse_plain_dms_check_failed": "Nie udało się sprawdzić, co jest zapisane, więc przełącznik pozostaje zablokowany.",
+  "refuse_plain_dms_retry": "Spróbuj ponownie"
 }

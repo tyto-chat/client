@@ -249,5 +249,16 @@
   "blocked_users_empty": "Não bloqueaste ninguém.",
   "blocked_users_since": "Bloqueado em {{date}}",
   "blocked_users_not_in_effect": "Sem efeito enquanto esta pessoa for moderadora ou administradora",
-  "blocked_users_unblock": "Desbloquear"
+  "blocked_users_unblock": "Desbloquear",
+  "direct_messages_section": "Mensagens diretas",
+  "refuse_plain_dms": "Participar apenas de mensagens diretas criptografadas de ponta a ponta",
+  "refuse_plain_dms_hint": "Ativado, você participa apenas de mensagens diretas criptografadas. Elas precisam do aplicativo de desktop do tyto.chat.",
+  "refuse_plain_dms_consequence": "Você não vai mais participar de mensagens diretas não criptografadas, inclusive em grupo. Suas conversas não criptografadas existentes ficarão somente leitura, e uma nova mensagem direta com você só poderá começar se puder ser criptografada. Mensagens diretas criptografadas precisam do aplicativo de desktop do tyto.chat.",
+  "refuse_plain_dms_confirm_title": "Usar só mensagens diretas criptografadas?",
+  "refuse_plain_dms_confirm": "Ativar",
+  "refuse_plain_dms_disabled": "Este servidor desativou as mensagens diretas criptografadas, então isto não pode ser ativado. Se estiver ativado, você pode desativá-lo.",
+  "refuse_plain_dms_required": "Este servidor exige que todas as mensagens diretas sejam criptografadas.",
+  "refuse_plain_dms_save_failed": "Não foi possível salvar esta configuração.",
+  "refuse_plain_dms_check_failed": "Não foi possível verificar o que está salvo, então o botão continua bloqueado.",
+  "refuse_plain_dms_retry": "Tentar de novo"
 }

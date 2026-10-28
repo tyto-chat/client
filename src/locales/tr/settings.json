@@ -249,5 +249,16 @@
   "blocked_users_empty": "Kimseyi engellemedin.",
   "blocked_users_since": "{{date}} tarihinde engellendi",
   "blocked_users_not_in_effect": "Bu kişi moderatör veya yönetici olduğu sürece geçerli değil",
-  "blocked_users_unblock": "Engeli kaldır"
+  "blocked_users_unblock": "Engeli kaldır",
+  "direct_messages_section": "Doğrudan mesajlar",
+  "refuse_plain_dms": "Yalnızca uçtan uca şifreli doğrudan mesajlara katıl",
+  "refuse_plain_dms_hint": "Açıkken yalnızca şifreli doğrudan mesajlara katılırsın. Bunlar için tyto.chat masaüstü uygulaması gerekir.",
+  "refuse_plain_dms_consequence": "Grup mesajları dahil, şifresiz doğrudan mesajlara artık katılmayacaksın. Mevcut şifresiz konuşmaların salt okunur olacak ve seninle yeni bir doğrudan mesaj yalnızca şifrelenebiliyorsa başlatılabilecek. Şifreli doğrudan mesajlar için tyto.chat masaüstü uygulaması gerekir.",
+  "refuse_plain_dms_confirm_title": "Yalnızca şifreli doğrudan mesajlar kullanılsın mı?",
+  "refuse_plain_dms_confirm": "Aç",
+  "refuse_plain_dms_disabled": "Bu sunucu şifreli doğrudan mesajları kapattı, bu yüzden bu açılamaz. Açıksa kapatabilirsin.",
+  "refuse_plain_dms_required": "Bu sunucu tüm doğrudan mesajların şifreli olmasını gerektiriyor.",
+  "refuse_plain_dms_save_failed": "Bu ayar kaydedilemedi.",
+  "refuse_plain_dms_check_failed": "Kayıtlı değer kontrol edilemedi, bu yüzden anahtar kilitli kalıyor.",
+  "refuse_plain_dms_retry": "Tekrar dene"
 }

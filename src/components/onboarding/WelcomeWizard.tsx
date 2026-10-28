@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,10 +9,13 @@ import { fetchMyCommunityMemberships } from "@/api/membership";
 import { Avatar } from "@/components/Avatar";
 import { apiErrorText, avatarUrl as getAvatarUrl } from "@/api/client";
 import { communityMemberIdSet, isCommunityMember } from "@/utils/membership";
-import type { Community, User } from "@/types/api";
+import { useServerInfo } from "@/hooks/useServerInfo";
+import { useUpdateUserPreference, useUserPreferences } from "@/queries/userPreferencesQueries";
+import { Switch } from "@/components/ui/Switch";
+import type { Community, EncryptedDmsMode, User } from "@/types/api";
 import { WizardPrimaryButton, WizardRail } from "./wizardUi";
 
-type Step = 1 | 2;
+type Step = 1 | 2 | 3;
 
 export function WelcomeWizard({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
@@ -24,9 +27,19 @@ function WelcomeWizardInner({ user, onClose }: { user: User; onClose: () => void
   const { t, i18n } = useTranslation(["auth", "settings"]);
   const { refreshUser } = useAuth();
   const joinCommunityMutation = useJoinCommunity();
+  const updatePreference = useUpdateUserPreference();
+  const encryptionMode = useServerInfo()?.encryptedDmsMode;
+  const hasEncryptionStep = encryptionMode === "enabled" || encryptionMode === "required";
+  const lastStep: Step = hasEncryptionStep ? 3 : 2;
+  const { data: prefs } = useUserPreferences({ enabled: encryptionMode === "enabled" });
+  const savedRefusal = prefs?.refusePlainDms === true;
+  const refusalKnown = prefs !== undefined;
+  const [refusalChoice, setRefusalChoice] = useState<boolean | null>(null);
+  const refusePlainDms = refusalChoice ?? savedRefusal;
 
   const [step, setStep] = useState<Step>(1);
   const [busy, setBusy] = useState(false);
+  const finishing = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const [displayName, setDisplayName] = useState(user.profile.name);
@@ -111,15 +124,21 @@ function WelcomeWizardInner({ user, onClose }: { user: User; onClose: () => void
   }
 
   async function finish() {
+    if (finishing.current) return;
+    finishing.current = true;
     setBusy(true);
     setError(null);
     try {
+      if (encryptionMode === "enabled" && refusalKnown && refusalChoice !== null) {
+        await updatePreference.mutateAsync({ refusePlainDms: refusalChoice });
+      }
       await completeUserOnboarding();
       await refreshUser();
       onClose();
     } catch (e) {
       setError(apiErrorText(e, t("welcome_save_failed")));
     } finally {
+      finishing.current = false;
       setBusy(false);
     }
   }
@@ -127,7 +146,10 @@ function WelcomeWizardInner({ user, onClose }: { user: User; onClose: () => void
   const heads: Record<Step, { title: string; sub: string }> = {
     1: { title: t("welcome_title"), sub: t("welcome_subtitle") },
     2: { title: t("welcome_communities_title"), sub: t("welcome_communities_intro") },
+    3: { title: t("welcome_encryption_title"), sub: t("welcome_encryption_intro") },
   };
+  const stepLabels = [t("welcome_step_profile"), t("welcome_step_communities")];
+  if (hasEncryptionStep) stepLabels.push(t("welcome_step_encryption"));
 
   return (
     <div
@@ -143,7 +165,7 @@ function WelcomeWizardInner({ user, onClose }: { user: User; onClose: () => void
         <WizardRail
           eyebrow={t("welcome_eyebrow")}
           note={t("welcome_rail_note")}
-          steps={[t("welcome_step_profile"), t("welcome_step_communities")]}
+          steps={stepLabels}
           current={step}
         />
 
@@ -195,6 +217,15 @@ function WelcomeWizardInner({ user, onClose }: { user: User; onClose: () => void
                 onJoin={(c) => void joinOne(c)}
               />
             )}
+            {step === 3 && encryptionMode && (
+              <EncryptionStep
+                t={t}
+                mode={encryptionMode}
+                refusePlainDms={refusePlainDms}
+                locked={busy || !refusalKnown}
+                onToggle={() => setRefusalChoice(!refusePlainDms)}
+              />
+            )}
 
             {error && <p className="text-xs text-danger">{error}</p>}
           </div>
@@ -203,7 +234,7 @@ function WelcomeWizardInner({ user, onClose }: { user: User; onClose: () => void
             <button
               type="button"
               disabled={step === 1 || busy}
-              onClick={() => setStep(1)}
+              onClick={() => setStep(step === 3 ? 2 : 1)}
               className="rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-fg hover:bg-surface disabled:opacity-30"
             >
               {t("welcome_back")}
@@ -216,7 +247,14 @@ function WelcomeWizardInner({ user, onClose }: { user: User; onClose: () => void
                   label={t("welcome_next")}
                 />
               )}
-              {step === 2 && (
+              {step < lastStep && step > 1 && (
+                <WizardPrimaryButton
+                  disabled={busy}
+                  onClick={() => setStep(3)}
+                  label={t("welcome_next")}
+                />
+              )}
+              {step === lastStep && (
                 <WizardPrimaryButton
                   disabled={busy}
                   onClick={() => void finish()}
@@ -456,6 +494,45 @@ function CommunitiesStep({
         </ul>
       )}
       <p className="text-xs text-fg-muted">{t("welcome_communities_skip_hint")}</p>
+    </div>
+  );
+}
+
+function EncryptionStep({
+  t,
+  mode,
+  refusePlainDms,
+  locked,
+  onToggle,
+}: {
+  t: T;
+  mode: EncryptedDmsMode;
+  refusePlainDms: boolean;
+  locked: boolean;
+  onToggle: () => void;
+}) {
+  if (mode === "required") {
+    return (
+      <p className="rounded-lg border border-line bg-surface px-3 py-3 text-sm text-fg">
+        {t("welcome_encryption_required")}
+      </p>
+    );
+  }
+  return (
+    <div className="rounded-lg border border-line bg-surface px-3 py-3">
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-sm font-medium text-fg">{t("welcome_refuse_plain_dms")}</p>
+        <Switch
+          checked={refusePlainDms}
+          disabled={locked}
+          onChange={onToggle}
+          testId="welcome-refuse-plain-dms"
+          label={t("welcome_refuse_plain_dms")}
+        />
+      </div>
+      <p className="mt-1.5 max-w-[52ch] text-xs text-fg-muted">
+        {t("welcome_refuse_plain_dms_consequence")}
+      </p>
     </div>
   );
 }

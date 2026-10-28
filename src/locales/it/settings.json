@@ -249,5 +249,16 @@
   "blocked_users_empty": "Non hai bloccato nessuno.",
   "blocked_users_since": "Bloccato il {{date}}",
   "blocked_users_not_in_effect": "Non attivo finché questa persona è moderatore o amministratore",
-  "blocked_users_unblock": "Sblocca"
+  "blocked_users_unblock": "Sblocca",
+  "direct_messages_section": "Messaggi diretti",
+  "refuse_plain_dms": "Partecipa solo a messaggi diretti crittografati end-to-end",
+  "refuse_plain_dms_hint": "Se attivo, partecipi solo a messaggi diretti crittografati. Richiedono l'app desktop di tyto.chat.",
+  "refuse_plain_dms_consequence": "Non parteciperai più a messaggi diretti non crittografati, anche di gruppo. Le tue conversazioni non crittografate esistenti diventeranno di sola lettura, e un nuovo messaggio diretto con te potrà iniziare solo se può essere crittografato. I messaggi diretti crittografati richiedono l'app desktop di tyto.chat.",
+  "refuse_plain_dms_confirm_title": "Usare solo messaggi diretti crittografati?",
+  "refuse_plain_dms_confirm": "Attiva",
+  "refuse_plain_dms_disabled": "Questo server ha disattivato i messaggi diretti crittografati, quindi non si può attivare. Se è attivo, puoi disattivarlo.",
+  "refuse_plain_dms_required": "Questo server richiede che tutti i messaggi diretti siano crittografati.",
+  "refuse_plain_dms_save_failed": "Impossibile salvare questa impostazione.",
+  "refuse_plain_dms_check_failed": "Impossibile verificare cosa è salvato, quindi l'interruttore resta bloccato.",
+  "refuse_plain_dms_retry": "Riprova"
 }

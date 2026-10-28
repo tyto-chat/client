@@ -61,7 +61,10 @@ test.describe.serial("Welcome wizard", () => {
 
       await expect(page.getByText("Set up your profile")).toBeVisible({ timeout: T(15_000) });
       await page.getByRole("button", { name: "Next" }).click();
+      await expect(page.getByText("Find your people")).toBeVisible({ timeout: T(10_000) });
+      await page.getByRole("button", { name: "Next" }).click();
 
+      await expect(page.getByText("Encrypted direct messages")).toBeVisible({ timeout: T(10_000) });
       await expect(page.getByRole("button", { name: "Done" })).toBeVisible({ timeout: T(10_000) });
       await page.getByRole("button", { name: "Done" }).click();
 

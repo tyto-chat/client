@@ -249,5 +249,16 @@
   "blocked_users_empty": "Je hebt niemand geblokkeerd.",
   "blocked_users_since": "Geblokkeerd op {{date}}",
   "blocked_users_not_in_effect": "Niet actief zolang deze persoon moderator of beheerder is",
-  "blocked_users_unblock": "Deblokkeren"
+  "blocked_users_unblock": "Deblokkeren",
+  "direct_messages_section": "Privéberichten",
+  "refuse_plain_dms": "Alleen deelnemen aan end-to-end versleutelde privéberichten",
+  "refuse_plain_dms_hint": "Als dit aan staat, neem je alleen deel aan versleutelde privéberichten. Die hebben de tyto.chat-desktopapp nodig.",
+  "refuse_plain_dms_consequence": "Je neemt niet meer deel aan onversleutelde privéberichten, ook niet in groepen. Je bestaande onversleutelde gesprekken worden alleen-lezen, en een nieuw privébericht met jou kan alleen starten als het versleuteld kan worden. Versleutelde privéberichten hebben de tyto.chat-desktopapp nodig.",
+  "refuse_plain_dms_confirm_title": "Alleen versleutelde privéberichten gebruiken?",
+  "refuse_plain_dms_confirm": "Inschakelen",
+  "refuse_plain_dms_disabled": "Deze server heeft versleutelde privéberichten uitgeschakeld, dus dit kan niet aan. Staat het aan, dan kun je het uitzetten.",
+  "refuse_plain_dms_required": "Deze server vereist dat alle privéberichten versleuteld zijn.",
+  "refuse_plain_dms_save_failed": "Deze instelling kon niet worden opgeslagen.",
+  "refuse_plain_dms_check_failed": "Kon niet controleren wat er is opgeslagen, dus de schakelaar blijft vergrendeld.",
+  "refuse_plain_dms_retry": "Opnieuw proberen"
 }
