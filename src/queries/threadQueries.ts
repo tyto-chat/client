@@ -6,16 +6,33 @@ import { createThreadReply, fetchThreadReplies } from "@/api/threads";
 import { patchMessageInPages, makeOptimisticMessage } from "@/queries/messageQueries";
 import { queryKeys } from "@/queries/queryKeys";
 import { uuidFromIri } from "@/api/hydra";
-import { ApiError } from "@/api/client";
 import type { ChannelPage, Message, User } from "@/types/api";
 import { editEncrypted, sendEncrypted, type ConversationSession } from "@/e2ee/conversationSession";
+import { admitMessages, assertPlainWriteAllowed, conversationFromCache } from "@/e2ee/admission";
+import { isReadOnlyError, refreshConversationPolicy } from "@/queries/conversationPolicy";
 
 export const THREAD_PAGE_SIZE = 50;
 
-export function useThreadReplies(rootIri: string | null) {
+function admitReplies(
+  queryClient: ReturnType<typeof useQueryClient>,
+  conversationIdentifier: string | undefined,
+  replies: Message[],
+): Message[] {
+  return conversationIdentifier === undefined
+    ? replies
+    : admitMessages(conversationFromCache(queryClient, conversationIdentifier), replies);
+}
+
+export function useThreadReplies(rootIri: string | null, conversationIdentifier?: string) {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: queryKeys.threadReplies(rootIri ?? ""),
-    queryFn: () => fetchThreadReplies(uuidFromIri(rootIri!), { limit: THREAD_PAGE_SIZE }),
+    queryFn: async () =>
+      admitReplies(
+        queryClient,
+        conversationIdentifier,
+        await fetchThreadReplies(uuidFromIri(rootIri!), { limit: THREAD_PAGE_SIZE }),
+      ),
     enabled: !!rootIri,
     staleTime: StaleTime.short,
   });
@@ -32,10 +49,11 @@ export function useReplyToMessage(
   const threadKey = queryKeys.threadReplies(rootIri);
 
   return useMutation({
-    mutationFn: ({ text, attachmentIris }: { text: string; attachmentIris?: string[] }) =>
-      session !== null
-        ? sendEncrypted(session, text, rootIri)
-        : createThreadReply(uuidFromIri(rootIri), text, attachmentIris ?? []),
+    mutationFn: ({ text, attachmentIris }: { text: string; attachmentIris?: string[] }) => {
+      if (session !== null) return sendEncrypted(session, text, rootIri);
+      if (conversationIdentifier) assertPlainWriteAllowed(queryClient, conversationIdentifier);
+      return createThreadReply(uuidFromIri(rootIri), text, attachmentIris ?? []);
+    },
     onMutate: async ({ text }) => {
       await queryClient.cancelQueries({ queryKey: threadKey });
       const previousThread = queryClient.getQueryData<Message[]>(threadKey);
@@ -59,10 +77,8 @@ export function useReplyToMessage(
     onError: (err, _vars, context) => {
       if (context?.previousThread) queryClient.setQueryData(threadKey, context.previousThread);
       if (context?.previousPages) queryClient.setQueryData(pagesKey, context.previousPages);
-      if (conversationIdentifier && err instanceof ApiError && err.status === 422) {
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.conversation(conversationIdentifier),
-        });
+      if (conversationIdentifier && isReadOnlyError(err)) {
+        refreshConversationPolicy(queryClient, conversationIdentifier);
       }
     },
     onSettled: () => {
@@ -71,16 +87,20 @@ export function useReplyToMessage(
   });
 }
 
-export function useLoadEarlierReplies(rootIri: string) {
+export function useLoadEarlierReplies(rootIri: string, conversationIdentifier?: string) {
   const queryClient = useQueryClient();
   const threadKey = queryKeys.threadReplies(rootIri);
 
   return useMutation({
-    mutationFn: (beforeIri: string) =>
-      fetchThreadReplies(uuidFromIri(rootIri), {
-        before: uuidFromIri(beforeIri),
-        limit: THREAD_PAGE_SIZE,
-      }),
+    mutationFn: async (beforeIri: string) =>
+      admitReplies(
+        queryClient,
+        conversationIdentifier,
+        await fetchThreadReplies(uuidFromIri(rootIri), {
+          before: uuidFromIri(beforeIri),
+          limit: THREAD_PAGE_SIZE,
+        }),
+      ),
     onSuccess: (earlier) => {
       queryClient.setQueryData<Message[]>(threadKey, (old) => {
         const existing = new Set((old ?? []).map((m) => m["@id"]));
@@ -90,13 +110,20 @@ export function useLoadEarlierReplies(rootIri: string) {
   });
 }
 
-export function useEditThreadReply(rootIri: string, session: ConversationSession | null = null) {
+export function useEditThreadReply(
+  rootIri: string,
+  session: ConversationSession | null = null,
+  conversationIdentifier?: string,
+) {
   const queryClient = useQueryClient();
   const threadKey = queryKeys.threadReplies(rootIri);
 
   return useMutation({
-    mutationFn: ({ messageIri, text }: { messageIri: string; text: string }) =>
-      session !== null ? editEncrypted(session, messageIri, text) : editMessage(messageIri, text),
+    mutationFn: ({ messageIri, text }: { messageIri: string; text: string }) => {
+      if (session !== null) return editEncrypted(session, messageIri, text);
+      if (conversationIdentifier) assertPlainWriteAllowed(queryClient, conversationIdentifier);
+      return editMessage(messageIri, text);
+    },
     onMutate: async ({ messageIri, text }) => {
       await queryClient.cancelQueries({ queryKey: threadKey });
       const previous = queryClient.getQueryData<Message[]>(threadKey);
@@ -122,8 +149,11 @@ export function useEditThreadReply(rootIri: string, session: ConversationSession
         ),
       );
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previous) queryClient.setQueryData(threadKey, context.previous);
+      if (conversationIdentifier && isReadOnlyError(err)) {
+        refreshConversationPolicy(queryClient, conversationIdentifier);
+      }
     },
   });
 }

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, it, expect, beforeEach, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
@@ -11,6 +11,28 @@ import { setServerInfo } from "@/api/serverInfo";
 import { TEST_BASE_URL as BASE } from "../../fixtures";
 import { PlainDmRefusalSection } from "@/components/preferences/PlainDmRefusalSection";
 import type { EncryptedDmsMode, ServerInfo } from "@/types/api";
+import { E2eeProvider } from "@/e2ee/E2eeContext";
+import { LocalSecurityState } from "@/e2ee/localSecurityState";
+import { setActiveSecurity } from "@/e2ee/admission";
+import { PlainDmRefusalMirror } from "@/components/dm/PlainDmRefusalMirror";
+import { memoryKeyStoreFactory } from "../../mocks/memoryKeyStore";
+
+const scope = { serverOrigin: BASE, serverUserId: 1, profileId: "p" };
+
+function securedWrapper(security: LocalSecurityState) {
+  return function SecuredWrapper({ children }: { children: ReactNode }) {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    return (
+      <QueryClientProvider client={queryClient}>
+        <E2eeProvider security={security} capable>
+          {children}
+        </E2eeProvider>
+      </QueryClientProvider>
+    );
+  };
+}
 
 let patches: Record<string, unknown>[];
 
@@ -41,7 +63,52 @@ beforeEach(() => {
   patches = [];
 });
 
+afterEach(() => setActiveSecurity(null));
+
 describe("PlainDmRefusalSection", () => {
+  it("writes the refusal locally before telling the server", async () => {
+    serve("enabled", null);
+    const security = await LocalSecurityState.open(memoryKeyStoreFactory()(), scope);
+    const user = userEvent.setup();
+    render(<PlainDmRefusalSection />, { wrapper: securedWrapper(security) });
+
+    await user.click(await screen.findByTestId("pref-refuse-plain-dms"));
+    await user.click(await screen.findByTestId("confirm-dialog-confirm"));
+
+    await waitFor(() => expect(patches).toEqual([{ refusePlainDms: true }]));
+    expect(security.snapshot().refusal.on).toBe(true);
+  });
+
+  it("server_cannot_clear_local_refusal", async () => {
+    serve("enabled", false);
+    const security = await LocalSecurityState.open(memoryKeyStoreFactory()(), scope);
+    await security.turnRefusalOn([]);
+    render(
+      <>
+        <PlainDmRefusalSection />
+        <PlainDmRefusalMirror />
+      </>,
+      { wrapper: securedWrapper(security) },
+    );
+
+    expect(await screen.findByRole("switch", { checked: true })).toBeInTheDocument();
+    await waitFor(() => expect(patches).toEqual([{ refusePlainDms: true }]));
+    expect(security.snapshot().refusal.on).toBe(true);
+  });
+
+  it("only the user turns the local refusal off", async () => {
+    serve("enabled", true);
+    const security = await LocalSecurityState.open(memoryKeyStoreFactory()(), scope);
+    await security.turnRefusalOn([]);
+    const user = userEvent.setup();
+    render(<PlainDmRefusalSection />, { wrapper: securedWrapper(security) });
+
+    await user.click(await screen.findByRole("switch", { checked: true }));
+
+    await waitFor(() => expect(patches).toEqual([{ refusePlainDms: false }]));
+    expect(security.snapshot().refusal.on).toBe(false);
+  });
+
   it("settings_row_confirms_consequence_before_enabling", async () => {
     serve("enabled", null);
     const user = userEvent.setup();

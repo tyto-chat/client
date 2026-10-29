@@ -332,6 +332,25 @@ describe("KeyStore", () => {
     expect(await store().loadDeviceState(alice)).toEqual(Uint8Array.of(2));
   });
 
+  it("writes an updated record and its backup entries together", async () => {
+    const keys = store();
+
+    await keys.updateRecord(alice, "security", "refusal", () => ({
+      data: Uint8Array.of(1),
+      result: undefined,
+      backupRecords: [Uint8Array.of(5)],
+    }));
+    await keys.updateRecord(alice, "security", "refusal", () => ({
+      data: null,
+      result: undefined,
+      backupRecords: [Uint8Array.of(6)],
+    }));
+
+    expect(await keys.getRecord(alice, "security", "refusal")).toEqual(Uint8Array.of(1));
+    expect(await keys.pendingBackupRecords(alice)).toEqual([Uint8Array.of(5)]);
+    expect(await keys.pendingBackupRecords(bob)).toEqual([]);
+  });
+
   it("fails instead of waiting when an older window blocks the upgrade", async () => {
     const old = await openVersionOne();
     const keys = store();
@@ -365,7 +384,7 @@ describe("KeyStore", () => {
     await keys.saveDeviceState(alice, Uint8Array.of(1));
 
     const newer = await new Promise<string>((resolve) => {
-      const open = idb.open(KeyStore.DATABASE, 4);
+      const open = idb.open(KeyStore.DATABASE, 5);
       open.onblocked = () => resolve("blocked");
       open.onsuccess = () => {
         open.result.close();

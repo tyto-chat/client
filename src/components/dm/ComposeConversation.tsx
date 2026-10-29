@@ -19,6 +19,7 @@ import { fetchUser } from "@/api/users";
 import { avatarUrl } from "@/api/client";
 import { useE2ee } from "@/e2ee/e2eeContextValue";
 import { composeOutcome, type ComposeOutcome } from "@/e2ee/composeOutcome";
+import { decideLocally, enforceLocally, type LocalDecision } from "@/e2ee/policy";
 import { createEncryptedConversation, sendEncrypted } from "@/e2ee/conversationSession";
 import { e2eeErrorKey } from "@/e2ee/e2eeErrors";
 import { AlertTriangleIcon } from "@/components/icons";
@@ -77,7 +78,7 @@ export function ComposeConversation({
     text: string;
     settle: (sent: Promise<void> | null) => void;
   } | null>(null);
-  const { identity, availability } = useE2ee();
+  const { identity, availability, security, securitySnapshot } = useE2ee();
   const mode = useServerInfo()?.encryptedDmsMode;
 
   const { data: invitable } = useQuery({
@@ -118,6 +119,14 @@ export function ComposeConversation({
   }
 
   const memberIds = useMemo(() => selected.map((u) => u.id), [selected]);
+  const localDecision = useMemo<LocalDecision>(
+    () =>
+      isRemote
+        ? { kind: "free" }
+        : decideLocally({ security: securitySnapshot, recipientIds: memberIds }),
+    [isRemote, securitySnapshot, memberIds],
+  );
+  const blockedLocally = localDecision.kind === "blocked";
   const preflight = useQuery({
     queryKey: [
       "conversationPreflight",
@@ -135,7 +144,7 @@ export function ComposeConversation({
       }
       return fetchConversationPreflight(memberIds);
     },
-    enabled: memberIds.length > 0 && (!isRemote || !!remoteCtx),
+    enabled: memberIds.length > 0 && !blockedLocally && (!isRemote || !!remoteCtx),
     retry: false,
     staleTime: 0,
   });
@@ -143,12 +152,15 @@ export function ComposeConversation({
     () => ({ availability, recipientCount: memberIds.length, otherServer: isRemote, mode }),
     [availability, memberIds.length, isRemote, mode],
   );
-  const outcome: ComposeOutcome | null = preflight.data
-    ? composeOutcome(preflight.data, outcomeContext)
-    : null;
-  const preflightError = preflight.error
-    ? apiErrorText(preflight.error, t("e2ee_blocked_generic"))
-    : null;
+  const outcome: ComposeOutcome | null = blockedLocally
+    ? enforceLocally(localDecision, { kind: "plain" })
+    : preflight.data
+      ? enforceLocally(localDecision, composeOutcome(preflight.data, outcomeContext))
+      : null;
+  const preflightError =
+    preflight.error && !blockedLocally
+      ? apiErrorText(preflight.error, t("e2ee_blocked_generic"))
+      : null;
   const nameOf = useCallback(
     (ids: number[]) =>
       ids
@@ -232,7 +244,9 @@ export function ComposeConversation({
           await sendEncrypted(identity.session(conversation), text);
           void queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
         } else {
+          if (localDecision.kind !== "free") throw new Error("plain refused locally");
           conversation = await createConversation.mutateAsync(memberIds);
+          await security?.acceptPlainConversation(conversation.id).catch(() => undefined);
           await createConversationMessage(conversation.identifier, text);
         }
         void navigate({
@@ -257,6 +271,8 @@ export function ComposeConversation({
       composeIdentityId,
       memberIds,
       identity,
+      localDecision,
+      security,
       queryClient,
       createConversation,
       navigate,
@@ -275,7 +291,9 @@ export function ComposeConversation({
       let current = outcome;
       if (current === null) {
         const fresh = (await preflight.refetch()).data;
-        current = fresh ? composeOutcome(fresh, outcomeContext) : null;
+        current = fresh
+          ? enforceLocally(localDecision, composeOutcome(fresh, outcomeContext))
+          : null;
       }
       if (current === null) return;
       if (current.kind === "encrypted") return createAndSend(text, "encrypted");
@@ -290,7 +308,7 @@ export function ComposeConversation({
         });
       }
     },
-    [selected.length, outcome, preflight, outcomeContext, createAndSend, notify, t],
+    [selected.length, outcome, preflight, outcomeContext, localDecision, createAndSend, notify, t],
   );
 
   const outcomePanel =

@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useSearchHotkey } from "@/hooks/useSearchHotkey";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { type InfiniteData } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,6 +51,16 @@ import { E2eeUnavailablePlaceholder } from "@/components/dm/E2eeUnavailablePlace
 import { useConversationSession, useE2ee } from "@/e2ee/e2eeContextValue";
 import { e2eeErrorKey } from "@/e2ee/e2eeErrors";
 import { renderPolicyFor } from "@/e2ee/renderPolicy";
+import {
+  admitPage,
+  admitPlainContent,
+  hasPinnedPeer,
+  plainWriteRefusal,
+  subscribeAdmission,
+  wasDeclined,
+} from "@/e2ee/admission";
+import { DeclinedPlainNotice } from "@/components/dm/DeclinedPlainNotice";
+import { RefusedPlainConversationNotice } from "@/components/dm/RefusedPlainConversationNotice";
 import { useDecryptedMessages, useE2eeSessionStatus } from "@/queries/e2eeQueries";
 import { MessagePaneSkeleton } from "@/components/ui/Skeleton";
 import { SearchDialog } from "@/components/chat/SearchDialog";
@@ -80,11 +90,14 @@ export const Route = createFileRoute("/_app/dm/$conversationId")({
       ? prefetchBlockedUsers(queryClient, BLOCKS_LOADER_WAIT_MS)
       : Promise.resolve();
     try {
-      void queryClient.prefetchQuery({
-        queryKey: queryKeys.conversation(params.conversationId),
-        queryFn: () => fetchConversation(params.conversationId),
-      });
+      const conversationReady = queryClient
+        .fetchQuery({
+          queryKey: queryKeys.conversation(params.conversationId),
+          queryFn: () => fetchConversation(params.conversationId),
+        })
+        .catch(() => undefined);
       const pages = await fetchConversationPages(params.conversationId);
+      const conversation = await conversationReady;
       const latestPage = pages[pages.length - 1];
       const latestPageNumber = latestPage?.pageNumber ?? 1;
       let initialPageNumber = latestPageNumber;
@@ -104,7 +117,11 @@ export const Route = createFileRoute("/_app/dm/$conversationId")({
               replace: true,
             });
           }
-          if (target.conversationIdentifier && target.pageNumber) {
+          if (
+            target.conversationIdentifier &&
+            target.pageNumber &&
+            admitPlainContent(conversation, target) === "show"
+          ) {
             initialPageNumber = target.pageNumber;
             focusMessageId = target["@id"];
           }
@@ -118,7 +135,10 @@ export const Route = createFileRoute("/_app/dm/$conversationId")({
       }
 
       if (latestPage) {
-        const pageData = await fetchConversationPage(params.conversationId, initialPageNumber);
+        const pageData = admitPage(
+          conversation,
+          await fetchConversationPage(params.conversationId, initialPageNumber),
+        );
         queryClient.setQueryData<InfiniteData<ChannelPage, number>>(
           queryKeys.conversationPages(params.conversationId),
           { pages: [pageData], pageParams: [initialPageNumber] },
@@ -189,9 +209,22 @@ function ConversationPage() {
   }, [user, conversationId]);
 
   const { data: conversation, isLoading } = useConversation(conversationId);
-  const { availability } = useE2ee();
+  const { availability, security, securitySnapshot } = useE2ee();
   const session = useConversationSession(conversation);
   const encrypted = conversation?.encrypted === true;
+  const plainRefusal = plainWriteRefusal(conversation, securitySnapshot);
+  const declined = useSyncExternalStore(subscribeAdmission, () => wasDeclined(conversationId));
+  const acceptOnOpen =
+    !!conversation &&
+    !encrypted &&
+    securitySnapshot !== null &&
+    !securitySnapshot.acceptedPlainConversations.has(conversation.id) &&
+    !hasPinnedPeer(conversation, securitySnapshot);
+  useEffect(() => {
+    if (acceptOnOpen && conversation && security) {
+      void security.acceptPlainConversation(conversation.id).catch(() => undefined);
+    }
+  }, [acceptOnOpen, conversation, security]);
   const renderPolicy = renderPolicyFor(conversation);
   const { data: sessionStatus } = useE2eeSessionStatus(session);
   const e2eeNotReady = encrypted && sessionStatus !== "ready";
@@ -204,15 +237,19 @@ function ConversationPage() {
   const isMember = !!me;
   const isMuted = !!me?.mutedUntil;
   const isGroup = (conversation?.members.length ?? 0) > 2;
-  const writeLocked = conversation?.readOnly === true || e2eeNotReady;
+  const localReadOnly = plainRefusal === "self_refuses";
+  const writeLocked = conversation?.readOnly === true || localReadOnly || e2eeNotReady;
   const otherUserId = isGroup
     ? null
     : (conversation?.members.find((m) => m.userId !== user?.id)?.userId ?? null);
   const readOnlyBanner =
-    conversation?.readOnly === true ? (
+    conversation?.readOnly === true || localReadOnly ? (
       <ConversationReadOnlyBanner
-        reason={conversation.readOnlyReason ?? null}
+        reason={
+          conversation?.readOnly === true ? (conversation.readOnlyReason ?? null) : "self_refuses"
+        }
         otherUserId={otherUserId}
+        conversation={conversation}
       />
     ) : e2eeNotReady ? (
       <p
@@ -283,7 +320,7 @@ function ConversationPage() {
   const [threadRootIri, setThreadRootIri] = useState<string | null>(null);
   const [reportMessageIri, setReportMessageIri] = useState<string | null>(null);
   const { openProfile, profileCard } = useConversationProfileCard();
-  const { data: threadReplies } = useThreadReplies(threadRootIri);
+  const { data: threadReplies } = useThreadReplies(threadRootIri, conversationId);
   const { t: searchT } = Route.useSearch();
   if (searchT && focusMessageId && !threadRootIri) {
     setThreadRootIri(focusMessageId);
@@ -361,6 +398,15 @@ function ConversationPage() {
     return (
       <main className="flex flex-1 items-center justify-center text-fg-muted">
         {t("conversation_not_found")}
+      </main>
+    );
+  }
+
+  if (plainRefusal === "pinned_peer") {
+    return (
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <MobileTopBar title={title} />
+        <RefusedPlainConversationNotice conversation={conversation} />
       </main>
     );
   }
@@ -487,6 +533,7 @@ function ConversationPage() {
           </h1>
         </header>
 
+        {declined && <DeclinedPlainNotice />}
         {profileCard}
         {historyMessageIri && (
           <MessageHistoryModal

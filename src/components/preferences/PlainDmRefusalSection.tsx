@@ -4,7 +4,8 @@ import { SettingRow } from "@/components/preferences/SettingRow";
 import { sectionHeading } from "@/components/preferences/panelStyles";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useServerInfo } from "@/hooks/useServerInfo";
-import { useUpdateUserPreference, useUserPreferences } from "@/queries/userPreferencesQueries";
+import { useUserPreferences } from "@/queries/userPreferencesQueries";
+import { useLocalPlainDmRefusal, useSetPlainDmRefusal } from "@/queries/plainDmRefusalQueries";
 
 export function PlainDmRefusalSection() {
   const { t } = useTranslation("settings");
@@ -15,12 +16,13 @@ export function PlainDmRefusalSection() {
     isError: checkFailed,
     refetch,
   } = useUserPreferences({ enabled: mode !== undefined });
-  const update = useUpdateUserPreference();
+  const update = useSetPlainDmRefusal();
+  const localRefusal = useLocalPlainDmRefusal();
   const { confirm, confirmDialog } = useConfirm();
 
   if (mode === undefined) return null;
 
-  const refuses = prefs?.refusePlainDms === true;
+  const refuses = prefs?.refusePlainDms === true || localRefusal;
   const required = mode === "required";
   const checked = required || refuses;
   const locked =
@@ -38,7 +40,7 @@ export function PlainDmRefusalSection() {
   const toggle = async () => {
     if (update.isPending) return;
     if (refuses) {
-      update.mutate({ refusePlainDms: false });
+      update.mutate(false);
       return;
     }
     const ok = await confirm({
@@ -46,7 +48,7 @@ export function PlainDmRefusalSection() {
       message: t("refuse_plain_dms_consequence"),
       confirmLabel: t("refuse_plain_dms_confirm"),
     });
-    if (ok) update.mutate({ refusePlainDms: true });
+    if (ok) update.mutate(true);
   };
 
   return (

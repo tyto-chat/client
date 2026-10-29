@@ -210,7 +210,7 @@ describe("ComposeConversation identity picker", () => {
       http.get(`${ORIGIN_B}/api/v1/conversations/preflight`, () =>
         HttpResponse.json({
           outcome: "plain",
-          reason: null,
+          reason: "operator_disabled",
           refusingUserIds: [],
           unreachableUserIds: [],
           existingIdentifier: null,

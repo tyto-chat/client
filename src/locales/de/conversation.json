@@ -71,5 +71,17 @@
   "e2ee_plain_marker": "Nicht Ende-zu-Ende-verschlüsselt",
   "e2ee_too_long": "Diese Nachricht ist zu lang, um sie verschlüsselt zu senden.",
   "e2ee_identity_changed": "Die Verschlüsselungsidentität einer Person hat sich geändert. Senden ist pausiert, bis sie überprüft oder akzeptiert wurde.",
-  "e2ee_send_failed": "Die verschlüsselte Nachricht konnte nicht gesendet werden."
+  "e2ee_send_failed": "Die verschlüsselte Nachricht konnte nicht gesendet werden.",
+  "e2ee_plain_write_refused": "Du kannst hier nicht schreiben: Diese Unterhaltung ist nicht Ende-zu-Ende-verschlüsselt.",
+  "read_only_operator_required": "Dieser Server verlangt jetzt Ende-zu-Ende-verschlüsselte Direktnachrichten. Diese Unterhaltung ist nicht verschlüsselt und daher schreibgeschützt.",
+  "read_only_participant_refuses": "Jemand hier nimmt nur Ende-zu-Ende-verschlüsselte Direktnachrichten an. Diese Unterhaltung ist nicht verschlüsselt und daher schreibgeschützt.",
+  "read_only_self_refuses": "Du nimmst nur Ende-zu-Ende-verschlüsselte Direktnachrichten an. Diese Unterhaltung ist nicht verschlüsselt und daher schreibgeschützt.",
+  "e2ee_declined_plain": "Nachrichten, die eingetroffen sind, nachdem du unverschlüsselte Direktnachrichten abgelehnt hast, werden nicht angezeigt.",
+  "e2ee_refused_plain_title": "Diese Unterhaltung ist nicht Ende-zu-Ende-verschlüsselt",
+  "e2ee_refused_plain_body": "Diese Person schreibt dir verschlüsselt, und du hast diese unverschlüsselte Unterhaltung nicht begonnen. Sie bleibt daher geschlossen.",
+  "e2ee_start_encrypted": "Verschlüsselte Unterhaltung mit diesen Personen beginnen",
+  "e2ee_start_group_not_available": "Verschlüsselte Gruppenunterhaltungen gibt es noch nicht.",
+  "e2ee_start_unreachable": "{{names}} kann noch keine verschlüsselten Nachrichten empfangen.",
+  "e2ee_blocked_pinned_unreachable": "Du hast mit {{names}} verschlüsselt geschrieben, aber der Server meldet, dass jetzt keine verschlüsselte Nachricht möglich ist. Es wurde nichts unverschlüsselt gesendet.",
+  "e2ee_blocked_pinned_group": "Du schreibst mit {{names}} verschlüsselt, und verschlüsselte Gruppenunterhaltungen gibt es noch nicht."
 }

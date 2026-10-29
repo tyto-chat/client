@@ -44,8 +44,9 @@ export function composeOutcome(
         unreachableUserIds: preflight.unreachableUserIds,
       };
     case "plain":
-      return context.recipientCount > 1 && context.mode !== "disabled"
-        ? { kind: "plain_warning", unreachableUserIds: [], group: true }
-        : { kind: "plain" };
+      return preflight.reason === "operator_disabled" &&
+        (context.otherServer || context.mode === "disabled")
+        ? { kind: "plain" }
+        : { kind: "plain_warning", unreachableUserIds: [], group: context.recipientCount > 1 };
   }
 }

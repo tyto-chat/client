@@ -195,7 +195,7 @@ describe("compose outcome preview", () => {
 
   it("create_error_reruns_preflight_and_shows_outcome", async () => {
     usePreflight(
-      () => preflightReply("plain"),
+      () => preflightReply("plain", { reason: "operator_disabled" }),
       () =>
         preflightReply("blocked", {
           reason: "participant_refuses",

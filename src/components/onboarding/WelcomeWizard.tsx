@@ -10,7 +10,8 @@ import { Avatar } from "@/components/Avatar";
 import { apiErrorText, avatarUrl as getAvatarUrl } from "@/api/client";
 import { communityMemberIdSet, isCommunityMember } from "@/utils/membership";
 import { useServerInfo } from "@/hooks/useServerInfo";
-import { useUpdateUserPreference, useUserPreferences } from "@/queries/userPreferencesQueries";
+import { useUserPreferences } from "@/queries/userPreferencesQueries";
+import { useSetPlainDmRefusal } from "@/queries/plainDmRefusalQueries";
 import { Switch } from "@/components/ui/Switch";
 import type { Community, EncryptedDmsMode, User } from "@/types/api";
 import { WizardPrimaryButton, WizardRail } from "./wizardUi";
@@ -27,7 +28,7 @@ function WelcomeWizardInner({ user, onClose }: { user: User; onClose: () => void
   const { t, i18n } = useTranslation(["auth", "settings"]);
   const { refreshUser } = useAuth();
   const joinCommunityMutation = useJoinCommunity();
-  const updatePreference = useUpdateUserPreference();
+  const setRefusal = useSetPlainDmRefusal();
   const encryptionMode = useServerInfo()?.encryptedDmsMode;
   const hasEncryptionStep = encryptionMode === "enabled" || encryptionMode === "required";
   const lastStep: Step = hasEncryptionStep ? 3 : 2;
@@ -130,7 +131,7 @@ function WelcomeWizardInner({ user, onClose }: { user: User; onClose: () => void
     setError(null);
     try {
       if (encryptionMode === "enabled" && refusalKnown && refusalChoice !== null) {
-        await updatePreference.mutateAsync({ refusePlainDms: refusalChoice });
+        await setRefusal.mutateAsync(refusalChoice);
       }
       await completeUserOnboarding();
       await refreshUser();

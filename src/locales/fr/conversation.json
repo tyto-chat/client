@@ -71,5 +71,17 @@
   "e2ee_plain_marker": "Non chiffrée de bout en bout",
   "e2ee_too_long": "Ce message est trop long pour être envoyé chiffré.",
   "e2ee_identity_changed": "L'identité de chiffrement d'un participant a changé. L'envoi est suspendu jusqu'à ce qu'elle soit vérifiée ou acceptée.",
-  "e2ee_send_failed": "Le message chiffré n'a pas pu être envoyé."
+  "e2ee_send_failed": "Le message chiffré n'a pas pu être envoyé.",
+  "e2ee_plain_write_refused": "Tu ne peux pas écrire ici : cette conversation n'est pas chiffrée de bout en bout.",
+  "read_only_operator_required": "Ce serveur exige désormais des messages privés chiffrés de bout en bout. Cette conversation n'est pas chiffrée, elle est donc en lecture seule.",
+  "read_only_participant_refuses": "Quelqu'un ici n'accepte que les messages privés chiffrés de bout en bout. Cette conversation n'est pas chiffrée, elle est donc en lecture seule.",
+  "read_only_self_refuses": "Tu n'acceptes que les messages privés chiffrés de bout en bout. Cette conversation n'est pas chiffrée, elle est donc en lecture seule.",
+  "e2ee_declined_plain": "Les messages arrivés après que tu as refusé les messages privés non chiffrés ne sont pas affichés.",
+  "e2ee_refused_plain_title": "Cette conversation n'est pas chiffrée de bout en bout",
+  "e2ee_refused_plain_body": "Cette personne échange avec toi des messages chiffrés, et tu n'as pas commencé cette conversation non chiffrée : elle reste donc fermée.",
+  "e2ee_start_encrypted": "Commencer une conversation chiffrée avec ces personnes",
+  "e2ee_start_group_not_available": "Les conversations de groupe chiffrées ne sont pas encore disponibles.",
+  "e2ee_start_unreachable": "{{names}} ne peut pas encore recevoir de messages chiffrés.",
+  "e2ee_blocked_pinned_unreachable": "Tu as déjà échangé des messages chiffrés avec {{names}}, mais le serveur indique que ce n'est pas possible pour le moment. Rien n'a été envoyé sans chiffrement.",
+  "e2ee_blocked_pinned_group": "Tu échanges des messages chiffrés avec {{names}}, et les conversations de groupe chiffrées ne sont pas encore disponibles."
 }

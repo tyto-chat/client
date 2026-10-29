@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { addReaction, fetchReactionUsers, removeReaction } from "@/api/reactions";
 import { queryKeys } from "@/queries/queryKeys";
+import { assertPlainWriteAllowed } from "@/e2ee/admission";
 import type { ChannelPage, Message, ReactionEntry, ReactionUser } from "@/types/api";
 
 interface ToggleReactionVars {
@@ -99,7 +100,23 @@ function applyConfirmedReactionId(
   return { ...message, reactions };
 }
 
-function useToggleReactionForKey(cacheKey: readonly unknown[], currentUserId: number) {
+function guardedToggle(
+  queryClient: ReturnType<typeof useQueryClient>,
+  conversationIdentifier: string | undefined,
+  vars: ToggleReactionVars,
+  currentUserId: number,
+): Promise<void | { id: number }> {
+  if (conversationIdentifier !== undefined && vars.existingId === undefined) {
+    assertPlainWriteAllowed(queryClient, conversationIdentifier);
+  }
+  return requestReactionToggle(vars, currentUserId);
+}
+
+function useToggleReactionForKey(
+  cacheKey: readonly unknown[],
+  currentUserId: number,
+  conversationIdentifier?: string,
+) {
   const queryClient = useQueryClient();
 
   return useMutation<
@@ -108,7 +125,8 @@ function useToggleReactionForKey(cacheKey: readonly unknown[], currentUserId: nu
     ToggleReactionVars,
     { previous: InfiniteData<ChannelPage> | undefined }
   >({
-    mutationFn: (vars: ToggleReactionVars) => requestReactionToggle(vars, currentUserId),
+    mutationFn: async (vars: ToggleReactionVars) =>
+      guardedToggle(queryClient, conversationIdentifier, vars, currentUserId),
 
     onMutate: async ({ messageIri, emoji, existingId }) => {
       await queryClient.cancelQueries({ queryKey: cacheKey });
@@ -169,10 +187,18 @@ export function useToggleReaction(
 }
 
 export function useToggleConversationReaction(identifier: string, currentUserId: number) {
-  return useToggleReactionForKey(queryKeys.conversationPages(identifier), currentUserId);
+  return useToggleReactionForKey(
+    queryKeys.conversationPages(identifier),
+    currentUserId,
+    identifier,
+  );
 }
 
-export function useToggleThreadReaction(rootIri: string, currentUserId: number) {
+export function useToggleThreadReaction(
+  rootIri: string,
+  currentUserId: number,
+  conversationIdentifier?: string,
+) {
   const queryClient = useQueryClient();
   const cacheKey = queryKeys.threadReplies(rootIri);
 
@@ -182,7 +208,8 @@ export function useToggleThreadReaction(rootIri: string, currentUserId: number) 
     ToggleReactionVars,
     { previous: Message[] | undefined }
   >({
-    mutationFn: (vars: ToggleReactionVars) => requestReactionToggle(vars, currentUserId),
+    mutationFn: async (vars: ToggleReactionVars) =>
+      guardedToggle(queryClient, conversationIdentifier, vars, currentUserId),
 
     onMutate: async ({ messageIri, emoji, existingId }) => {
       await queryClient.cancelQueries({ queryKey: cacheKey });

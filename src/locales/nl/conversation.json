@@ -71,5 +71,17 @@
   "e2ee_plain_marker": "Niet end-to-end versleuteld",
   "e2ee_too_long": "Dit bericht is te lang om versleuteld te versturen.",
   "e2ee_identity_changed": "De versleutelingsidentiteit van een deelnemer is gewijzigd. Versturen is gepauzeerd tot die is geverifieerd of geaccepteerd.",
-  "e2ee_send_failed": "Het versleutelde bericht kon niet worden verstuurd."
+  "e2ee_send_failed": "Het versleutelde bericht kon niet worden verstuurd.",
+  "e2ee_plain_write_refused": "Je kunt hier niet schrijven: dit gesprek is niet end-to-end versleuteld.",
+  "read_only_operator_required": "Deze server vereist nu end-to-end versleutelde privéberichten. Dit gesprek is niet versleuteld en daarom alleen-lezen.",
+  "read_only_participant_refuses": "Iemand hier accepteert alleen end-to-end versleutelde privéberichten. Dit gesprek is niet versleuteld en daarom alleen-lezen.",
+  "read_only_self_refuses": "Je accepteert alleen end-to-end versleutelde privéberichten. Dit gesprek is niet versleuteld en daarom alleen-lezen.",
+  "e2ee_declined_plain": "Berichten die binnenkwamen nadat je onversleutelde privéberichten weigerde, worden niet getoond.",
+  "e2ee_refused_plain_title": "Dit gesprek is niet end-to-end versleuteld",
+  "e2ee_refused_plain_body": "Deze persoon gebruikt versleutelde privéberichten met jou, en jij bent dit onversleutelde gesprek niet begonnen. Het blijft daarom gesloten.",
+  "e2ee_start_encrypted": "Start een versleuteld gesprek met deze personen",
+  "e2ee_start_group_not_available": "Versleutelde groepsgesprekken zijn nog niet beschikbaar.",
+  "e2ee_start_unreachable": "{{names}} kan nog geen versleutelde berichten ontvangen.",
+  "e2ee_blocked_pinned_unreachable": "Je hebt versleutelde privéberichten met {{names}} gebruikt, maar de server meldt dat dat nu niet kan. Er is niets onversleuteld verstuurd.",
+  "e2ee_blocked_pinned_group": "Je gebruikt versleutelde privéberichten met {{names}}, en versleutelde groepsgesprekken zijn nog niet beschikbaar."
 }

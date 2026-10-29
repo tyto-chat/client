@@ -71,5 +71,17 @@
   "e2ee_plain_marker": "Not end-to-end encrypted",
   "e2ee_too_long": "This message is too long to send encrypted.",
   "e2ee_identity_changed": "A participant's encryption identity changed. Sending is paused until it is verified or accepted.",
-  "e2ee_send_failed": "The encrypted message could not be sent."
+  "e2ee_send_failed": "The encrypted message could not be sent.",
+  "e2ee_plain_write_refused": "You can't write here: this conversation is not end-to-end encrypted.",
+  "read_only_operator_required": "This server now requires end-to-end encrypted direct messages. This conversation is not encrypted, so it is read-only.",
+  "read_only_participant_refuses": "Someone here only accepts end-to-end encrypted direct messages. This conversation is not encrypted, so it is read-only.",
+  "read_only_self_refuses": "You only accept end-to-end encrypted direct messages. This conversation is not encrypted, so it is read-only.",
+  "e2ee_declined_plain": "Messages that arrived after you stopped accepting unencrypted direct messages are not shown.",
+  "e2ee_refused_plain_title": "This conversation is not end-to-end encrypted",
+  "e2ee_refused_plain_body": "This person uses encrypted direct messages with you, and you did not start this unencrypted conversation, so it stays closed.",
+  "e2ee_start_encrypted": "Start an encrypted conversation with these people",
+  "e2ee_start_group_not_available": "Encrypted group conversations are not available yet.",
+  "e2ee_start_unreachable": "{{names}} cannot receive encrypted messages yet.",
+  "e2ee_blocked_pinned_unreachable": "You have used encrypted direct messages with {{names}}, but the server says they can't receive one now. Nothing was sent unencrypted.",
+  "e2ee_blocked_pinned_group": "You use encrypted direct messages with {{names}}, and encrypted group conversations are not available yet."
 }

@@ -263,7 +263,8 @@ export interface Conversation extends HydraResource {
   unreadCount: number;
   encrypted?: boolean;
   readOnly: boolean;
-  readOnlyReason: "blocked" | "unavailable" | null;
+  readOnlyReason:
+    "blocked" | "unavailable" | "operator_required" | "participant_refuses_plain" | null;
 }
 
 export interface BlockedUser {

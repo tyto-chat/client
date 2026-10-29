@@ -11,6 +11,7 @@ import {
 import { deleteAttachment } from "@/api/attachments";
 import { fetchChannelPage } from "@/api/pages";
 import { isRateLimited } from "@/api/client";
+import { admitPlainContent, conversationFromCache } from "@/e2ee/admission";
 import { queryKeys } from "@/queries/queryKeys";
 import { inheritMessageKey } from "@/utils/messageKey";
 import type { ChannelPage, Message, User } from "@/types/api";
@@ -205,10 +206,30 @@ export function useDeleteAttachmentForKey(key: readonly unknown[]) {
   });
 }
 
+export class DeclinedContentError extends Error {
+  constructor() {
+    super("this content arrived after plain direct messages were refused");
+    this.name = "DeclinedContentError";
+  }
+}
+
 export function useMessage(uuid: string | null | undefined) {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: queryKeys.message(uuid ?? ""),
-    queryFn: () => fetchMessage(uuid!),
+    queryFn: async () => {
+      const message = await fetchMessage(uuid!);
+      if (
+        message.conversationIdentifier &&
+        admitPlainContent(
+          conversationFromCache(queryClient, message.conversationIdentifier),
+          message,
+        ) === "drop"
+      ) {
+        throw new DeclinedContentError();
+      }
+      return message;
+    },
     enabled: !!uuid,
     staleTime: StaleTime.long,
     retry: false,

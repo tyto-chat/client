@@ -20,6 +20,8 @@ const REASON_KEYS = {
     "e2ee_blocked_participant_refuses_group",
   ],
   operator_disabled: ["e2ee_blocked_operator_disabled", "e2ee_blocked_operator_disabled"],
+  pinned_unreachable: ["e2ee_blocked_pinned_unreachable", "e2ee_blocked_pinned_unreachable"],
+  pinned_group: ["e2ee_blocked_pinned_group", "e2ee_blocked_pinned_group"],
 } as const;
 
 function reasonKeys(reason: string | null) {

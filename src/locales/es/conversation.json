@@ -71,5 +71,17 @@
   "e2ee_plain_marker": "Sin cifrado de extremo a extremo",
   "e2ee_too_long": "Este mensaje es demasiado largo para enviarlo cifrado.",
   "e2ee_identity_changed": "La identidad de cifrado de un participante cambió. El envío está en pausa hasta que se verifique o acepte.",
-  "e2ee_send_failed": "No se pudo enviar el mensaje cifrado."
+  "e2ee_send_failed": "No se pudo enviar el mensaje cifrado.",
+  "e2ee_plain_write_refused": "No puedes escribir aquí: esta conversación no tiene cifrado de extremo a extremo.",
+  "read_only_operator_required": "Este servidor ahora exige mensajes directos cifrados de extremo a extremo. Esta conversación no está cifrada, así que es de solo lectura.",
+  "read_only_participant_refuses": "Alguien aquí solo acepta mensajes directos cifrados de extremo a extremo. Esta conversación no está cifrada, así que es de solo lectura.",
+  "read_only_self_refuses": "Solo aceptas mensajes directos cifrados de extremo a extremo. Esta conversación no está cifrada, así que es de solo lectura.",
+  "e2ee_declined_plain": "Los mensajes que llegaron después de que dejaras de aceptar mensajes directos sin cifrar no se muestran.",
+  "e2ee_refused_plain_title": "Esta conversación no tiene cifrado de extremo a extremo",
+  "e2ee_refused_plain_body": "Esta persona usa mensajes directos cifrados contigo y tú no iniciaste esta conversación sin cifrar, así que permanece cerrada.",
+  "e2ee_start_encrypted": "Iniciar una conversación cifrada con estas personas",
+  "e2ee_start_group_not_available": "Las conversaciones de grupo cifradas aún no están disponibles.",
+  "e2ee_start_unreachable": "{{names}} aún no puede recibir mensajes cifrados.",
+  "e2ee_blocked_pinned_unreachable": "Has usado mensajes directos cifrados con {{names}}, pero el servidor dice que ahora no puede recibirlos. No se envió nada sin cifrar.",
+  "e2ee_blocked_pinned_group": "Usas mensajes directos cifrados con {{names}} y las conversaciones de grupo cifradas aún no están disponibles."
 }

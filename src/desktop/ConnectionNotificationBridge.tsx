@@ -9,6 +9,7 @@ import { isManagedIdentityMode } from "@/platform/appMode";
 import { ConnectionsContext, type ConnectionsContextValue } from "./connections/ConnectionsContext";
 import type { ConnectionNotificationEvent } from "./connections/IdentityConnection";
 import type { AppNotification } from "@/types/api";
+import { allowNotification } from "@/e2ee/notificationGate";
 
 function useOptionalConnectionsContext(): ConnectionsContextValue | null {
   return useContext(ConnectionsContext);
@@ -47,6 +48,8 @@ export function ConnectionNotificationBridge() {
         actorIds: data.actorIds,
         messageCount: data.messageCount,
       };
+
+      if (isDm && !allowNotification(newNotif, () => undefined, event.origin)) return;
 
       const text = notificationText(
         {

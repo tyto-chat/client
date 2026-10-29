@@ -71,5 +71,17 @@
   "e2ee_plain_marker": "Bez szyfrowania end-to-end",
   "e2ee_too_long": "Ta wiadomość jest za długa, by wysłać ją zaszyfrowaną.",
   "e2ee_identity_changed": "Tożsamość szyfrowania uczestnika się zmieniła. Wysyłanie jest wstrzymane do czasu weryfikacji lub akceptacji.",
-  "e2ee_send_failed": "Nie udało się wysłać zaszyfrowanej wiadomości."
+  "e2ee_send_failed": "Nie udało się wysłać zaszyfrowanej wiadomości.",
+  "e2ee_plain_write_refused": "Nie możesz tu pisać: ta rozmowa nie jest szyfrowana end-to-end.",
+  "read_only_operator_required": "Ten serwer wymaga teraz wiadomości prywatnych szyfrowanych end-to-end. Ta rozmowa nie jest szyfrowana, więc jest tylko do odczytu.",
+  "read_only_participant_refuses": "Ktoś w tej rozmowie przyjmuje tylko wiadomości prywatne szyfrowane end-to-end. Ta rozmowa nie jest szyfrowana, więc jest tylko do odczytu.",
+  "read_only_self_refuses": "Przyjmujesz tylko wiadomości prywatne szyfrowane end-to-end. Ta rozmowa nie jest szyfrowana, więc jest tylko do odczytu.",
+  "e2ee_declined_plain": "Wiadomości, które przyszły po wyłączeniu nieszyfrowanych wiadomości prywatnych, nie są wyświetlane.",
+  "e2ee_refused_plain_title": "Ta rozmowa nie jest szyfrowana end-to-end",
+  "e2ee_refused_plain_body": "Ta osoba prowadzi z tobą szyfrowane rozmowy, a ta nieszyfrowana rozmowa nie została rozpoczęta przez ciebie, więc pozostaje zamknięta.",
+  "e2ee_start_encrypted": "Zacznij szyfrowaną rozmowę z tymi osobami",
+  "e2ee_start_group_not_available": "Szyfrowane rozmowy grupowe nie są jeszcze dostępne.",
+  "e2ee_start_unreachable": "{{names}} nie może jeszcze odbierać szyfrowanych wiadomości.",
+  "e2ee_blocked_pinned_unreachable": "Masz z {{names}} szyfrowane rozmowy, ale serwer twierdzi, że teraz nie da się wysłać szyfrowanej wiadomości. Nic nie zostało wysłane bez szyfrowania.",
+  "e2ee_blocked_pinned_group": "Prowadzisz z {{names}} szyfrowane rozmowy, a szyfrowane rozmowy grupowe nie są jeszcze dostępne."
 }

@@ -51,10 +51,19 @@ describe("compose outcome", () => {
     ).toEqual({ kind: "plain_warning", unreachableUserIds: [], group: true });
   });
 
-  it("plain without warning only when nothing suggests encryption", () => {
+  it("plain without warning only when the server reports encryption disabled", () => {
+    expect(
+      composeOutcome(preflight({ outcome: "plain", reason: "operator_disabled" }), {
+        ...ready,
+        mode: "disabled",
+      }),
+    ).toEqual({ kind: "plain" });
     expect(composeOutcome(preflight({ outcome: "plain" }), { ...ready, mode: "disabled" })).toEqual(
-      { kind: "plain" },
+      { kind: "plain_warning", unreachableUserIds: [], group: false },
     );
+    expect(
+      composeOutcome(preflight({ outcome: "plain", reason: "operator_disabled" }), ready),
+    ).toEqual({ kind: "plain_warning", unreachableUserIds: [], group: false });
   });
 
   it("blocked outcomes keep the reason and the named people", () => {

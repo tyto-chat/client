@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo } from "react";
 import type { ConversationSession, E2eeIdentity } from "./conversationSession";
 import type { Conversation } from "@/types/api";
+import type { LocalSecuritySnapshot, LocalSecurityState } from "./localSecurityState";
 
 export type E2eeAvailability = "unsupported" | "not_restored" | "ready";
 
@@ -8,12 +9,18 @@ export interface E2eeContextValue {
   identity: E2eeIdentity | null;
   availability: E2eeAvailability;
   setIdentity: (identity: E2eeIdentity | null) => void;
+  security: LocalSecurityState | null;
+  securitySnapshot: LocalSecuritySnapshot | null;
+  setSecurity: (security: LocalSecurityState | null) => void;
 }
 
 export const E2eeContext = createContext<E2eeContextValue>({
   identity: null,
   availability: "unsupported",
   setIdentity: () => undefined,
+  security: null,
+  securitySnapshot: null,
+  setSecurity: () => undefined,
 });
 
 export function useE2ee(): E2eeContextValue {

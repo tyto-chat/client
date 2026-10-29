@@ -71,5 +71,17 @@
   "e2ee_plain_marker": "Sem criptografia de ponta a ponta",
   "e2ee_too_long": "Esta mensagem é longa demais para ser enviada criptografada.",
   "e2ee_identity_changed": "A identidade de criptografia de um participante mudou. O envio está pausado até ser verificada ou aceita.",
-  "e2ee_send_failed": "Não foi possível enviar a mensagem criptografada."
+  "e2ee_send_failed": "Não foi possível enviar a mensagem criptografada.",
+  "e2ee_plain_write_refused": "Você não pode escrever aqui: esta conversa não tem criptografia de ponta a ponta.",
+  "read_only_operator_required": "Este servidor agora exige mensagens diretas com criptografia de ponta a ponta. Esta conversa não é criptografada, por isso é somente leitura.",
+  "read_only_participant_refuses": "Alguém aqui só aceita mensagens diretas com criptografia de ponta a ponta. Esta conversa não é criptografada, por isso é somente leitura.",
+  "read_only_self_refuses": "Você só aceita mensagens diretas com criptografia de ponta a ponta. Esta conversa não é criptografada, por isso é somente leitura.",
+  "e2ee_declined_plain": "Mensagens que chegaram depois que você deixou de aceitar mensagens diretas sem criptografia não são exibidas.",
+  "e2ee_refused_plain_title": "Esta conversa não tem criptografia de ponta a ponta",
+  "e2ee_refused_plain_body": "Esta pessoa usa mensagens diretas criptografadas com você, e você não iniciou esta conversa sem criptografia, então ela continua fechada.",
+  "e2ee_start_encrypted": "Iniciar uma conversa criptografada com estas pessoas",
+  "e2ee_start_group_not_available": "Conversas em grupo criptografadas ainda não estão disponíveis.",
+  "e2ee_start_unreachable": "{{names}} ainda não pode receber mensagens criptografadas.",
+  "e2ee_blocked_pinned_unreachable": "Você já usou mensagens diretas criptografadas com {{names}}, mas o servidor diz que agora não é possível. Nada foi enviado sem criptografia.",
+  "e2ee_blocked_pinned_group": "Você usa mensagens diretas criptografadas com {{names}}, e conversas em grupo criptografadas ainda não estão disponíveis."
 }

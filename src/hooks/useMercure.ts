@@ -1,5 +1,7 @@
 import { hashKey, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { dispatchE2eeEvent, isE2eeEvent, type E2eeEvent } from "@/e2ee/e2eeEvents";
+import { admitPlainContent, conversationFromCache } from "@/e2ee/admission";
+import { refreshServerPolicy } from "@/queries/conversationPolicy";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { conversationActivityTopic, conversationTopic } from "@/api/topics";
@@ -310,6 +312,12 @@ export function useConversationMercure(
         }
       }
 
+      const admission = admitPlainContent(
+        conversationFromCache(queryClient, conversationIdentifier),
+        raw as Message | MessageUpdateEvent,
+      );
+      if (admission === "drop") return;
+
       applyMessageEvent(
         queryClient,
         queryKeys.conversationPages(conversationIdentifier),
@@ -334,7 +342,11 @@ function parentIri(msg: Message): string | null {
   return typeof parent === "string" ? parent : (parent["@id"] ?? null);
 }
 
-export function useThreadMercure(rootIri: string | null, topic: string | null) {
+export function useThreadMercure(
+  rootIri: string | null,
+  topic: string | null,
+  conversationIdentifier?: string,
+) {
   const queryClient = useQueryClient();
   const { t } = useTranslation("channel");
 
@@ -343,6 +355,13 @@ export function useThreadMercure(rootIri: string | null, topic: string | null) {
     (event) => {
       const data = parseMercureEvent<Message | MessageUpdateEvent>(event);
       if (!data) return;
+      if (
+        conversationIdentifier !== undefined &&
+        admitPlainContent(conversationFromCache(queryClient, conversationIdentifier), data) ===
+          "drop"
+      ) {
+        return;
+      }
       const key = queryKeys.threadReplies(rootIri!);
 
       const applyThreadEvent = () => {
@@ -385,11 +404,16 @@ export function useConversationActivityMercure(userId: number | undefined) {
     (event) => {
       const data = parseMercureEvent<{
         type?: string;
+        scope?: string;
         conversationIdentifier?: string;
         lastMessageAt?: string | null;
         readOnly?: boolean;
         readOnlyReason?: Conversation["readOnlyReason"];
       }>(event);
+      if (data?.type === "conversation.policy" && data.scope === "server") {
+        void refreshServerPolicy(queryClient);
+        return;
+      }
       if (!data?.conversationIdentifier) return;
       if (data.type === "conversation.policy") {
         const policy = {

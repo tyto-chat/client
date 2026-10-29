@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouterState } from "@tanstack/react-router";
 import { E2eeProvider } from "@/e2ee/E2eeContext";
+import { PlainDmRefusalMirror } from "@/components/dm/PlainDmRefusalMirror";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -317,6 +318,7 @@ function AppShell() {
 
   return (
     <E2eeProvider>
+      <PlainDmRefusalMirror />
       <AuthModalProvider>
         {({ modal, close, switchToRegister, switchToLogin }) => (
           <AudioCallProvider>

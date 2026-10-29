@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
+import { PlainWriteRefusedError, assertPlainWriteAllowed } from "@/e2ee/admission";
 import { useAttachmentValidation } from "@/hooks/useAttachmentValidation";
 import { useNotification } from "@/context/NotificationContext";
 import {
@@ -28,8 +30,9 @@ export function usePendingAttachments({
   channelIdentifier?: string;
   conversationIdentifier?: string;
 }) {
-  const { t } = useTranslation(["channel"]);
+  const { t } = useTranslation(["channel", "conversation"]);
   const { notify } = useNotification();
+  const queryClient = useQueryClient();
   const { validateAttachment, getLimits } = useAttachmentValidation();
 
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
@@ -41,6 +44,15 @@ export function usePendingAttachments({
     const isChannel = !!communityId && !!channelIdentifier;
     const isConversation = !!conversationIdentifier;
     if (!isChannel && !isConversation) return;
+    if (!isChannel) {
+      try {
+        assertPlainWriteAllowed(queryClient, conversationIdentifier!);
+      } catch (error) {
+        if (!(error instanceof PlainWriteRefusedError)) throw error;
+        notify(t("conversation:e2ee_plain_write_refused"), "error");
+        return;
+      }
+    }
     const { attachmentMaxPerMessage } = getLimits();
     const maxPerMessage = attachmentMaxPerMessage;
     const slots = maxPerMessage - pendingAttachmentsRef.current.length;

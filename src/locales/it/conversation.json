@@ -71,5 +71,17 @@
   "e2ee_plain_marker": "Non crittografata end-to-end",
   "e2ee_too_long": "Questo messaggio è troppo lungo per essere inviato crittografato.",
   "e2ee_identity_changed": "L'identità di crittografia di un partecipante è cambiata. L'invio è sospeso finché non viene verificata o accettata.",
-  "e2ee_send_failed": "Impossibile inviare il messaggio crittografato."
+  "e2ee_send_failed": "Impossibile inviare il messaggio crittografato.",
+  "e2ee_plain_write_refused": "Non puoi scrivere qui: questa conversazione non è crittografata end-to-end.",
+  "read_only_operator_required": "Questo server ora richiede messaggi diretti crittografati end-to-end. Questa conversazione non è crittografata, quindi è di sola lettura.",
+  "read_only_participant_refuses": "Qualcuno qui accetta solo messaggi diretti crittografati end-to-end. Questa conversazione non è crittografata, quindi è di sola lettura.",
+  "read_only_self_refuses": "Accetti solo messaggi diretti crittografati end-to-end. Questa conversazione non è crittografata, quindi è di sola lettura.",
+  "e2ee_declined_plain": "I messaggi arrivati dopo che hai smesso di accettare messaggi diretti non crittografati non vengono mostrati.",
+  "e2ee_refused_plain_title": "Questa conversazione non è crittografata end-to-end",
+  "e2ee_refused_plain_body": "Questa persona usa con te messaggi diretti crittografati e questa conversazione non crittografata non è stata avviata da te, quindi resta chiusa.",
+  "e2ee_start_encrypted": "Avvia una conversazione crittografata con queste persone",
+  "e2ee_start_group_not_available": "Le conversazioni di gruppo crittografate non sono ancora disponibili.",
+  "e2ee_start_unreachable": "{{names}} non può ancora ricevere messaggi crittografati.",
+  "e2ee_blocked_pinned_unreachable": "Hai usato messaggi diretti crittografati con {{names}}, ma il server dice che ora non è possibile. Non è stato inviato nulla senza crittografia.",
+  "e2ee_blocked_pinned_group": "Usi messaggi diretti crittografati con {{names}} e le conversazioni di gruppo crittografate non sono ancora disponibili."
 }

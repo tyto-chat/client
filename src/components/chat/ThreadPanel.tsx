@@ -100,12 +100,15 @@ export function ThreadPanel({
         ? conversationThreadsTopic(conversationNumericId)
         : null;
   const { data: rawRoot } = useMessage(rootUuid);
-  const { data: rawReplies, isLoading } = useThreadReplies(rootIri);
+  const { data: rawReplies, isLoading } = useThreadReplies(
+    rootIri,
+    conversationIdentifier ?? undefined,
+  );
   const rawRootList = useMemo(() => (rawRoot ? [rawRoot] : EMPTY_REPLIES), [rawRoot]);
   const [root] = useDecryptedMessages(e2eeSession, rawRootList);
   const decryptedReplies = useDecryptedMessages(e2eeSession, rawReplies ?? EMPTY_REPLIES);
   const replies = rawReplies === undefined ? undefined : decryptedReplies;
-  useThreadMercure(rootIri, threadTopic);
+  useThreadMercure(rootIri, threadTopic, conversationIdentifier ?? undefined);
 
   const pagesKey =
     conversationIdentifier != null
@@ -119,8 +122,12 @@ export function ThreadPanel({
     conversationIdentifier,
     e2eeSession,
   );
-  const toggleReplyReaction = useToggleThreadReaction(rootIri, user?.id ?? 0);
-  const editReply = useEditThreadReply(rootIri, e2eeSession);
+  const toggleReplyReaction = useToggleThreadReaction(
+    rootIri,
+    user?.id ?? 0,
+    conversationIdentifier ?? undefined,
+  );
+  const editReply = useEditThreadReply(rootIri, e2eeSession, conversationIdentifier ?? undefined);
   const deleteReply = useDeleteThreadReply(rootIri);
   const handleToggleReplyReaction = useCallback(
     (messageIri: string, emoji: string, existingId?: number) =>
@@ -137,7 +144,7 @@ export function ThreadPanel({
     [deleteReply],
   );
 
-  const loadEarlier = useLoadEarlierReplies(rootIri);
+  const loadEarlier = useLoadEarlierReplies(rootIri, conversationIdentifier ?? undefined);
   const [noEarlier, setNoEarlier] = useState(false);
   const [noEarlierRootIri, setNoEarlierRootIri] = useState(rootIri);
   if (rootIri !== noEarlierRootIri) {
