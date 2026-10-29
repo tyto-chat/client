@@ -57,12 +57,6 @@ export class RevocationStore implements RevocationLookup {
     return (await this.store.getRecord(this.scope, "revocations", idOf(device))) !== null;
   }
 
-  async revokedAt(device: RevokedDevice): Promise<number | null> {
-    const data = await this.store.getRecord(this.scope, "revocations", idOf(device));
-    if (data === null) return null;
-    return (JSON.parse(new TextDecoder().decode(data)) as StoredRevocation).revokedAt;
-  }
-
   async merge(accountId: number, revocations: SignedRevocation[]): Promise<number> {
     const pin = await this.options.pins.pinned(accountId);
     if (pin === undefined) return 0;

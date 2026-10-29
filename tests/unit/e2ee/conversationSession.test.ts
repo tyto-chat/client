@@ -18,6 +18,8 @@ import { FakeDeliveryServer, type FakeDevice } from "../../mocks/fakeDeliverySer
 import { identityFor } from "../../mocks/e2eeIdentity";
 import { ed25519Key, signedDevice, signedRevocation } from "../../mocks/e2eeKeys";
 import { createFakeMlsEngine } from "../../mocks/fakeMlsEngine";
+import { memoryKeyStoreFactory } from "../../mocks/memoryKeyStore";
+import { MemorySessionLocks } from "../../mocks/memorySessionLocks";
 import { server as mockFetch } from "../../mocks/server";
 
 const ALICE = 1;
@@ -732,7 +734,7 @@ describe("conversation session", () => {
     expect(await bob.session(conversation).status()).toBe("removed");
   });
 
-  it("offline_participant_catches_up_past_a_later_revoked_committer", async () => {
+  it("historical_commit_by_later_revoked_device_refused_until_rejoin", async () => {
     const { server, alice, bob, bobDevice } = await setup();
     const secondDevice = await server.addDevice(BOB);
     const conversation = await createEncryptedConversation(alice, BOB);
@@ -747,19 +749,73 @@ describe("conversation session", () => {
       )),
       leaveRequestId: null,
     });
-    await bob.session(conversation).sync();
-    const sent = await sendEncrypted(bob.session(conversation), "after cleaning up");
 
-    await alice.session(conversation).sync();
-
-    expect(server.conversationOf(conversation.identifier).commits.map((c) => c.deviceId)).toEqual([
-      alice.deviceId,
-      second.deviceId,
-      bob.deviceId,
-    ]);
-    expect(await read(alice, conversation, server.message(sent.id))).toEqual({
-      text: "after cleaning up",
+    await expect(alice.session(conversation).sync()).rejects.toMatchObject({
+      reason: "actor_revoked",
     });
+  });
+
+  it("backdated_message_from_revoked_device_refused", async () => {
+    const { server, alice, bob, bobDevice } = await setup();
+    const secondDevice = await server.addDevice(BOB);
+    const conversation = await createEncryptedConversation(alice, BOB);
+    await bob.processWelcomes();
+    const second = identityFor(server, BOB, secondDevice);
+    await second.processWelcomes();
+    server.users.get(BOB)?.revocations.push({
+      ...(await signedRevocation(
+        { credential: bobDevice.credential, device: bobDevice.key },
+        secondDevice.credential,
+      )),
+      leaveRequestId: null,
+    });
+    await alice.session(conversation).sync();
+    const sent = await sendEncrypted(second.session(conversation), "pretend this is old");
+    const backdated = {
+      ...server.message(sent.id),
+      createdAt: "2020-01-01T00:00:00Z",
+      revisedAt: "2020-01-01T00:00:00Z",
+    };
+
+    expect(await read(alice, conversation, backdated)).toEqual({
+      tampered: "sender_not_authorised",
+    });
+  });
+
+  it("recovery_in_one_window_never_discards_another_windows_stage", async () => {
+    const { server, aliceDevice, bob } = await setup();
+    const keyStore = memoryKeyStoreFactory()();
+    const locks = new MemorySessionLocks();
+    const first = identityFor(server, ALICE, aliceDevice, { keyStore, locks });
+    const second = identityFor(server, ALICE, aliceDevice, { keyStore, locks });
+    await second.ensureRecovered();
+    let release = () => undefined as void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+      setTimeout(resolve, 50);
+    });
+    const loadRecords = keyStore.loadRecords.bind(keyStore);
+    vi.spyOn(keyStore, "loadRecords").mockImplementationOnce(async (...args) => {
+      const records = await loadRecords(...args);
+      await gate;
+      return records;
+    });
+    const transport = second.transport;
+    const submit = transport.submitCommit.bind(transport);
+    vi.spyOn(transport, "submitCommit").mockImplementation(async (identifier, submission) => {
+      release();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return submit(identifier, submission);
+    });
+
+    const recovering = first.ensureRecovered();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const conversation = await createEncryptedConversation(second, BOB);
+    await recovering;
+
+    await bob.processWelcomes();
+    const sent = await sendEncrypted(second.session(conversation), "two windows");
+    expect(await read(bob, conversation, server.message(sent.id))).toEqual({ text: "two windows" });
   });
 
   it("commit_by_device_after_its_revocation_rejected", async () => {

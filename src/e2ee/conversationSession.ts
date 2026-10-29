@@ -137,7 +137,7 @@ function revokedKey(device: RevokedDevice): string {
 
 class TrustOverlay implements PinLookup, RevocationLookup {
   readonly tentative = new Map<number, PinnedAccount>();
-  readonly tentativeRevoked = new Map<string, number>();
+  readonly tentativeRevoked = new Set<string>();
   private readonly pins: PinStore;
   private readonly revocations: RevocationStore;
 
@@ -147,13 +147,7 @@ class TrustOverlay implements PinLookup, RevocationLookup {
   }
 
   async isRevoked(device: RevokedDevice): Promise<boolean> {
-    return (await this.revokedAt(device)) !== null;
-  }
-
-  async revokedAt(device: RevokedDevice): Promise<number | null> {
-    return (
-      this.tentativeRevoked.get(revokedKey(device)) ?? (await this.revocations.revokedAt(device))
-    );
+    return this.tentativeRevoked.has(revokedKey(device)) || this.revocations.isRevoked(device);
   }
 
   async pinned(userId: number): Promise<PinnedIdentity | undefined> {
@@ -211,6 +205,21 @@ function secondsOf(timestamp: string | null | undefined): number | null {
   return Number.isNaN(ms) ? null : ms / 1000;
 }
 
+export interface SessionLocks {
+  request<T>(name: string, mode: "shared" | "exclusive", task: () => Promise<T>): Promise<T>;
+}
+
+function browserSessionLocks(): SessionLocks {
+  return {
+    request<T>(name: string, mode: "shared" | "exclusive", task: () => Promise<T>): Promise<T> {
+      if (typeof navigator === "undefined" || navigator.locks === undefined) {
+        return Promise.reject(new Error("encrypted conversations need Web Locks"));
+      }
+      return navigator.locks.request(name, { mode }, task) as Promise<T>;
+    },
+  };
+}
+
 export interface E2eeIdentityOptions {
   scope: KeyStoreScope;
   server: string;
@@ -223,6 +232,7 @@ export interface E2eeIdentityOptions {
   revocations: RevocationStore;
   transport?: E2eeTransport;
   networkRetries?: number;
+  locks?: SessionLocks;
 }
 
 export class E2eeIdentity {
@@ -237,6 +247,7 @@ export class E2eeIdentity {
   readonly revocations: RevocationStore;
   readonly transport: E2eeTransport;
   readonly networkRetries: number;
+  private readonly locks: SessionLocks;
 
   private state: Uint8Array | null = null;
   private readonly stateQueue = new SerialQueue();
@@ -258,6 +269,7 @@ export class E2eeIdentity {
     this.revocations = options.revocations;
     this.transport = options.transport ?? httpE2eeTransport;
     this.networkRetries = options.networkRetries ?? 2;
+    this.locks = options.locks ?? browserSessionLocks();
   }
 
   get deviceId(): string {
@@ -292,8 +304,14 @@ export class E2eeIdentity {
   }
 
   ensureRecovered(): Promise<void> {
-    this.recovered ??= this.recover().catch(() => undefined);
+    this.recovered ??= this.locks
+      .request(this.scopeLockName(), "exclusive", () => this.recover())
+      .catch(() => undefined);
     return this.recovered;
+  }
+
+  private scopeLockName(): string {
+    return `tyto-e2ee-session:${JSON.stringify([this.scope.serverOrigin, this.scope.serverUserId, this.scope.profileId])}`;
   }
 
   async recover(): Promise<void> {
@@ -377,7 +395,9 @@ export class E2eeIdentity {
     }
     return queue.run(async () => {
       await this.ensureRecovered();
-      return task();
+      return this.locks.request(this.scopeLockName(), "shared", () =>
+        this.locks.request(`${this.scopeLockName()}:${conversation}`, "exclusive", task),
+      );
     });
   }
 
@@ -757,11 +777,7 @@ export class ConversationSession {
       return { tampered: "malformed" };
     }
     const trust = await this.trustOverlay();
-    const check = await this.validateAt(
-      trust,
-      sender,
-      secondsOf(rev === 0 ? message.createdAt : message.revisedAt),
-    );
+    const check = await this.validate(trust, sender);
     const pin = await trust.pinned(sender.accountId);
     if (check !== "ok" || pin === undefined) return { tampered: "sender_not_authorised" };
     const verified: MessageKeySender = {
@@ -861,17 +877,6 @@ export class ConversationSession {
     });
   }
 
-  private async validateAt(
-    trust: TrustOverlay,
-    credential: Credential,
-    at: number | null,
-  ): Promise<CredentialCheck> {
-    const check = await this.validate(trust, credential);
-    if (check !== "revoked" || at === null) return check;
-    const revokedAt = await trust.revokedAt(credential);
-    return revokedAt !== null && at < revokedAt ? "ok" : check;
-  }
-
   private validate(trust: TrustOverlay, credential: Credential): Promise<CredentialCheck> {
     return this.validator(trust)(credential, {
       conversationId: this.conversation.id,
@@ -911,10 +916,7 @@ export class ConversationSession {
         const signer = { server: this.identity.server, accountId: userId, pin };
         for (const revocation of await transport.fetchUserRevocations(userId)) {
           if (await verifyRevocation(revocation, signer)) {
-            overlay.tentativeRevoked.set(
-              revokedKey({ ...revocation, accountId: userId }),
-              revocation.revokedAt,
-            );
+            overlay.tentativeRevoked.add(revokedKey({ ...revocation, accountId: userId }));
           }
         }
         continue;
@@ -939,13 +941,12 @@ export class ConversationSession {
     trust: TrustOverlay,
     staged: Staged,
     expectedActor: string | null,
-    at: number | null = null,
   ): Promise<string | null> {
     if (expectedActor !== null && staged.actor.deviceId !== expectedActor) return "actor_mismatch";
-    const actor = await this.validateAt(trust, staged.actor, at);
+    const actor = await this.validate(trust, staged.actor);
     if (actor !== "ok") return `actor_${actor}`;
     for (const member of staged.added) {
-      const added = await this.validateAt(trust, member.credential, at);
+      const added = await this.validate(trust, member.credential);
       if (added !== "ok") return `added_${added}`;
     }
     const participants = new Set(this.participantIds);
@@ -1132,7 +1133,7 @@ export class ConversationSession {
         const reason =
           progress.mlsEpoch !== null && staged.newEpoch !== progress.mlsEpoch + 1
             ? "epoch_mismatch"
-            : await this.checkStaged(trust, staged, commit.deviceId, commit.createdAt);
+            : await this.checkStaged(trust, staged, commit.deviceId);
         if (reason !== null) {
           await engine.discard(staged);
           throw new CommitRejectedError(reason);
