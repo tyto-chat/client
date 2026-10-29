@@ -43,8 +43,15 @@ export function deleteMessage(messageIri: string): Promise<void> {
   return apiClient.delete<void>(messageIri);
 }
 
-export function editMessage(messageIri: string, text: string): Promise<Message> {
-  return apiClient.patch<Message>(messageIri, { text });
+export function editMessage(
+  messageIri: string,
+  text: string,
+  baseRevisionCount?: number,
+): Promise<Message> {
+  return apiClient.patch<Message>(messageIri, {
+    text,
+    ...(baseRevisionCount !== undefined && { baseRevisionCount }),
+  });
 }
 
 export async function fetchMessageHistory(messageIri: string): Promise<MessageBodyRevision[]> {

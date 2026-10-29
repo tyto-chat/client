@@ -20,6 +20,11 @@ export function createThreadReply(
   rootUuid: string,
   text: string,
   attachmentIris: string[] = [],
+  id?: string,
 ): Promise<Message> {
-  return apiClient.post<Message>(`/api/messages/${rootUuid}/replies`, { text, attachmentIris });
+  return apiClient.post<Message>(`/api/messages/${rootUuid}/replies`, {
+    text,
+    attachmentIris,
+    ...(id !== undefined && { id }),
+  });
 }

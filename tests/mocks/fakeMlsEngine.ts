@@ -281,6 +281,8 @@ export function createFakeMlsEngine(self: Credential): MlsEngine & { latest: () 
       }>(message);
       if (parsed.groupId !== groupId || parsed.epoch !== epoch)
         throw new Error("message is not for this epoch");
+      if (parsed.sender.deviceId === self.deviceId)
+        throw new Error("cannot process a message from self");
       if (!members.some((m) => m.credential.deviceId === parsed.sender.deviceId))
         throw new Error("No member found");
       const result = { data: Uint8Array.from(parsed.data), sender: unwire(parsed.sender) };

@@ -203,6 +203,20 @@ describe("credential validator", () => {
     await expect(validate(relabelled, context)).resolves.toBe("chain_invalid");
   });
 
+  it("forged_credential_under_a_revoked_device_id_is_not_reported_revoked", async () => {
+    const account = await ed25519Key();
+    const revoked = await signedDevice(account);
+    const validate = validatorFor(
+      new Map([[7, { accountPublicKey: account.publicKey, generation: 1 }]]),
+      [`7/${revoked.credential.deviceId}/1`],
+    );
+    const forged = (
+      await signedDevice(await ed25519Key(), { deviceId: revoked.credential.deviceId })
+    ).credential;
+
+    await expect(validate(forged, context)).resolves.toBe("chain_invalid");
+  });
+
   it("rejects the old key while the account's identity change is unresolved", async () => {
     const oldAccount = await ed25519Key();
     const newAccount = await ed25519Key();

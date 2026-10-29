@@ -68,6 +68,7 @@ export const queryKeys = {
   conversation: (identifier: string) => ["conversations", identifier] as const,
   conversationPages: (identifier: string) => ["conversations", identifier, "pages"] as const,
   conversationMessages: (identifier: string) => ["conversations", identifier, "messages"] as const,
+  e2eeMessage: (scope: string, fingerprint: string) => ["e2eeMessage", scope, fingerprint] as const,
   invitableUsers: (search: string, includeBlocked = false) =>
     ["users", "invitable", includeBlocked ? "all" : "unblocked", search] as const,
   blocks: () => ["me", "blocks"] as const,

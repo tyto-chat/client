@@ -22,11 +22,12 @@ export interface KeyStoreTransaction {
   deviceState?: Uint8Array;
   messageKeys?: { ref: MessageKeyRef; key: Uint8Array; sender: MessageKeySender }[];
   backupRecords?: Uint8Array[];
+  records?: { kind: RecordKind; id: string; data: Uint8Array }[];
 }
 
 type Secrets = PlatformBridge["secrets"];
 
-export type RecordKind = typeof PINS | typeof REVOCATIONS;
+export type RecordKind = typeof PINS | typeof REVOCATIONS | typeof GROUPS | typeof PENDING_KEYS;
 
 export interface KeyedRecord {
   id: string;
@@ -43,7 +44,9 @@ const MESSAGE_KEYS = "messageKeys";
 const OUTBOX = "outbox";
 const PINS = "pins";
 const REVOCATIONS = "revocations";
-const ALL_STORES = [DEVICE_STATE, MESSAGE_KEYS, OUTBOX, PINS, REVOCATIONS];
+const GROUPS = "groups";
+const PENDING_KEYS = "pendingKeys";
+const ALL_STORES = [DEVICE_STATE, MESSAGE_KEYS, OUTBOX, PINS, REVOCATIONS, GROUPS, PENDING_KEYS];
 const STORE_KEY_PREFIX = "e2ee-store-key:";
 const STRICT: IDBTransactionOptions = { durability: "strict" };
 
@@ -199,9 +202,20 @@ export class KeyStore {
     const backupRecords = await Promise.all(
       (change.backupRecords ?? []).map((record) => this.seal(scope, `${key}|${OUTBOX}`, record)),
     );
+    const records = await Promise.all(
+      (change.records ?? []).map(async ({ kind, id, data }) => ({
+        kind,
+        id,
+        sealed: await this.seal(scope, this.recordContext(key, kind, id), data),
+      })),
+    );
 
     const db = await this.open();
-    const tx = db.transaction([DEVICE_STATE, MESSAGE_KEYS, OUTBOX], "readwrite", STRICT);
+    const tx = db.transaction(
+      [DEVICE_STATE, MESSAGE_KEYS, OUTBOX, ...new Set(records.map((r) => r.kind))],
+      "readwrite",
+      STRICT,
+    );
     const done = completion(tx);
     try {
       if (deviceState !== undefined) tx.objectStore(DEVICE_STATE).put(deviceState, key);
@@ -215,6 +229,7 @@ export class KeyStore {
           `${Date.now().toString(36).padStart(10, "0")}-${outboxSequence.toString(36).padStart(6, "0")}-${crypto.randomUUID()}`,
         ]);
       }
+      for (const { kind, id, sealed } of records) tx.objectStore(kind).put(sealed, [key, id]);
     } catch (error) {
       tx.abort();
       await done.catch(() => undefined);
@@ -407,7 +422,7 @@ export class KeyStore {
     if (this.db === null) {
       const opening = new Promise<IDBDatabase>((resolve, reject) => {
         let gaveUp = false;
-        const req = this.factory.open(KeyStore.DATABASE, 2);
+        const req = this.factory.open(KeyStore.DATABASE, 3);
         req.onupgradeneeded = () => {
           const db = req.result;
           for (const store of ALL_STORES) {

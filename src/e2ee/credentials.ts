@@ -122,12 +122,12 @@ export function createCredentialValidator(options: {
     const pin = await options.pins.pinned(credential.accountId);
     if (pin === undefined) return "unpinned";
     if (pin.blocked) return "identity_changed";
-    if (await options.revocations.isRevoked(credential)) return "revoked";
     if (credential.generation !== pin.generation) return "chain_invalid";
     const chained = await verifyCredential(pin.accountPublicKey, credential, {
       server: options.server,
       accountId: credential.accountId,
     });
-    return chained ? "ok" : "chain_invalid";
+    if (!chained) return "chain_invalid";
+    return (await options.revocations.isRevoked(credential)) ? "revoked" : "ok";
   };
 }

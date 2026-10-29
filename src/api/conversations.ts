@@ -13,8 +13,14 @@ export function fetchConversation(identifier: string): Promise<Conversation> {
   return apiClient.get<Conversation>(`/api/conversations/${identifier}`);
 }
 
-export function createConversation(memberUserIds: number[]): Promise<Conversation> {
-  return apiClient.post<Conversation>("/api/conversations", { memberUserIds });
+export function createConversation(
+  memberUserIds: number[],
+  options: { encrypted?: boolean } = {},
+): Promise<Conversation> {
+  return apiClient.post<Conversation>("/api/conversations", {
+    memberUserIds,
+    ...(options.encrypted === true && { encrypted: true }),
+  });
 }
 
 export function muteConversation(
@@ -50,9 +56,11 @@ export function createConversationMessage(
   identifier: string,
   text: string,
   attachmentIris: string[] = [],
+  id?: string,
 ): Promise<Message> {
   return apiClient.post<Message>(`/api/conversations/${identifier}/messages`, {
     text,
     attachmentIris,
+    ...(id !== undefined && { id }),
   });
 }

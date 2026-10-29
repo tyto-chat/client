@@ -342,12 +342,30 @@ describe("KeyStore", () => {
     await expect(keys.loadRecords(alice, "pins")).resolves.toEqual([]);
   });
 
+  it("writes group records in the same transaction as message keys", async () => {
+    const keys = store();
+    const ref = { id: "m-1", rev: 0 };
+    const group = { kind: "groups" as const, id: "conv-1", data: Uint8Array.of(1) };
+    await keys.commitTransaction(alice, { messageKeys: [{ ref, key: Uint8Array.of(9), sender }] });
+
+    await expect(
+      keys.commitTransaction(alice, {
+        messageKeys: [{ ref, key: Uint8Array.of(8), sender }],
+        records: [group],
+      }),
+    ).rejects.toThrow();
+    expect(await keys.getRecord(alice, "groups", "conv-1")).toBeNull();
+
+    await keys.commitTransaction(alice, { records: [group] });
+    expect(await keys.getRecord(alice, "groups", "conv-1")).toEqual(Uint8Array.of(1));
+  });
+
   it("steps aside when a newer version needs the database", async () => {
     const keys = store();
     await keys.saveDeviceState(alice, Uint8Array.of(1));
 
     const newer = await new Promise<string>((resolve) => {
-      const open = idb.open(KeyStore.DATABASE, 3);
+      const open = idb.open(KeyStore.DATABASE, 4);
       open.onblocked = () => resolve("blocked");
       open.onsuccess = () => {
         open.result.close();

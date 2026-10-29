@@ -214,6 +214,8 @@ export interface Message extends HydraResource {
   deletedAt?: string | null;
   deletedBy?: User | null;
   edited: boolean;
+  revisionCount?: number;
+  revisedAt?: string | null;
   kind: MessageKind;
   createdAt: string;
   createdBy?: User;
@@ -258,6 +260,7 @@ export interface Conversation extends HydraResource {
   updatedAt: string;
   lastMessageAt: string | null;
   unreadCount: number;
+  encrypted?: boolean;
   readOnly: boolean;
   readOnlyReason: "blocked" | "unavailable" | null;
 }
