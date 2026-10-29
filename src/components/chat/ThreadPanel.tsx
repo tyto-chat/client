@@ -23,6 +23,9 @@ import { useMessageGroups } from "@/hooks/useMessageGroups";
 import { queryKeys } from "@/queries/queryKeys";
 import type { MemberItem } from "@/utils/userMentionExtension";
 import type { Message, UserGroup } from "@/types/api";
+import type { ConversationSession } from "@/e2ee/conversationSession";
+import type { ContentRenderPolicy } from "@/e2ee/renderPolicy";
+import { useDecryptedMessages } from "@/queries/e2eeQueries";
 
 const EMPTY_MODS: Set<number> = new Set();
 const EMPTY_GROUPS: Map<number, UserGroup[]> = new Map();
@@ -55,6 +58,9 @@ interface Props {
   canParticipate?: boolean;
   writeLocked?: boolean;
   lockedNotice?: React.ReactNode;
+  renderPolicy?: ContentRenderPolicy;
+  e2eeSession?: ConversationSession | null;
+  onSendError?: (error: unknown) => void;
 }
 
 export function ThreadPanel({
@@ -78,6 +84,9 @@ export function ThreadPanel({
   canParticipate = true,
   writeLocked = false,
   lockedNotice,
+  renderPolicy = "plain",
+  e2eeSession = null,
+  onSendError,
 }: Props) {
   const { t } = useTranslation(["channel", "common"]);
   const { user } = useAuthContext();
@@ -90,8 +99,12 @@ export function ThreadPanel({
       : conversationNumericId != null
         ? conversationThreadsTopic(conversationNumericId)
         : null;
-  const { data: root } = useMessage(rootUuid);
-  const { data: replies, isLoading } = useThreadReplies(rootIri);
+  const { data: rawRoot } = useMessage(rootUuid);
+  const { data: rawReplies, isLoading } = useThreadReplies(rootIri);
+  const rawRootList = useMemo(() => (rawRoot ? [rawRoot] : EMPTY_REPLIES), [rawRoot]);
+  const [root] = useDecryptedMessages(e2eeSession, rawRootList);
+  const decryptedReplies = useDecryptedMessages(e2eeSession, rawReplies ?? EMPTY_REPLIES);
+  const replies = rawReplies === undefined ? undefined : decryptedReplies;
   useThreadMercure(rootIri, threadTopic);
 
   const pagesKey =
@@ -99,9 +112,15 @@ export function ThreadPanel({
       ? queryKeys.conversationPages(conversationIdentifier)
       : queryKeys.channelPages(communityId ?? "", channelIdentifier ?? "");
 
-  const reply = useReplyToMessage(pagesKey, rootIri, user ?? null, conversationIdentifier);
+  const reply = useReplyToMessage(
+    pagesKey,
+    rootIri,
+    user ?? null,
+    conversationIdentifier,
+    e2eeSession,
+  );
   const toggleReplyReaction = useToggleThreadReaction(rootIri, user?.id ?? 0);
-  const editReply = useEditThreadReply(rootIri);
+  const editReply = useEditThreadReply(rootIri, e2eeSession);
   const deleteReply = useDeleteThreadReply(rootIri);
   const handleToggleReplyReaction = useCallback(
     (messageIri: string, emoji: string, existingId?: number) =>
@@ -109,8 +128,9 @@ export function ThreadPanel({
     [toggleReplyReaction],
   );
   const handleEditReply = useCallback(
-    (messageIri: string, text: string) => editReply.mutate({ messageIri, text }),
-    [editReply],
+    (messageIri: string, text: string) =>
+      editReply.mutate({ messageIri, text }, { onError: onSendError }),
+    [editReply, onSendError],
   );
   const handleDeleteReply = useCallback(
     (messageIri: string) => deleteReply.mutate(messageIri),
@@ -199,6 +219,7 @@ export function ThreadPanel({
     onUserClick: noop,
     onDeleteAttachment: noop,
     readOnly: true as const,
+    renderPolicy,
   };
 
   const replyGroupProps = {
@@ -221,6 +242,7 @@ export function ThreadPanel({
     canEmbed,
     onEmbedMessage,
     compact: true as const,
+    renderPolicy,
   };
 
   return (
@@ -304,7 +326,9 @@ export function ThreadPanel({
           <div className="pointer-events-none absolute inset-x-0 bottom-0 px-3 pb-2 pt-1">
             <div className="pointer-events-auto">
               <MessageEditor
-                onSend={(text, attachmentIris) => reply.mutate({ text, attachmentIris })}
+                onSend={(text, attachmentIris) =>
+                  reply.mutate({ text, attachmentIris }, { onError: onSendError })
+                }
                 isPending={reply.isPending}
                 placeholder={t("thread_reply_placeholder")}
                 members={members}

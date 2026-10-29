@@ -216,6 +216,7 @@ export interface Message extends HydraResource {
   edited: boolean;
   revisionCount?: number;
   revisedAt?: string | null;
+  e2eeStatus?: "pending" | "unreadable" | "tampered";
   kind: MessageKind;
   createdAt: string;
   createdBy?: User;
@@ -336,6 +337,8 @@ export interface MessageUpdateEvent {
   pinnedAt?: string | null;
   replyCount?: number;
   lastReplyAt?: string | null;
+  revisionCount?: number;
+  revisedAt?: string | null;
 }
 
 export interface MessageAttachmentsUpdateEvent {

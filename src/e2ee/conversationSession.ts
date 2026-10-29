@@ -195,6 +195,12 @@ function rosterOf(staged: Staged): RosterEntry[] {
   }));
 }
 
+export function parentIdOf(message: Pick<Message, "parent">): string | null {
+  const parent = message.parent as Message | string | null | undefined;
+  if (parent === null || parent === undefined) return null;
+  return typeof parent === "string" ? uuidOf(parent) : parent.id;
+}
+
 function uuidOf(iri: string): string {
   return iri.slice(iri.lastIndexOf("/") + 1);
 }
@@ -557,7 +563,7 @@ export class ConversationSession {
       }
       if (current.revisionCount === undefined) throw new Error("the server sent no revision count");
       const sealed = await this.encryptLocked(
-        { id: current.id, rev: current.revisionCount, parent: current.parent?.id ?? null },
+        { id: current.id, rev: current.revisionCount, parent: parentIdOf(current) },
         text,
         false,
       );
@@ -732,7 +738,7 @@ export class ConversationSession {
     const expected: MessageHeader = {
       id: message.id,
       rev,
-      parent: message.parent?.id ?? null,
+      parent: parentIdOf(message),
       conv: this.conversation.id,
       g: envelope.g,
       sender: stored.sender,
@@ -831,7 +837,7 @@ export class ConversationSession {
     }
     if (header.conv !== this.conversation.id) return "other_conversation";
     if (header.id !== message.id) return "replayed";
-    if (header.parent !== (message.parent?.id ?? null)) return "reparented";
+    if (header.parent !== parentIdOf(message)) return "reparented";
     if (header.rev !== rev) return "revision";
     if (header.g !== envelope.g) return "generation";
     return null;

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { ContentRenderPolicy } from "@/e2ee/renderPolicy";
 import { useTranslation } from "react-i18next";
 import { useMessageGroups } from "@/hooks/useMessageGroups";
 import { useMessagePaneScroll } from "@/hooks/useMessagePaneScroll";
@@ -61,6 +62,7 @@ interface MessagePaneProps {
   onEmbedMessage?: (messageIri: string) => void;
   canReport?: boolean;
   onReportMessage?: (messageIri: string) => void;
+  renderPolicy?: ContentRenderPolicy;
   timezone: string;
   communityId?: string;
   channelIdentifier?: string;
@@ -117,6 +119,7 @@ export function MessagePane({
   canEmbed = false,
   onEmbedMessage,
   canReport = false,
+  renderPolicy = "plain",
   onReportMessage,
   timezone,
   communityId,
@@ -243,6 +246,7 @@ export function MessagePane({
               onEmbedMessage={onEmbedMessage}
               canReport={!readOnly && canReport}
               onReportMessage={onReportMessage}
+              renderPolicy={renderPolicy}
             />
           ))}
         </div>

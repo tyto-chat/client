@@ -10,7 +10,8 @@ import { useConversations } from "@/queries/conversationQueries";
 import { useAutoHideScrollbar } from "@/hooks/useAutoHideScrollbar";
 import { useMarkAllDmsRead } from "@/queries/readStateQueries";
 import { conversationDisplayName } from "@/utils/conversationDisplayName";
-import { BellOffIcon, CheckDoubleIcon, PlusIcon } from "@/components/icons";
+import { BellOffIcon, CheckDoubleIcon, LockIcon, LockOpenIcon, PlusIcon } from "@/components/icons";
+import { useServerInfo } from "@/hooks/useServerInfo";
 import { useMobileNav } from "@/context/MobileNavContext";
 import { cn } from "@/utils/cn";
 import { isManagedIdentityMode } from "@/platform/appMode";
@@ -74,6 +75,9 @@ function LegacyConversationsSidebar() {
     return c.members.find((m) => m.userId === user?.id);
   }
 
+  const encryptionMode = useServerInfo()?.encryptedDmsMode;
+  const showPlainMarker = encryptionMode === "enabled" || encryptionMode === "required";
+
   function renderRow(c: Conversation) {
     const displayName = conversationDisplayName(c, user?.id, overflowSuffix);
     const isActive = c.identifier === activeId;
@@ -114,6 +118,27 @@ function LegacyConversationsSidebar() {
             </span>
           )}
           <span className="flex-1 truncate">{displayName}</span>
+          {c.encrypted === true ? (
+            <span
+              data-testid="dm-e2ee-row-badge"
+              aria-label={t("e2ee_badge")}
+              title={t("e2ee_badge")}
+              className="shrink-0"
+            >
+              <LockIcon size={11} className="text-fg-subtle" />
+            </span>
+          ) : (
+            showPlainMarker && (
+              <span
+                data-testid="dm-plain-marker"
+                aria-label={t("e2ee_plain_marker")}
+                title={t("e2ee_plain_marker")}
+                className="shrink-0"
+              >
+                <LockOpenIcon size={11} className="text-fg-subtle" />
+              </span>
+            )
+          )}
           {isMuted && (
             <span
               data-testid="dm-muted-indicator"

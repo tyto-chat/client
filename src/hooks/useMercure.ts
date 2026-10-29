@@ -1,4 +1,5 @@
 import { hashKey, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { dispatchE2eeEvent, isE2eeEvent, type E2eeEvent } from "@/e2ee/e2eeEvents";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { conversationActivityTopic, conversationTopic } from "@/api/topics";
@@ -282,6 +283,11 @@ export function useConversationMercure(
           conversationTypingScope(conversationIdentifier),
           raw as unknown as TypingMercureEvent,
         );
+        return;
+      }
+
+      if (isE2eeEvent(raw)) {
+        dispatchE2eeEvent(raw as E2eeEvent);
         return;
       }
 

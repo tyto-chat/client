@@ -22,6 +22,7 @@ import { serverOrigin } from "@/utils/permalinkOrigins";
 import { useServerDirectory } from "@/platform/serverDirectory";
 import type { CommunityEmoji } from "@/types/api";
 import { parseInertHtml } from "@/utils/inertHtml";
+import { ENCRYPTED_REMOTE_POLICY, type ContentRenderPolicy } from "@/e2ee/renderPolicy";
 
 const COLLAPSE_VIEWPORT_RATIO = 0.3;
 
@@ -34,6 +35,7 @@ interface Props {
   renderPermalinkPreview?: boolean;
   highlightTerms?: readonly string[];
   emojis?: CommunityEmoji[];
+  renderPolicy?: ContentRenderPolicy;
 }
 
 function convertMentionLinks(html: string): string {
@@ -134,12 +136,15 @@ export function MessageContent({
   renderPermalinkPreview = true,
   highlightTerms: terms,
   emojis,
+  renderPolicy = "plain",
 }: Props) {
+  const encrypted = renderPolicy === "encrypted";
   const { t } = useTranslation("channel");
   const { data: fetchedEmojis } = useCommunityEmojis(emojis ? undefined : communityId);
   const communityEmojis = emojis ?? fetchedEmojis;
   const serverDirectory = useServerDirectory();
-  const remoteContent = useRemoteContentPolicy();
+  const userRemoteContent = useRemoteContentPolicy();
+  const remoteContent = encrypted ? ENCRYPTED_REMOTE_POLICY : userRemoteContent;
   const allowRemoteHost = useAllowRemoteHost();
   const __html = useMemo(() => {
     const normalized = (text ?? "")
@@ -168,11 +173,17 @@ export function MessageContent({
     return highlightCodeBlocks(html);
   }, [text, communityEmojis, terms, t, remoteContent, serverDirectory]);
 
-  const youtubeIds = useMemo(() => extractYouTubeIds(text ?? ""), [text]);
-  const imageUrls = useMemo(() => extractImageUrls(text ?? ""), [text]);
+  const youtubeIds = useMemo(
+    () => (encrypted ? [] : extractYouTubeIds(text ?? "")),
+    [text, encrypted],
+  );
+  const imageUrls = useMemo(
+    () => (encrypted ? [] : extractImageUrls(text ?? "")),
+    [text, encrypted],
+  );
   const previewTarget = useMemo(
-    () => (renderPermalinkPreview ? extractFirstPermalink(__html) : null),
-    [__html, renderPermalinkPreview],
+    () => (renderPermalinkPreview && !encrypted ? extractFirstPermalink(__html) : null),
+    [__html, renderPermalinkPreview, encrypted],
   );
 
   const navigate = useNavigate();

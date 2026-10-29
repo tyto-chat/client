@@ -46,14 +46,20 @@ import { avatarUrl } from "@/api/client";
 import { Menu, MenuItem, MenuStaticItem } from "@/components/ui/Menu";
 import { ReportModal } from "@/components/ReportModal";
 import { uuidFromIri } from "@/api/hydra";
-import { BellIcon, BellOffIcon, ChatBubbleIcon, SearchIcon } from "@/components/icons";
+import { BellIcon, BellOffIcon, ChatBubbleIcon, LockIcon, SearchIcon } from "@/components/icons";
+import { E2eeUnavailablePlaceholder } from "@/components/dm/E2eeUnavailablePlaceholder";
+import { useConversationSession, useE2ee } from "@/e2ee/e2eeContextValue";
+import { e2eeErrorKey } from "@/e2ee/e2eeErrors";
+import { renderPolicyFor } from "@/e2ee/renderPolicy";
+import { useDecryptedMessages, useE2eeSessionStatus } from "@/queries/e2eeQueries";
 import { MessagePaneSkeleton } from "@/components/ui/Skeleton";
 import { SearchDialog } from "@/components/chat/SearchDialog";
 import { MobileTopBar } from "@/components/MobileTopBar";
-import type { ChannelPage } from "@/types/api";
+import type { ChannelPage, Message } from "@/types/api";
 import { writeLastLocation } from "@/utils/lastLocation";
 import type { MemberItem } from "@/utils/userMentionExtension";
 
+const NO_MESSAGES: Message[] = [];
 const MUTE_FOREVER = () => new Date(Date.now() + 100 * 365 * 24 * 3600 * 1000);
 
 interface ConversationSearch {
@@ -183,6 +189,12 @@ function ConversationPage() {
   }, [user, conversationId]);
 
   const { data: conversation, isLoading } = useConversation(conversationId);
+  const { availability } = useE2ee();
+  const session = useConversationSession(conversation);
+  const encrypted = conversation?.encrypted === true;
+  const renderPolicy = renderPolicyFor(conversation);
+  const { data: sessionStatus } = useE2eeSessionStatus(session);
+  const e2eeNotReady = encrypted && sessionStatus !== "ready";
 
   const overflowSuffix = (count: number) => t("compact_overflow_suffix", { count });
   const title = conversation ? conversationDisplayName(conversation, user?.id, overflowSuffix) : "";
@@ -192,16 +204,24 @@ function ConversationPage() {
   const isMember = !!me;
   const isMuted = !!me?.mutedUntil;
   const isGroup = (conversation?.members.length ?? 0) > 2;
-  const writeLocked = conversation?.readOnly === true;
+  const writeLocked = conversation?.readOnly === true || e2eeNotReady;
   const otherUserId = isGroup
     ? null
     : (conversation?.members.find((m) => m.userId !== user?.id)?.userId ?? null);
-  const readOnlyBanner = writeLocked ? (
-    <ConversationReadOnlyBanner
-      reason={conversation?.readOnlyReason ?? null}
-      otherUserId={otherUserId}
-    />
-  ) : undefined;
+  const readOnlyBanner =
+    conversation?.readOnly === true ? (
+      <ConversationReadOnlyBanner
+        reason={conversation.readOnlyReason ?? null}
+        otherUserId={otherUserId}
+      />
+    ) : e2eeNotReady ? (
+      <p
+        data-testid="e2ee-session-notice"
+        className="border-t border-line bg-canvas px-4 py-3 text-sm text-fg-muted"
+      >
+        {sessionStatus === "removed" ? t("e2ee_removed") : t("e2ee_setting_up")}
+      </p>
+    ) : undefined;
   const muteConversation = useMuteConversation(conversationId);
   const toggleMute = useCallback(
     () => muteConversation.mutate(isMuted ? null : MUTE_FOREVER().toISOString()),
@@ -217,10 +237,20 @@ function ConversationPage() {
     [conversation?.members],
   );
 
-  const sendMessage = useSendConversationMessage(conversationId, user ?? null, () =>
-    notify(t("common:too_many_requests"), "error"),
+  const sendMessage = useSendConversationMessage(
+    conversationId,
+    user ?? null,
+    () => notify(t("common:too_many_requests"), "error"),
+    session,
   );
-  const editMessage = useEditConversationMessage(conversationId);
+  const editMessage = useEditConversationMessage(conversationId, session);
+  const notifyE2eeError = useCallback(
+    (error: unknown) => {
+      if (!encrypted) return;
+      notify(t(e2eeErrorKey(error)), "error");
+    },
+    [encrypted, notify, t],
+  );
   const deleteMessage = useDeleteConversationMessage(conversationId);
   const deleteAttachmentMutation = useDeleteConversationAttachment(conversationId);
   const toggleReaction = useToggleConversationReaction(conversationId, user?.id ?? 0);
@@ -241,11 +271,12 @@ function ConversationPage() {
     isMember,
   );
 
-  const messages = useMemo(
+  const rawMessages = useMemo(
     () => pagesData?.pages.flatMap((p) => p.messages ?? []) ?? [],
     [pagesData],
   );
-  usePrefetchMessagePermalinks(messages);
+  const messages = useDecryptedMessages(session, rawMessages);
+  usePrefetchMessagePermalinks(encrypted ? NO_MESSAGES : rawMessages);
 
   const [historyMessageIri, setHistoryMessageIri] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -270,7 +301,9 @@ function ConversationPage() {
     });
   }, [navigate, conversationId]);
 
-  useSearchHotkey(() => setSearchOpen((v) => !v));
+  useSearchHotkey(() => {
+    if (!encrypted) setSearchOpen((v) => !v);
+  });
 
   const handleToggleReaction = useCallback(
     (messageIri: string, emoji: string, existingId?: number) =>
@@ -282,8 +315,9 @@ function ConversationPage() {
     [deleteMessage],
   );
   const handleEditMessage = useCallback(
-    (iri: string, text: string) => editMessage.mutate({ messageIri: iri, text }),
-    [editMessage],
+    (iri: string, text: string) =>
+      editMessage.mutate({ messageIri: iri, text }, { onError: notifyE2eeError }),
+    [editMessage, notifyE2eeError],
   );
   const handleViewHistory = useCallback((iri: string) => setHistoryMessageIri(iri), []);
   const handleDeleteAttachment = useCallback(
@@ -297,8 +331,12 @@ function ConversationPage() {
     void fetchNextPage();
   }, [fetchNextPage]);
   const handleSend = useCallback(
-    (text: string, attachmentIris?: string[]) => sendMessage.mutateAsync({ text, attachmentIris }),
-    [sendMessage],
+    (text: string, attachmentIris?: string[]) =>
+      sendMessage.mutateAsync({ text, attachmentIris }).catch((error: unknown) => {
+        notifyE2eeError(error);
+        throw error;
+      }),
+    [sendMessage, notifyE2eeError],
   );
 
   const clearFocus = useCallback(() => {
@@ -327,6 +365,15 @@ function ConversationPage() {
     );
   }
 
+  if (encrypted && availability !== "ready") {
+    return (
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <MobileTopBar title={title} />
+        <E2eeUnavailablePlaceholder availability={availability} />
+      </main>
+    );
+  }
+
   return (
     <div className="flex flex-1 min-w-0 overflow-hidden">
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -338,13 +385,15 @@ function ConversationPage() {
             </>
           }
           right={
-            <button
-              onClick={() => setSearchOpen(true)}
-              title={t("channel:search")}
-              className="flex h-11 w-11 items-center justify-center rounded-lg text-fg-muted hover:bg-surface hover:text-fg"
-            >
-              <SearchIcon size={18} />
-            </button>
+            encrypted ? undefined : (
+              <button
+                onClick={() => setSearchOpen(true)}
+                title={t("channel:search")}
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-fg-muted hover:bg-surface hover:text-fg"
+              >
+                <SearchIcon size={18} />
+              </button>
+            )
           }
         />
         <header className="flex h-14 shrink-0 items-center border-b border-line px-4 max-md:hidden">
@@ -417,13 +466,24 @@ function ConversationPage() {
             >
               {isMuted ? <BellOffIcon size={13} /> : <BellIcon size={13} />}
             </button>
-            <button
-              onClick={() => setSearchOpen(true)}
-              title={`${t("channel:search")} (${navigator.platform.toLowerCase().includes("mac") ? "⌘K" : "Ctrl+K"})`}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface hover:text-fg"
-            >
-              <SearchIcon size={13} />
-            </button>
+            {encrypted ? (
+              <span
+                data-testid="dm-e2ee-badge"
+                title={t("e2ee_badge")}
+                className="flex h-8 w-8 items-center justify-center text-accent"
+              >
+                <LockIcon size={13} />
+              </span>
+            ) : (
+              <button
+                data-testid="dm-search-button"
+                onClick={() => setSearchOpen(true)}
+                title={`${t("channel:search")} (${navigator.platform.toLowerCase().includes("mac") ? "⌘K" : "Ctrl+K"})`}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface hover:text-fg"
+              >
+                <SearchIcon size={13} />
+              </button>
+            )}
           </h1>
         </header>
 
@@ -464,7 +524,7 @@ function ConversationPage() {
           members={memberItems}
           timezone={timezone}
           conversationIdentifier={conversationId}
-          allowAttachments={true}
+          allowAttachments={!encrypted}
           placeholder={t("message_placeholder", { name: title })}
           emptyTitle={t("no_messages")}
           emptySubtitle={t("be_first")}
@@ -474,10 +534,11 @@ function ConversationPage() {
           writeLocked={writeLocked}
           canReply={!!user}
           onOpenThread={setThreadRootIri}
-          canReport={!!user}
+          canReport={!!user && !encrypted}
           onReportMessage={setReportMessageIri}
+          renderPolicy={renderPolicy}
         />
-        {searchOpen && (
+        {searchOpen && !encrypted && (
           <SearchDialog
             kind="conversation"
             conversationIdentifier={conversationId}
@@ -494,7 +555,10 @@ function ConversationPage() {
           rootIri={threadRootIri}
           members={memberItems}
           channels={[]}
-          allowAttachments={true}
+          allowAttachments={!encrypted}
+          renderPolicy={renderPolicy}
+          e2eeSession={session}
+          onSendError={notifyE2eeError}
           canModerate={false}
           writeLocked={writeLocked}
           lockedNotice={readOnlyBanner}

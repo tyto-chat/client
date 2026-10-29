@@ -7,6 +7,7 @@ import {
   X,
   Plus,
   Lock,
+  LockOpen,
   Archive,
   PencilOff,
   MessageSquareReply,
@@ -110,6 +111,7 @@ export const CheckDoubleIcon = make(CheckCheck, 14);
 export const XIcon = make(X, 14);
 export const PlusIcon = make(Plus, 16);
 export const LockIcon = make(Lock, 11);
+export const LockOpenIcon = make(LockOpen, 11);
 export const ArchiveIcon = make(Archive, 11);
 export const ReadonlyIcon = make(PencilOff, 11);
 export const ReadonlyRepliesIcon = make(MessageSquareReply, 11);

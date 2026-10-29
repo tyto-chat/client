@@ -23,6 +23,26 @@ export function createConversation(
   });
 }
 
+export type PreflightOutcome = "encrypted" | "plain" | "plain_fallback" | "blocked";
+
+export interface ConversationPreflight {
+  outcome: PreflightOutcome;
+  reason: string | null;
+  refusingUserIds: number[];
+  unreachableUserIds: number[];
+  existingIdentifier: string | null;
+}
+
+export function fetchConversationPreflight(
+  memberUserIds: number[],
+): Promise<ConversationPreflight> {
+  const params = new URLSearchParams();
+  for (const id of memberUserIds) params.append("memberUserIds[]", String(id));
+  return apiClient.getJson<ConversationPreflight>(
+    `/api/conversations/preflight?${params.toString()}`,
+  );
+}
+
 export function muteConversation(
   identifier: string,
   mutedUntil: string | null,

@@ -255,7 +255,19 @@ export class FakeDeliveryServer {
       id,
       identifier: `c${id}`,
       encrypted: true,
-      members: sorted.map((userId) => ({ userId })),
+      members: sorted.map((userId) => ({
+        "@id": `/api/v1/conversation_members/${userId}`,
+        id: userId,
+        userId,
+        profile: { "@id": `/api/profiles/${userId}`, name: `User ${userId}`, avatar: null },
+        joinedAt: "2026-10-29T10:00:00+00:00",
+        mutedUntil: null,
+        lastReadAt: null,
+      })),
+      unreadCount: 0,
+      readOnly: false,
+      readOnlyReason: null,
+      lastMessageAt: null,
     } as unknown as Conversation;
     this.conversations.set(conversation.identifier, {
       conversation,
@@ -333,7 +345,11 @@ export class FakeDeliveryServer {
       revisedAt: at,
       kind: "standard",
       createdAt: at,
-      createdBy: { "@id": `/api/v1/users/${userId}`, id: userId },
+      createdBy: {
+        "@id": `/api/v1/users/${userId}`,
+        id: userId,
+        profile: { "@id": `/api/profiles/${userId}`, name: `User ${userId}`, avatar: null },
+      },
       reactions: null,
       pageNumber: 1,
       conversationIdentifier: conversation,

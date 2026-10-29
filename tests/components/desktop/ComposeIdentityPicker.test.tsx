@@ -47,8 +47,11 @@ vi.mock("@/components/MobileTopBar", () => ({
 }));
 
 vi.mock("@/components/chat/MessagePane", () => ({
-  MessagePane: ({ onSend }: { onSend: (text: string) => void }) => (
-    <button onClick={() => onSend("hello")}>send-stub</button>
+  MessagePane: ({ onSend, footer }: { onSend: (text: string) => void; footer?: ReactNode }) => (
+    <>
+      {footer}
+      <button onClick={() => onSend("hello")}>send-stub</button>
+    </>
   ),
 }));
 
@@ -141,6 +144,34 @@ beforeEach(() => {
 });
 
 describe("ComposeConversation identity picker", () => {
+  it("an encrypted outcome on another server asks to switch servers instead of sending", async () => {
+    const user = userEvent.setup();
+    let created = false;
+    server.use(
+      http.get(`${ORIGIN_B}/api/v1/conversations/preflight`, () =>
+        HttpResponse.json({
+          outcome: "encrypted",
+          reason: null,
+          refusingUserIds: [],
+          unreachableUserIds: [],
+          existingIdentifier: null,
+        }),
+      ),
+      http.post(`${ORIGIN_B}/api/v1/conversations`, () => {
+        created = true;
+        return HttpResponse.json({});
+      }),
+    );
+
+    render(<ComposeConversation />, { wrapper: makeWrapper(twoIdentityRegistry()) });
+    await user.selectOptions(await screen.findByTestId("dm-compose-identity-select"), "ib");
+    await waitFor(() => expect(screen.getByText(/Bora/)).toBeInTheDocument());
+    await user.click(screen.getByTestId("picker-chip-20"));
+
+    expect(await screen.findByTestId("e2ee-creation-blocked")).toBeInTheDocument();
+    expect(created).toBe(false);
+  });
+
   it("shows the server select with the active identity preselected, listing healthy servers", async () => {
     render(<ComposeConversation />, { wrapper: makeWrapper(twoIdentityRegistry()) });
 
@@ -176,6 +207,15 @@ describe("ComposeConversation identity picker", () => {
     let createdBody: unknown = null;
     let messageBody: unknown = null;
     server.use(
+      http.get(`${ORIGIN_B}/api/v1/conversations/preflight`, () =>
+        HttpResponse.json({
+          outcome: "plain",
+          reason: null,
+          refusingUserIds: [],
+          unreachableUserIds: [],
+          existingIdentifier: null,
+        }),
+      ),
       http.post(`${ORIGIN_B}/api/v1/conversations`, async ({ request }) => {
         createdBody = await request.json();
         return HttpResponse.json({ "@id": "/api/conversations/remote-c", identifier: "remote-c" });

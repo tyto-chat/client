@@ -5,6 +5,7 @@ import { StaleTime } from "@/queries/staleTimes";
 import type { Message } from "@/types/api";
 import { extractPermalinkTargets } from "@/utils/extractPermalinkTargets";
 import { linkScope, linkViewer } from "@/utils/linkScope";
+import { ENVELOPE_PREFIX } from "@/e2ee/envelope";
 
 export async function prefetchMessagePermalinks(
   queryClient: QueryClient,
@@ -13,6 +14,7 @@ export async function prefetchMessagePermalinks(
 ): Promise<void> {
   const jobs = new Map<string, Promise<void>>();
   for (const message of messages) {
+    if (message.text?.startsWith(ENVELOPE_PREFIX) === true) continue;
     for (const target of extractPermalinkTargets(message.text)) {
       const scope = linkScope(target.origin);
       if (!scope) continue;

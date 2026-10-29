@@ -1,4 +1,7 @@
 import { useState, useCallback } from "react";
+import type { ContentRenderPolicy } from "@/e2ee/renderPolicy";
+import { PendingDecryption, UnreadableMessage } from "@/components/dm/UnreadableMessage";
+import { TamperedMessage } from "@/components/dm/TamperedMessage";
 import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/Avatar";
 import { GroupIcon } from "@/components/GroupIcon";
@@ -64,6 +67,7 @@ export interface MessageGroupProps {
   canDeleteSystem?: boolean;
   compact?: boolean;
   showDivider?: boolean;
+  renderPolicy?: ContentRenderPolicy;
 }
 
 export function MessageGroup({
@@ -100,6 +104,7 @@ export function MessageGroup({
   canDeleteSystem = false,
   compact = false,
   showDivider = false,
+  renderPolicy = "plain",
 }: MessageGroupProps) {
   const { t } = useTranslation(["community", "channel", "common"]);
   const { notify } = useNotification();
@@ -382,9 +387,10 @@ export function MessageGroup({
           const interactive = !readOnly && !isOptimisticMessage(msg["@id"]);
           const flags = {
             canReact: allowReactions && !!user && !frozen && !writeLocked,
-            canEdit: canEdit && !msg.isDeleted && !frozen && !writeLocked,
+            canEdit: canEdit && !msg.isDeleted && !frozen && !writeLocked && !msg.e2eeStatus,
             canDelete: canDelete && !msg.isDeleted && !frozen,
-            canViewHistory: (isAdmin || canModerate) && (msg.edited || msg.isDeleted),
+            canViewHistory:
+              renderPolicy === "plain" && (isAdmin || canModerate) && (msg.edited || msg.isDeleted),
             canPin: canPin && !msg.isDeleted && !frozen && !writeLocked,
             isPinned: !!msg.pinned,
             canReply: canReply && !frozen && !writeLocked,
@@ -506,13 +512,22 @@ export function MessageGroup({
                       {t("channel:pinned_badge")}
                     </span>
                   )}
-                  <MessageContent
-                    text={msg.text}
-                    communityId={communityId}
-                    onUserClick={onUserClick}
-                    messageIri={msg["@id"]}
-                    highlightTerms={highlightTerms}
-                  />
+                  {msg.e2eeStatus === "pending" ? (
+                    <PendingDecryption />
+                  ) : msg.e2eeStatus === "unreadable" ? (
+                    <UnreadableMessage />
+                  ) : msg.e2eeStatus === "tampered" ? (
+                    <TamperedMessage />
+                  ) : (
+                    <MessageContent
+                      text={msg.text}
+                      communityId={communityId}
+                      onUserClick={onUserClick}
+                      messageIri={msg["@id"]}
+                      highlightTerms={highlightTerms}
+                      renderPolicy={renderPolicy}
+                    />
+                  )}
                   {msg.edited && !msg.isDeleted && (
                     <span className="text-xs italic text-fg-subtle">{t("channel:edited")}</span>
                   )}

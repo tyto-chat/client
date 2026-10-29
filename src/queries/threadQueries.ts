@@ -8,6 +8,7 @@ import { queryKeys } from "@/queries/queryKeys";
 import { uuidFromIri } from "@/api/hydra";
 import { ApiError } from "@/api/client";
 import type { ChannelPage, Message, User } from "@/types/api";
+import { editEncrypted, sendEncrypted, type ConversationSession } from "@/e2ee/conversationSession";
 
 export const THREAD_PAGE_SIZE = 50;
 
@@ -25,13 +26,16 @@ export function useReplyToMessage(
   rootIri: string,
   currentUser: User | null,
   conversationIdentifier?: string,
+  session: ConversationSession | null = null,
 ) {
   const queryClient = useQueryClient();
   const threadKey = queryKeys.threadReplies(rootIri);
 
   return useMutation({
     mutationFn: ({ text, attachmentIris }: { text: string; attachmentIris?: string[] }) =>
-      createThreadReply(uuidFromIri(rootIri), text, attachmentIris ?? []),
+      session !== null
+        ? sendEncrypted(session, text, rootIri)
+        : createThreadReply(uuidFromIri(rootIri), text, attachmentIris ?? []),
     onMutate: async ({ text }) => {
       await queryClient.cancelQueries({ queryKey: threadKey });
       const previousThread = queryClient.getQueryData<Message[]>(threadKey);
@@ -86,24 +90,36 @@ export function useLoadEarlierReplies(rootIri: string) {
   });
 }
 
-export function useEditThreadReply(rootIri: string) {
+export function useEditThreadReply(rootIri: string, session: ConversationSession | null = null) {
   const queryClient = useQueryClient();
   const threadKey = queryKeys.threadReplies(rootIri);
 
   return useMutation({
     mutationFn: ({ messageIri, text }: { messageIri: string; text: string }) =>
-      editMessage(messageIri, text),
+      session !== null ? editEncrypted(session, messageIri, text) : editMessage(messageIri, text),
     onMutate: async ({ messageIri, text }) => {
       await queryClient.cancelQueries({ queryKey: threadKey });
       const previous = queryClient.getQueryData<Message[]>(threadKey);
-      queryClient.setQueryData<Message[]>(threadKey, (old) =>
-        old?.map((m) => (m["@id"] === messageIri ? { ...m, text, edited: true } : m)),
-      );
+      if (session === null) {
+        queryClient.setQueryData<Message[]>(threadKey, (old) =>
+          old?.map((m) => (m["@id"] === messageIri ? { ...m, text, edited: true } : m)),
+        );
+      }
       return { previous };
     },
     onSuccess: (updated, { messageIri }) => {
       queryClient.setQueryData<Message[]>(threadKey, (old) =>
-        old?.map((m) => (m["@id"] === messageIri ? { ...m, text: updated.text, edited: true } : m)),
+        old?.map((m) =>
+          m["@id"] === messageIri
+            ? {
+                ...m,
+                text: updated.text,
+                edited: true,
+                revisionCount: updated.revisionCount ?? m.revisionCount,
+                revisedAt: updated.revisedAt ?? m.revisedAt,
+              }
+            : m,
+        ),
       );
     },
     onError: (_err, _vars, context) => {

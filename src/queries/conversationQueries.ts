@@ -3,6 +3,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import {
   createConversation,
   createConversationMessage,
+  fetchConversationPreflight,
   fetchConversation,
   fetchConversations,
   fetchInvitableUsers,
@@ -20,6 +21,7 @@ import {
 import { bumpDmListRevision } from "@/platform/dmListRevision";
 import { queryKeys } from "@/queries/queryKeys";
 import type { User } from "@/types/api";
+import { editEncrypted, sendEncrypted, type ConversationSession } from "@/e2ee/conversationSession";
 
 export function useConversations(enabled = true) {
   return useQuery({
@@ -42,6 +44,17 @@ export function useInvitableUsers(search: string, includeBlocked = false) {
     queryKey: queryKeys.invitableUsers(search, includeBlocked),
     queryFn: () => fetchInvitableUsers(search, includeBlocked),
     staleTime: StaleTime.short,
+  });
+}
+
+export function useConversationPreflight(memberUserIds: number[], enabled = true) {
+  const sorted = [...memberUserIds].sort((a, b) => a - b);
+  return useQuery({
+    queryKey: ["conversationPreflight", sorted.join(",")],
+    queryFn: () => fetchConversationPreflight(sorted),
+    enabled: enabled && sorted.length > 0,
+    retry: false,
+    staleTime: 0,
   });
 }
 
@@ -110,12 +123,14 @@ export function useSendConversationMessage(
   identifier: string,
   currentUser: User | null,
   onRateLimit?: () => void,
+  session: ConversationSession | null = null,
 ) {
   const queryClient = useQueryClient();
   return useSendMessageForKey(
     queryKeys.conversationPages(identifier),
     async ({ text, attachmentIris }) => {
       try {
+        if (session !== null) return await sendEncrypted(session, text);
         return await createConversationMessage(identifier, text, attachmentIris ?? []);
       } catch (err) {
         if (err instanceof ApiError && err.status === 422) {
@@ -129,8 +144,14 @@ export function useSendConversationMessage(
   );
 }
 
-export function useEditConversationMessage(identifier: string) {
-  return useEditMessageForKey(queryKeys.conversationPages(identifier));
+export function useEditConversationMessage(
+  identifier: string,
+  session: ConversationSession | null = null,
+) {
+  return useEditMessageForKey(
+    queryKeys.conversationPages(identifier),
+    session === null ? undefined : (messageIri, text) => editEncrypted(session, messageIri, text),
+  );
 }
 
 export function useDeleteConversationAttachment(identifier: string) {

@@ -8,6 +8,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useMercureSubscription } from "@/hooks/useMercureSubscription";
 import { parseMercureEvent } from "@/utils/parseMercureEvent";
+import { dispatchE2eeEvent, isE2eeEvent, type E2eeEvent } from "@/e2ee/e2eeEvents";
 
 const GRANT_CHANGING_EVENTS = new Set([
   "community.removed",
@@ -39,6 +40,10 @@ export function useUserEventsMercure() {
     topic,
     (event) => {
       const data = parseMercureEvent<UserControlEvent>(event);
+      if (isE2eeEvent(data)) {
+        dispatchE2eeEvent(data as E2eeEvent);
+        return;
+      }
       if (!data || data.type !== "user.event") return;
       if (data.event && GRANT_CHANGING_EVENTS.has(data.event)) {
         void refreshMercureToken({ revoke: data.event !== "channel.access.granted" });

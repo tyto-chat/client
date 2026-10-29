@@ -7,7 +7,7 @@ import { Modal } from "@/components/Modal";
 import { ModalTabs } from "@/components/ui";
 import { Avatar } from "@/components/Avatar";
 import { PresenceDot } from "@/components/PresenceDot";
-import { apiErrorText, avatarUrl } from "@/api/client";
+import { avatarUrl } from "@/api/client";
 import { getUserTextColor } from "@/utils/userColor";
 import { toSafeHttpUrl } from "@/utils/safeUrl";
 import { usePresenceSubscription, useUserPresence } from "@/queries/presenceQueries";
@@ -27,7 +27,6 @@ import { ReportModal } from "@/components/ReportModal";
 import { useUser } from "@/queries/userQueries";
 import { useCommunity } from "@/queries/communityQueries";
 import { useCommunityMembership } from "@/queries/membershipQueries";
-import { useCreateConversation } from "@/queries/conversationQueries";
 import { useBlockStatus, useBlockUser, useUnblockUser } from "@/queries/blockQueries";
 import { useConfirm } from "@/hooks/useConfirm";
 import {
@@ -94,7 +93,6 @@ export function UserModerationModal({
   const { data: membership } = useCommunityMembership(cid);
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
-  const createConversation = useCreateConversation();
   const isOther = !!currentUser && currentUser.id !== userId;
   const { data: blockStatus } = useBlockStatus(isOther ? userId : null);
   const blockUser = useBlockUser();
@@ -103,17 +101,9 @@ export function UserModerationModal({
   usePresenceSubscription([userId]);
   const presenceState = useUserPresence(userId);
 
-  async function handleSendDm() {
-    try {
-      const conversation = await createConversation.mutateAsync([userId]);
-      onClose();
-      void navigate({
-        to: "/dm/$conversationId",
-        params: { conversationId: conversation.identifier },
-      });
-    } catch (err) {
-      notify(apiErrorText(err, tConv("create_failed")), "error");
-    }
+  function handleSendDm() {
+    onClose();
+    void navigate({ to: "/dm/new", search: { to: userId } });
   }
 
   async function handleBlock(name: string) {
@@ -324,7 +314,6 @@ export function UserModerationModal({
                     <button
                       type="button"
                       onClick={handleSendDm}
-                      disabled={createConversation.isPending}
                       title={tConv("write_private_message")}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-accent-subtle px-3 py-1.5 text-sm font-medium text-accent transition-opacity hover:opacity-80 disabled:opacity-50"
                     >

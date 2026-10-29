@@ -141,14 +141,22 @@ export function useSendMessageForKey(
   });
 }
 
-export function useEditMessageForKey(key: readonly unknown[]) {
+export function useEditMessageForKey(
+  key: readonly unknown[],
+  edit: (messageIri: string, text: string) => Promise<Message> = editMessage,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ messageIri, text }: { messageIri: string; text: string }) =>
-      editMessage(messageIri, text),
+      edit(messageIri, text),
     onSuccess: (updated, { messageIri }) => {
       queryClient.setQueryData<InfiniteData<ChannelPage>>(key, (old) =>
-        patchMessageInPages(old, messageIri, { text: updated.text, edited: true }),
+        patchMessageInPages(old, messageIri, {
+          text: updated.text,
+          edited: true,
+          ...(updated.revisionCount !== undefined && { revisionCount: updated.revisionCount }),
+          ...(updated.revisedAt !== undefined && { revisedAt: updated.revisedAt }),
+        }),
       );
     },
   });

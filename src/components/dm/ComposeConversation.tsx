@@ -1,14 +1,30 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useContext, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useTimezone } from "@/context/TimezoneContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useCreateConversation } from "@/queries/conversationQueries";
 import { queryKeys } from "@/queries/queryKeys";
 import { apiErrorText } from "@/api/client";
-import { createConversationMessage, fetchInvitableUsers } from "@/api/conversations";
+import {
+  createConversationMessage,
+  fetchConversationPreflight,
+  fetchInvitableUsers,
+  type ConversationPreflight,
+} from "@/api/conversations";
+import { useServerInfo } from "@/hooks/useServerInfo";
+import { fetchUser } from "@/api/users";
+import { avatarUrl } from "@/api/client";
+import { useE2ee } from "@/e2ee/e2eeContextValue";
+import { composeOutcome, type ComposeOutcome } from "@/e2ee/composeOutcome";
+import { createEncryptedConversation, sendEncrypted } from "@/e2ee/conversationSession";
+import { e2eeErrorKey } from "@/e2ee/e2eeErrors";
+import { AlertTriangleIcon } from "@/components/icons";
+import { CreationBlockedNotice } from "@/components/dm/CreationBlockedNotice";
+import { EncryptionOutcome } from "@/components/dm/EncryptionOutcome";
+import { PlainFallbackDialog } from "@/components/dm/PlainFallbackDialog";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Avatar } from "@/components/Avatar";
 import { ChatBubbleIcon } from "@/components/icons";
@@ -23,7 +39,9 @@ import { hostFromOrigin } from "@/utils/serverDisplay";
 import type { Conversation, InvitableUser, InvitableUsersResponse } from "@/types/api";
 import type { MemberItem } from "@/utils/userMentionExtension";
 
-export function ComposeConversation() {
+export function ComposeConversation({
+  initialRecipientId = null,
+}: { initialRecipientId?: number | null } = {}) {
   const { t } = useTranslation(["conversation", "desktop", "common"]);
   const { user } = useAuth();
   const { timezone } = useTimezone();
@@ -55,6 +73,12 @@ export function ComposeConversation() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<InvitableUser[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [pendingPlain, setPendingPlain] = useState<{
+    text: string;
+    settle: (sent: Promise<void> | null) => void;
+  } | null>(null);
+  const { identity, availability } = useE2ee();
+  const mode = useServerInfo()?.encryptedDmsMode;
 
   const { data: invitable } = useQuery({
     queryKey: [...queryKeys.invitableUsers(search), composeIdentityId ?? "local"],
@@ -72,6 +96,68 @@ export function ComposeConversation() {
     enabled: !isRemote || !!remoteCtx,
   });
   const createConversation = useCreateConversation();
+  const queryClient = useQueryClient();
+
+  const { data: preselected } = useQuery({
+    queryKey: ["composeRecipient", initialRecipientId ?? 0],
+    queryFn: async (): Promise<InvitableUser> => {
+      const found = await fetchUser(initialRecipientId as number);
+      return {
+        id: found.id,
+        name: found.profile?.name ?? null,
+        avatarUrl: avatarUrl(found.profile?.avatar?.contentUrl ?? null),
+      };
+    },
+    enabled: initialRecipientId !== null,
+    staleTime: Infinity,
+  });
+  const [preselectApplied, setPreselectApplied] = useState(false);
+  if (preselected && !preselectApplied) {
+    setPreselectApplied(true);
+    setSelected((prev) => (prev.some((u) => u.id === preselected.id) ? prev : [preselected]));
+  }
+
+  const memberIds = useMemo(() => selected.map((u) => u.id), [selected]);
+  const preflight = useQuery({
+    queryKey: [
+      "conversationPreflight",
+      composeIdentityId ?? "local",
+      [...memberIds].sort().join(","),
+    ],
+    queryFn: () => {
+      if (remoteCtx) {
+        const params = new URLSearchParams();
+        for (const id of memberIds) params.append("memberUserIds[]", String(id));
+        return identityFetch<ConversationPreflight>(
+          remoteCtx,
+          `/conversations/preflight?${params.toString()}`,
+        );
+      }
+      return fetchConversationPreflight(memberIds);
+    },
+    enabled: memberIds.length > 0 && (!isRemote || !!remoteCtx),
+    retry: false,
+    staleTime: 0,
+  });
+  const outcomeContext = useMemo(
+    () => ({ availability, recipientCount: memberIds.length, otherServer: isRemote, mode }),
+    [availability, memberIds.length, isRemote, mode],
+  );
+  const outcome: ComposeOutcome | null = preflight.data
+    ? composeOutcome(preflight.data, outcomeContext)
+    : null;
+  const preflightError = preflight.error
+    ? apiErrorText(preflight.error, t("e2ee_blocked_generic"))
+    : null;
+  const nameOf = useCallback(
+    (ids: number[]) =>
+      ids
+        .map((id) =>
+          id === user?.id ? t("e2ee_you") : (selected.find((u) => u.id === id)?.name ?? `#${id}`),
+        )
+        .join(", "),
+    [selected, user?.id, t],
+  );
 
   useDocumentTitle(t("compose_title"));
 
@@ -121,17 +207,13 @@ export function ComposeConversation() {
     setSelected((prev) => prev.filter((u) => u.id !== id));
   }
 
-  const handleSend = useCallback(
-    async (text: string) => {
-      if (selected.length === 0) {
-        notify(t("select_at_least_one"), "error");
-        return;
-      }
+  const createAndSend = useCallback(
+    async (text: string, kind: "encrypted" | "plain") => {
       setIsSending(true);
       try {
         if (remoteCtx && composeIdentityId) {
           const conversation = await identityPost<Conversation>(remoteCtx, "/conversations", {
-            memberUserIds: selected.map((u) => u.id),
+            memberUserIds: memberIds,
           });
           await identityPost(remoteCtx, `/conversations/${conversation.identifier}/messages`, {
             text,
@@ -143,19 +225,98 @@ export function ComposeConversation() {
           });
           return;
         }
-        const conversation = await createConversation.mutateAsync(selected.map((u) => u.id));
-        await createConversationMessage(conversation.identifier, text);
+        let conversation: Conversation;
+        if (kind === "encrypted") {
+          if (identity === null || memberIds.length !== 1) throw new Error("not ready");
+          conversation = await createEncryptedConversation(identity, memberIds[0] as number);
+          await sendEncrypted(identity.session(conversation), text);
+          void queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
+        } else {
+          conversation = await createConversation.mutateAsync(memberIds);
+          await createConversationMessage(conversation.identifier, text);
+        }
         void navigate({
           to: "/dm/$conversationId",
           params: { conversationId: conversation.identifier },
         });
       } catch (error) {
-        notify(apiErrorText(error, t("create_failed")), "error");
         setIsSending(false);
+        const before = preflight.data?.outcome;
+        const after = await preflight.refetch();
+        if (after.data?.outcome === before && !after.error) {
+          notify(
+            kind === "encrypted" ? t(e2eeErrorKey(error)) : apiErrorText(error, t("create_failed")),
+            "error",
+          );
+        }
+        throw error;
       }
     },
-    [selected, remoteCtx, composeIdentityId, createConversation, navigate, notify, t],
+    [
+      remoteCtx,
+      composeIdentityId,
+      memberIds,
+      identity,
+      queryClient,
+      createConversation,
+      navigate,
+      preflight,
+      notify,
+      t,
+    ],
   );
+
+  const handleSend = useCallback(
+    async (text: string) => {
+      if (selected.length === 0) {
+        notify(t("select_at_least_one"), "error");
+        return;
+      }
+      let current = outcome;
+      if (current === null) {
+        const fresh = (await preflight.refetch()).data;
+        current = fresh ? composeOutcome(fresh, outcomeContext) : null;
+      }
+      if (current === null) return;
+      if (current.kind === "encrypted") return createAndSend(text, "encrypted");
+      if (current.kind === "plain") return createAndSend(text, "plain");
+      if (current.kind === "plain_warning") {
+        return new Promise<void>((resolve, reject) => {
+          setPendingPlain({
+            text,
+            settle: (sent) =>
+              sent === null ? reject(new Error("cancelled")) : sent.then(resolve, reject),
+          });
+        });
+      }
+    },
+    [selected.length, outcome, preflight, outcomeContext, createAndSend, notify, t],
+  );
+
+  const outcomePanel =
+    outcome === null ? null : outcome.kind === "encrypted" ? (
+      <EncryptionOutcome />
+    ) : outcome.kind === "plain_warning" ? (
+      <p
+        data-testid="e2ee-plain-inline"
+        className="flex items-center gap-1.5 text-xs text-fg-muted"
+      >
+        <AlertTriangleIcon size={12} className="text-warning" />
+        {t("e2ee_plain_inline")}
+      </p>
+    ) : null;
+  const blockingNotice =
+    preflightError !== null ? (
+      <CreationBlockedNotice
+        outcome={{ kind: "blocked", reason: null, refusingUserIds: [], unreachableUserIds: [] }}
+        names={nameOf}
+        group={memberIds.length > 1}
+        serverMessage={preflightError}
+      />
+    ) : outcome?.kind === "blocked" || outcome?.kind === "client_not_ready" ? (
+      <CreationBlockedNotice outcome={outcome} names={nameOf} group={memberIds.length > 1} />
+    ) : undefined;
+  const composeLocked = blockingNotice !== undefined;
 
   const noop = useCallback(() => {}, []);
 
@@ -221,7 +382,22 @@ export function ComposeConversation() {
             layout="chips"
           />
         </div>
+        {outcomePanel}
       </header>
+      {pendingPlain !== null && outcome?.kind === "plain_warning" && (
+        <PlainFallbackDialog
+          names={nameOf(outcome.unreachableUserIds)}
+          group={outcome.group}
+          onCancel={() => {
+            pendingPlain.settle(null);
+            setPendingPlain(null);
+          }}
+          onConfirm={() => {
+            pendingPlain.settle(createAndSend(pendingPlain.text, "plain"));
+            setPendingPlain(null);
+          }}
+        />
+      )}
 
       <MessagePane
         messages={[]}
@@ -241,6 +417,8 @@ export function ComposeConversation() {
         timezone={timezone}
         allowAttachments={false}
         placeholder={t("compose_placeholder")}
+        footer={blockingNotice}
+        writeLocked={composeLocked}
         emptyTitle={t("no_messages")}
         emptySubtitle={t("be_first")}
         beginningLabel={t("beginning_of_history")}

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouterState } from "@tanstack/react-router";
+import { E2eeProvider } from "@/e2ee/E2eeContext";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -315,105 +316,109 @@ function AppShell() {
   }
 
   return (
-    <AuthModalProvider>
-      {({ modal, close, switchToRegister, switchToLogin }) => (
-        <AudioCallProvider>
-          <MobileNavProvider>
-            <MessagePopoverProvider>
-              <div className="flex h-app flex-col bg-canvas text-fg">
-                <a
-                  href="#main-content"
-                  className="sr-only z-[200] rounded-lg bg-accent-gradient px-4 py-2 text-sm font-semibold text-on-accent focus:not-sr-only focus:absolute focus:left-4 focus:top-4"
-                >
-                  {tCommon("skip_to_content")}
-                </a>
-                <SetupAttentionBanner isAdmin={isAdmin} />
-                <TransportWarningBanner />
-                <div className="flex min-h-0 flex-1">
-                  <NavScrim />
-                  <CommunityRailNav>
-                    {token && (
-                      <Link
-                        to="/dm"
-                        title={tConv("direct_messages")}
-                        className="relative flex h-[42px] w-[42px] items-center justify-center rounded-[13px] bg-surface text-fg-muted hover:bg-raised hover:text-fg"
-                        activeProps={{
-                          "aria-current": "page",
-                          className:
-                            "relative flex h-[42px] w-[42px] items-center justify-center rounded-[13px] bg-accent-gradient text-on-accent shadow-glow ring-2 ring-white ring-offset-2 ring-offset-rail",
-                        }}
-                        activeOptions={{ exact: false }}
-                      >
-                        <ChatBubbleIcon size={20} />
-                        {(() => {
-                          const badge = (unreadCounts["dm"] ?? 0) + otherServersDmUnread;
-                          if (badge === 0) return null;
-                          return (
-                            <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[0.625rem] font-bold text-white ring-2 ring-rail">
-                              <span className="block cap-trim">{badge > 9 ? "9+" : badge}</span>
-                            </span>
-                          );
-                        })()}
-                      </Link>
-                    )}
-                    {token && !isManagedIdentityMode() && (
-                      <div
-                        data-testid="rail-divider"
-                        aria-hidden
-                        className="my-1.5 h-px w-8 shrink-0 rounded-full bg-line-strong"
-                      />
-                    )}
-                    <DesktopRailGroups hasLeadingItem={Boolean(token)}>
-                      <CommunityRail
-                        unreadCounts={unreadCounts}
-                        renderTileExtra={(c) => (
-                          <CommunityVoiceIndicator communityIdentifier={c.identifier} />
-                        )}
-                      />
-                    </DesktopRailGroups>
-                    <ConnectionNotificationBridge />
-                    <NativeShellRelay />
-                    <ActiveUnreadSync />
-                    <CallSounds />
-                    <div className="mt-auto" />
-                    <ActiveVoiceButton />
-                    <UserProfileButton />
-                  </CommunityRailNav>
-
-                  {/* PersistentAudioRoom renders the routed Outlet — must mount even when voice is disabled */}
-                  <div
-                    id="main-content"
-                    tabIndex={-1}
-                    className="relative flex min-w-0 flex-1 overflow-hidden focus:outline-none"
+    <E2eeProvider>
+      <AuthModalProvider>
+        {({ modal, close, switchToRegister, switchToLogin }) => (
+          <AudioCallProvider>
+            <MobileNavProvider>
+              <MessagePopoverProvider>
+                <div className="flex h-app flex-col bg-canvas text-fg">
+                  <a
+                    href="#main-content"
+                    className="sr-only z-[200] rounded-lg bg-accent-gradient px-4 py-2 text-sm font-semibold text-on-accent focus:not-sr-only focus:absolute focus:left-4 focus:top-4"
                   >
-                    <PersistentAudioRoom voiceEnabled={serverInfo?.voiceEnabled ?? false} />
-                    <ServerUnreachableOverlay />
+                    {tCommon("skip_to_content")}
+                  </a>
+                  <SetupAttentionBanner isAdmin={isAdmin} />
+                  <TransportWarningBanner />
+                  <div className="flex min-h-0 flex-1">
+                    <NavScrim />
+                    <CommunityRailNav>
+                      {token && (
+                        <Link
+                          to="/dm"
+                          title={tConv("direct_messages")}
+                          className="relative flex h-[42px] w-[42px] items-center justify-center rounded-[13px] bg-surface text-fg-muted hover:bg-raised hover:text-fg"
+                          activeProps={{
+                            "aria-current": "page",
+                            className:
+                              "relative flex h-[42px] w-[42px] items-center justify-center rounded-[13px] bg-accent-gradient text-on-accent shadow-glow ring-2 ring-white ring-offset-2 ring-offset-rail",
+                          }}
+                          activeOptions={{ exact: false }}
+                        >
+                          <ChatBubbleIcon size={20} />
+                          {(() => {
+                            const badge = (unreadCounts["dm"] ?? 0) + otherServersDmUnread;
+                            if (badge === 0) return null;
+                            return (
+                              <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[0.625rem] font-bold text-white ring-2 ring-rail">
+                                <span className="block cap-trim">{badge > 9 ? "9+" : badge}</span>
+                              </span>
+                            );
+                          })()}
+                        </Link>
+                      )}
+                      {token && !isManagedIdentityMode() && (
+                        <div
+                          data-testid="rail-divider"
+                          aria-hidden
+                          className="my-1.5 h-px w-8 shrink-0 rounded-full bg-line-strong"
+                        />
+                      )}
+                      <DesktopRailGroups hasLeadingItem={Boolean(token)}>
+                        <CommunityRail
+                          unreadCounts={unreadCounts}
+                          renderTileExtra={(c) => (
+                            <CommunityVoiceIndicator communityIdentifier={c.identifier} />
+                          )}
+                        />
+                      </DesktopRailGroups>
+                      <ConnectionNotificationBridge />
+                      <NativeShellRelay />
+                      <ActiveUnreadSync />
+                      <CallSounds />
+                      <div className="mt-auto" />
+                      <ActiveVoiceButton />
+                      <UserProfileButton />
+                    </CommunityRailNav>
+
+                    {/* PersistentAudioRoom renders the routed Outlet — must mount even when voice is disabled */}
+                    <div
+                      id="main-content"
+                      tabIndex={-1}
+                      className="relative flex min-w-0 flex-1 overflow-hidden focus:outline-none"
+                    >
+                      <PersistentAudioRoom voiceEnabled={serverInfo?.voiceEnabled ?? false} />
+                      <ServerUnreachableOverlay />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </MessagePopoverProvider>
-          </MobileNavProvider>
-          {modal === "login" && (
-            <LoginModal
-              serverInfo={serverInfo}
-              onClose={close}
-              onSuccess={close}
-              onSwitchToRegister={switchToRegister}
-            />
-          )}
-          {modal === "register" && (
-            <RegisterModal
-              serverInfo={serverInfo}
-              onClose={close}
-              onSwitchToLogin={switchToLogin}
-            />
-          )}
-          {needsSetup && !setupDismissed && <SetupWizard onClose={() => setSetupDismissed(true)} />}
-          {needsWelcome && !welcomeDismissed && (
-            <WelcomeWizard onClose={() => setWelcomeDismissed(true)} />
-          )}
-        </AudioCallProvider>
-      )}
-    </AuthModalProvider>
+              </MessagePopoverProvider>
+            </MobileNavProvider>
+            {modal === "login" && (
+              <LoginModal
+                serverInfo={serverInfo}
+                onClose={close}
+                onSuccess={close}
+                onSwitchToRegister={switchToRegister}
+              />
+            )}
+            {modal === "register" && (
+              <RegisterModal
+                serverInfo={serverInfo}
+                onClose={close}
+                onSwitchToLogin={switchToLogin}
+              />
+            )}
+            {needsSetup && !setupDismissed && (
+              <SetupWizard onClose={() => setSetupDismissed(true)} />
+            )}
+            {needsWelcome && !welcomeDismissed && (
+              <WelcomeWizard onClose={() => setWelcomeDismissed(true)} />
+            )}
+          </AudioCallProvider>
+        )}
+      </AuthModalProvider>
+    </E2eeProvider>
   );
 }
