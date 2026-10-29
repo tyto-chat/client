@@ -1014,6 +1014,27 @@ describe("conversation session", () => {
     expect(edited.revisionCount).toBe(2);
   });
 
+  it("commit_merges_when_another_conversation_advanced_meanwhile", async () => {
+    const { server, alice, bob } = await setup();
+    await server.addDevice(CAROL);
+    const withBob = await createEncryptedConversation(alice, BOB);
+    const withCarol = await createEncryptedConversation(alice, CAROL);
+    await bob.processWelcomes();
+    const transport = alice.transport;
+    const submit = transport.submitCommit.bind(transport);
+    vi.spyOn(transport, "submitCommit").mockImplementation(async (identifier, submission) => {
+      if (identifier === withBob.identifier) {
+        await sendEncrypted(alice.session(withCarol), "meanwhile");
+      }
+      return submit(identifier, submission);
+    });
+
+    await alice.session(withBob).rotateKeys();
+
+    const sent = await sendEncrypted(alice.session(withBob), "after rotation");
+    expect(await read(bob, withBob, server.message(sent.id))).toEqual({ text: "after rotation" });
+  });
+
   it("edit_rebased_when_another_edit_landed_first", async () => {
     const { alice, bob, conversation, server } = await pair();
     const sent = await sendEncrypted(alice.session(conversation), "v0");

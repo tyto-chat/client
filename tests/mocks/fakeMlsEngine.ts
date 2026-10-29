@@ -38,9 +38,12 @@ const unwireMembers = (members: { leafIndex: number; credential: WireCredential 
 
 let tokens = 0;
 
+const wireGroup = (group: FakeGroup | undefined) =>
+  group === undefined ? null : { epoch: group.epoch, members: wireMembers(group.members) };
+
 export function createFakeMlsEngine(self: Credential): MlsEngine & { latest: () => Uint8Array } {
   let latest: FakeState | null = null;
-  const staged = new Map<string, { groupId: string; state: FakeState; base: string }>();
+  const staged = new Map<string, { groupId: string; before: string; after: FakeGroup | null }>();
   const held = new Map<string, { data: Uint8Array; sender: Credential }>();
   const consumed = new Set<string>();
 
@@ -104,7 +107,11 @@ export function createFakeMlsEngine(self: Credential): MlsEngine & { latest: () 
     if (next === null) delete groups[groupId];
     else groups[groupId] = next;
     const id = crypto.randomUUID();
-    staged.set(id, { groupId, state: fresh(groups), base: state.token });
+    staged.set(id, {
+      groupId,
+      before: JSON.stringify(wireGroup(state.groups[groupId])),
+      after: next,
+    });
     return {
       id,
       groupId,
@@ -252,8 +259,14 @@ export function createFakeMlsEngine(self: Credential): MlsEngine & { latest: () 
       const pending = staged.get(id);
       if (pending === undefined) throw new Error("unknown or already settled stage");
       staged.delete(id);
-      if (latest !== null && latest.token !== pending.base) throw new Error("stale stage");
-      return { state: accept(pending.state) };
+      const current = latest ?? fresh({});
+      if (JSON.stringify(wireGroup(current.groups[pending.groupId])) !== pending.before) {
+        throw new Error("stale stage");
+      }
+      const groups = { ...current.groups };
+      if (pending.after === null) delete groups[pending.groupId];
+      else groups[pending.groupId] = pending.after;
+      return { state: accept(fresh(groups)) };
     },
     discard: async ({ id }) => void staged.delete(id),
     encrypt: async (state, groupId, data) => {
