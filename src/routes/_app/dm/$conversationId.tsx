@@ -571,7 +571,7 @@ function ConversationPage() {
           members={memberItems}
           timezone={timezone}
           conversationIdentifier={conversationId}
-          allowAttachments={!encrypted}
+          allowAttachments
           placeholder={t("message_placeholder", { name: title })}
           emptyTitle={t("no_messages")}
           emptySubtitle={t("be_first")}
@@ -602,7 +602,7 @@ function ConversationPage() {
           rootIri={threadRootIri}
           members={memberItems}
           channels={[]}
-          allowAttachments={!encrypted}
+          allowAttachments
           renderPolicy={renderPolicy}
           e2eeSession={session}
           onSendError={notifyE2eeError}

@@ -83,5 +83,6 @@
   "e2ee_start_group_not_available": "Les conversations de groupe chiffrées ne sont pas encore disponibles.",
   "e2ee_start_unreachable": "{{names}} ne peut pas encore recevoir de messages chiffrés.",
   "e2ee_blocked_pinned_unreachable": "Tu as déjà échangé des messages chiffrés avec {{names}}, mais le serveur indique que ce n'est pas possible pour le moment. Rien n'a été envoyé sans chiffrement.",
-  "e2ee_blocked_pinned_group": "Tu échanges des messages chiffrés avec {{names}}, et les conversations de groupe chiffrées ne sont pas encore disponibles."
+  "e2ee_blocked_pinned_group": "Tu échanges des messages chiffrés avec {{names}}, et les conversations de groupe chiffrées ne sont pas encore disponibles.",
+  "e2ee_attachment_unreadable": "Impossible d'ouvrir cette pièce jointe. Elle a peut-être été modifiée ou supprimée."
 }

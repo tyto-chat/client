@@ -23,6 +23,7 @@ import { queryKeys } from "@/queries/queryKeys";
 import type { Conversation, User } from "@/types/api";
 import { admitPage, assertPlainWriteAllowed, conversationFromCache } from "@/e2ee/admission";
 import { isReadOnlyError, refreshConversationPolicy } from "@/queries/conversationPolicy";
+import { forgetUploadedAttachments, uploadedAttachmentsFor } from "@/e2ee/attachments";
 import {
   createEncryptedConversation,
   editEncrypted,
@@ -144,7 +145,12 @@ export function useSendConversationMessage(
     queryKeys.conversationPages(identifier),
     async ({ text, attachmentIris }) => {
       try {
-        if (session !== null) return await sendEncrypted(session, text);
+        if (session !== null) {
+          const iris = attachmentIris ?? [];
+          const sent = await sendEncrypted(session, text, undefined, uploadedAttachmentsFor(iris));
+          forgetUploadedAttachments(iris);
+          return sent;
+        }
         assertPlainWriteAllowed(queryClient, identifier);
         return await createConversationMessage(identifier, text, attachmentIris ?? []);
       } catch (err) {

@@ -83,5 +83,6 @@
   "e2ee_start_group_not_available": "Las conversaciones de grupo cifradas aún no están disponibles.",
   "e2ee_start_unreachable": "{{names}} aún no puede recibir mensajes cifrados.",
   "e2ee_blocked_pinned_unreachable": "Has usado mensajes directos cifrados con {{names}}, pero el servidor dice que ahora no puede recibirlos. No se envió nada sin cifrar.",
-  "e2ee_blocked_pinned_group": "Usas mensajes directos cifrados con {{names}} y las conversaciones de grupo cifradas aún no están disponibles."
+  "e2ee_blocked_pinned_group": "Usas mensajes directos cifrados con {{names}} y las conversaciones de grupo cifradas aún no están disponibles.",
+  "e2ee_attachment_unreadable": "No se pudo abrir este archivo adjunto. Puede que se haya modificado o eliminado."
 }

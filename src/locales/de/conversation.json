@@ -83,5 +83,6 @@
   "e2ee_start_group_not_available": "Verschlüsselte Gruppenunterhaltungen gibt es noch nicht.",
   "e2ee_start_unreachable": "{{names}} kann noch keine verschlüsselten Nachrichten empfangen.",
   "e2ee_blocked_pinned_unreachable": "Du hast mit {{names}} verschlüsselt geschrieben, aber der Server meldet, dass jetzt keine verschlüsselte Nachricht möglich ist. Es wurde nichts unverschlüsselt gesendet.",
-  "e2ee_blocked_pinned_group": "Du schreibst mit {{names}} verschlüsselt, und verschlüsselte Gruppenunterhaltungen gibt es noch nicht."
+  "e2ee_blocked_pinned_group": "Du schreibst mit {{names}} verschlüsselt, und verschlüsselte Gruppenunterhaltungen gibt es noch nicht.",
+  "e2ee_attachment_unreadable": "Dieser Anhang konnte nicht geöffnet werden. Möglicherweise wurde er verändert oder entfernt."
 }

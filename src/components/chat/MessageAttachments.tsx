@@ -7,10 +7,15 @@ import { ImageGallery } from "./attachments/ImageGallery";
 import { Lightbox } from "./attachments/Lightbox";
 import { AudioPlayer } from "./attachments/AudioPlayer";
 import { isImageMime, formatFileSize, THUMB_CLASS } from "@/utils/attachmentFormat";
+import { useNotification } from "@/context/NotificationContext";
+import {
+  downloadEncryptedAttachment,
+  useDecryptedAttachments,
+} from "@/hooks/useDecryptedAttachments";
 import type { Attachment } from "@/types/api";
 
 export function MessageAttachments({
-  attachments,
+  attachments: stored,
   canDelete,
   onDeleteAttachment,
 }: {
@@ -18,8 +23,18 @@ export function MessageAttachments({
   canDelete: boolean;
   onDeleteAttachment: (iri: string) => void;
 }) {
-  const { t } = useTranslation("channel");
+  const { t } = useTranslation(["channel", "conversation"]);
+  const { notify } = useNotification();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const attachments = useDecryptedAttachments(stored);
+
+  function downloadEncrypted(att: Attachment) {
+    const original = stored.find((a) => a["@id"] === att["@id"]);
+    if (original === undefined) return;
+    downloadEncryptedAttachment(original).catch(() =>
+      notify(t("conversation:e2ee_attachment_unreadable"), "error"),
+    );
+  }
 
   if (attachments.length === 0) return null;
 
@@ -31,9 +46,10 @@ export function MessageAttachments({
   const audios = attachments.filter((a) => a.mimeType?.startsWith("audio/") && a.contentUrl);
   const files = attachments.filter(
     (a) =>
-      (!isImageMime(a.mimeType) || !a.contentUrl) &&
-      !a.mimeType?.startsWith("video/") &&
-      !a.mimeType?.startsWith("audio/"),
+      (a.e2ee !== undefined && !a.contentUrl) ||
+      ((!isImageMime(a.mimeType) || !a.contentUrl) &&
+        !a.mimeType?.startsWith("video/") &&
+        !a.mimeType?.startsWith("audio/")),
   );
 
   function openLightbox(att: Attachment) {
@@ -136,7 +152,17 @@ export function MessageAttachments({
                     <span className="text-[0.6875rem] text-fg-subtle">{sizeLabel}</span>
                   )}
                 </div>
-                {att.contentUrl && (
+                {att.e2ee !== undefined && (
+                  <button
+                    type="button"
+                    onClick={() => downloadEncrypted(att)}
+                    title={t("download_attachment")}
+                    className="text-fg-subtle hover:text-[var(--accent)]"
+                  >
+                    <DownloadIcon size={13} />
+                  </button>
+                )}
+                {att.e2ee === undefined && att.contentUrl && (
                   <a
                     href={att.contentUrl}
                     download={att.originalName ?? true}

@@ -83,5 +83,6 @@
   "e2ee_start_group_not_available": "Versleutelde groepsgesprekken zijn nog niet beschikbaar.",
   "e2ee_start_unreachable": "{{names}} kan nog geen versleutelde berichten ontvangen.",
   "e2ee_blocked_pinned_unreachable": "Je hebt versleutelde privéberichten met {{names}} gebruikt, maar de server meldt dat dat nu niet kan. Er is niets onversleuteld verstuurd.",
-  "e2ee_blocked_pinned_group": "Je gebruikt versleutelde privéberichten met {{names}}, en versleutelde groepsgesprekken zijn nog niet beschikbaar."
+  "e2ee_blocked_pinned_group": "Je gebruikt versleutelde privéberichten met {{names}}, en versleutelde groepsgesprekken zijn nog niet beschikbaar.",
+  "e2ee_attachment_unreadable": "Deze bijlage kon niet worden geopend. Mogelijk is ze gewijzigd of verwijderd."
 }

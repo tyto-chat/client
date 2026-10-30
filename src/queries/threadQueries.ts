@@ -7,6 +7,7 @@ import { patchMessageInPages, makeOptimisticMessage } from "@/queries/messageQue
 import { queryKeys } from "@/queries/queryKeys";
 import { uuidFromIri } from "@/api/hydra";
 import type { ChannelPage, Message, User } from "@/types/api";
+import { forgetUploadedAttachments, uploadedAttachmentsFor } from "@/e2ee/attachments";
 import { editEncrypted, sendEncrypted, type ConversationSession } from "@/e2ee/conversationSession";
 import { admitMessages, assertPlainWriteAllowed, conversationFromCache } from "@/e2ee/admission";
 import { isReadOnlyError, refreshConversationPolicy } from "@/queries/conversationPolicy";
@@ -49,8 +50,13 @@ export function useReplyToMessage(
   const threadKey = queryKeys.threadReplies(rootIri);
 
   return useMutation({
-    mutationFn: ({ text, attachmentIris }: { text: string; attachmentIris?: string[] }) => {
-      if (session !== null) return sendEncrypted(session, text, rootIri);
+    mutationFn: async ({ text, attachmentIris }: { text: string; attachmentIris?: string[] }) => {
+      if (session !== null) {
+        const iris = attachmentIris ?? [];
+        const sent = await sendEncrypted(session, text, rootIri, uploadedAttachmentsFor(iris));
+        forgetUploadedAttachments(iris);
+        return sent;
+      }
       if (conversationIdentifier) assertPlainWriteAllowed(queryClient, conversationIdentifier);
       return createThreadReply(uuidFromIri(rootIri), text, attachmentIris ?? []);
     },

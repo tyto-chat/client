@@ -186,6 +186,7 @@ export interface Attachment extends HydraResource {
   size: number | null;
   width: number | null;
   height: number | null;
+  e2ee?: { key: Uint8Array; nonce: Uint8Array };
 }
 
 export interface CommunityEmojiImage extends HydraResource {

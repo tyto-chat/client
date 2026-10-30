@@ -9,8 +9,10 @@ import {
 } from "@/e2ee/conversationSession";
 import { decodeEnvelope } from "@/e2ee/envelope";
 import type { KeyStoreScope } from "@/e2ee/keyStore";
+import { uuidFromIri } from "@/api/hydra";
+import type { AttachmentKey } from "@/e2ee/attachments";
 import { isOptimisticMessage } from "@/utils/optimisticMessage";
-import type { Message } from "@/types/api";
+import type { Attachment, Message } from "@/types/api";
 import { queryKeys } from "./queryKeys";
 
 export function e2eeScopeKey(scope: KeyStoreScope): string {
@@ -81,12 +83,41 @@ function needsDecryption(message: Message): boolean {
   );
 }
 
+function decryptedAttachments(message: Message, keys: readonly AttachmentKey[]): Attachment[] {
+  const byId = new Map(keys.map((k) => [k.id, k]));
+  return (message.attachments ?? []).flatMap((attachment) => {
+    const key = byId.get(uuidFromIri(attachment["@id"]));
+    if (key === undefined) return [];
+    return [
+      {
+        ...attachment,
+        originalName: key.manifest.name,
+        mimeType: key.manifest.mimeType,
+        size: key.manifest.size,
+        width: key.manifest.width ?? null,
+        height: key.manifest.height ?? null,
+        thumbnailUrl: null,
+        animated: null,
+        e2ee: { key: key.key, nonce: key.nonce },
+      },
+    ];
+  });
+}
+
 function display(message: Message, result: DecryptResult | undefined): Message {
-  if (result === undefined) return { ...message, text: null, e2eeStatus: "pending" };
-  if ("text" in result) return { ...message, text: result.text };
+  if (result === undefined)
+    return { ...message, text: null, attachments: [], e2eeStatus: "pending" };
+  if ("text" in result) {
+    return {
+      ...message,
+      text: result.text,
+      attachments: decryptedAttachments(message, result.attachments ?? []),
+    };
+  }
   return {
     ...message,
     text: null,
+    attachments: [],
     e2eeStatus: "unreadable" in result ? "unreadable" : "tampered",
   };
 }

@@ -36,8 +36,18 @@ export interface E2eeTransport {
   submitCommit(conversation: string, submission: CommitSubmission): Promise<CommitResult>;
   fetchWelcomes(deviceId: string, after?: string): Promise<Welcome[]>;
   acknowledgeWelcome(welcomeId: string): Promise<void>;
-  sendMessage(conversation: string, text: string, id: string): Promise<Message>;
-  sendReply(rootUuid: string, text: string, id: string): Promise<Message>;
+  sendMessage(
+    conversation: string,
+    text: string,
+    id: string,
+    attachmentIris?: string[],
+  ): Promise<Message>;
+  sendReply(
+    rootUuid: string,
+    text: string,
+    id: string,
+    attachmentIris?: string[],
+  ): Promise<Message>;
   editMessage(messageIri: string, text: string, baseRevisionCount: number): Promise<Message>;
   fetchMessage(uuid: string): Promise<Message>;
 }
@@ -54,8 +64,10 @@ export const httpE2eeTransport: E2eeTransport = {
   submitCommit,
   fetchWelcomes,
   acknowledgeWelcome,
-  sendMessage: (conversation, text, id) => createConversationMessage(conversation, text, [], id),
-  sendReply: (rootUuid, text, id) => createThreadReply(rootUuid, text, [], id),
+  sendMessage: (conversation, text, id, attachmentIris = []) =>
+    createConversationMessage(conversation, text, attachmentIris, id),
+  sendReply: (rootUuid, text, id, attachmentIris = []) =>
+    createThreadReply(rootUuid, text, attachmentIris, id),
   editMessage,
   fetchMessage,
 };

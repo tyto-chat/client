@@ -83,5 +83,6 @@
   "e2ee_start_group_not_available": "Szyfrowane rozmowy grupowe nie są jeszcze dostępne.",
   "e2ee_start_unreachable": "{{names}} nie może jeszcze odbierać szyfrowanych wiadomości.",
   "e2ee_blocked_pinned_unreachable": "Masz z {{names}} szyfrowane rozmowy, ale serwer twierdzi, że teraz nie da się wysłać szyfrowanej wiadomości. Nic nie zostało wysłane bez szyfrowania.",
-  "e2ee_blocked_pinned_group": "Prowadzisz z {{names}} szyfrowane rozmowy, a szyfrowane rozmowy grupowe nie są jeszcze dostępne."
+  "e2ee_blocked_pinned_group": "Prowadzisz z {{names}} szyfrowane rozmowy, a szyfrowane rozmowy grupowe nie są jeszcze dostępne.",
+  "e2ee_attachment_unreadable": "Nie udało się otworzyć tego załącznika. Mógł zostać zmieniony lub usunięty."
 }

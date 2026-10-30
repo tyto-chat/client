@@ -83,5 +83,6 @@
   "e2ee_start_group_not_available": "Encrypted group conversations are not available yet.",
   "e2ee_start_unreachable": "{{names}} cannot receive encrypted messages yet.",
   "e2ee_blocked_pinned_unreachable": "You have used encrypted direct messages with {{names}}, but the server says they can't receive one now. Nothing was sent unencrypted.",
-  "e2ee_blocked_pinned_group": "You use encrypted direct messages with {{names}}, and encrypted group conversations are not available yet."
+  "e2ee_blocked_pinned_group": "You use encrypted direct messages with {{names}}, and encrypted group conversations are not available yet.",
+  "e2ee_attachment_unreadable": "This attachment could not be opened. It may have been changed or removed."
 }

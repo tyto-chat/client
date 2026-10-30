@@ -150,10 +150,14 @@ async function contentKey(raw: Uint8Array, usage: KeyUsage): Promise<CryptoKey> 
   return crypto.subtle.importKey("raw", new Uint8Array(raw), "AES-GCM", false, [usage]);
 }
 
-export async function sealContent(header: MessageHeader, text: string): Promise<SealedContent> {
+export async function sealContent(
+  header: MessageHeader,
+  text: string,
+  attachments: CborValue[] = [],
+): Promise<SealedContent> {
   const key = crypto.getRandomValues(new Uint8Array(KEY_BYTES));
   const nonce = crypto.getRandomValues(new Uint8Array(NONCE_BYTES));
-  const payload = encodeCanonicalMap({ h: headerMap(header), t: text, a: [] });
+  const payload = encodeCanonicalMap({ h: headerMap(header), t: text, a: attachments });
   const ciphertext = new Uint8Array(
     await crypto.subtle.encrypt(
       { name: "AES-GCM", iv: nonce, additionalData: new Uint8Array(encodeHeader(header)) },

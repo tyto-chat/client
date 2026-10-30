@@ -27,9 +27,16 @@ import {
   openContent,
   sameHeader,
   sealContent,
+  type ContentPayload,
   type Envelope,
   type MessageHeader,
 } from "./envelope";
+import {
+  decodeAttachmentKeys,
+  encodeAttachmentKeys,
+  type AttachmentKey,
+  type UploadedEncryptedAttachment,
+} from "./attachments";
 import {
   decodeProgress,
   emptyProgress,
@@ -61,7 +68,10 @@ export type TamperReason =
   | "sender_not_authorised"
   | "frozen_generation";
 
-export type DecryptResult = { text: string } | { unreadable: true } | { tampered: TamperReason };
+export type DecryptResult =
+  | { text: string; attachments?: AttachmentKey[] }
+  | { unreadable: true }
+  | { tampered: TamperReason };
 
 export type SessionStatus = "ready" | "uninitialised" | "awaiting_welcome" | "removed";
 
@@ -193,6 +203,12 @@ function rosterOf(staged: Staged): RosterEntry[] {
     deviceId: member.credential.deviceId,
     generation: member.credential.generation,
   }));
+}
+
+function contentResult(payload: ContentPayload): DecryptResult {
+  const attachments = decodeAttachmentKeys(payload.a);
+  if (attachments === null) return { tampered: "malformed" };
+  return attachments.length === 0 ? { text: payload.t } : { text: payload.t, attachments };
 }
 
 export function parentIdOf(message: Pick<Message, "parent">): string | null {
@@ -523,21 +539,31 @@ export class ConversationSession {
     });
   }
 
-  async send(text: string, parentIri?: string): Promise<Message> {
+  async send(
+    text: string,
+    parentIri?: string,
+    attachments: readonly UploadedEncryptedAttachment[] = [],
+  ): Promise<Message> {
     assertPlaintextLength(text);
     const parent = parentIri === undefined ? null : uuidOf(parentIri);
     const { envelope, id } = await this.identity.inGroup(this.identifier, async () => {
       await this.syncLocked();
       await this.assertPeersUnblocked();
       const id = crypto.randomUUID();
-      const { envelope } = await this.encryptLocked({ id, rev: 0, parent }, text, true);
+      const { envelope } = await this.encryptLocked(
+        { id, rev: 0, parent },
+        text,
+        true,
+        attachments,
+      );
       return { envelope, id };
     });
     const { transport } = this.identity;
+    const iris = attachments.map((a) => a.iri);
     return this.identity.withNetworkRetry(() =>
       parent === null
-        ? transport.sendMessage(this.identifier, envelope, id)
-        : transport.sendReply(parent, envelope, id),
+        ? transport.sendMessage(this.identifier, envelope, id, iris)
+        : transport.sendReply(parent, envelope, id, iris),
     );
   }
 
@@ -554,6 +580,8 @@ export class ConversationSession {
 
   private async editOnce(messageIri: string, text: string): Promise<Message> {
     const { transport } = this.identity;
+    const previous = await this.decrypt(await transport.fetchMessage(uuidOf(messageIri)));
+    const kept = "text" in previous ? (previous.attachments ?? []) : null;
     const { envelope, base, saveKey } = await this.identity.inGroup(this.identifier, async () => {
       await this.syncLocked();
       await this.assertPeersUnblocked();
@@ -562,10 +590,14 @@ export class ConversationSession {
         throw new Error("only the author can edit a message");
       }
       if (current.revisionCount === undefined) throw new Error("the server sent no revision count");
+      if (kept === null && (current.attachments?.length ?? 0) > 0) {
+        throw new Error("the attachments of this message cannot be read on this device");
+      }
       const sealed = await this.encryptLocked(
         { id: current.id, rev: current.revisionCount, parent: parentIdOf(current) },
         text,
         false,
+        kept ?? [],
       );
       return { ...sealed, base: current.revisionCount };
     });
@@ -605,6 +637,7 @@ export class ConversationSession {
     fields: Pick<MessageHeader, "id" | "rev" | "parent">,
     text: string,
     persist: boolean,
+    attachments: readonly AttachmentKey[],
   ): Promise<{ envelope: string; saveKey: () => Promise<void> }> {
     await this.removeRevokedLocked();
     const progress = await this.readyProgress();
@@ -621,7 +654,7 @@ export class ConversationSession {
       g: progress.generation,
       sender: await this.identity.sender(),
     };
-    const sealed = await sealContent(header, text);
+    const sealed = await sealContent(header, text, encodeAttachmentKeys(attachments));
     const { message } = await this.identity.withState(
       (s) => this.identity.engine.encrypt(s, groupId, encodeKeyMessage(sealed.key, header)),
       (r) => r.state,
@@ -746,7 +779,7 @@ export class ConversationSession {
     const payload = await openContent(stored.key, envelope.n, envelope.c, expected);
     if (payload === null || !sameHeader(payload.h, expected))
       return { tampered: "header_mismatch" };
-    return { text: payload.t };
+    return contentResult(payload);
   }
 
   private async decryptLocked(
@@ -796,12 +829,13 @@ export class ConversationSession {
     if (payload === null) return { tampered: "header_mismatch" };
     const reason = this.headerMismatch(header, payload.h, message, envelope, rev, verified);
     if (reason !== null) return { tampered: reason };
+    const result = contentResult(payload);
     await this.identity.keyStore.commitTransaction(this.identity.scope, {
       messageKeys: [{ ref: { id: message.id, rev }, key: keyMessage.key, sender: verified }],
     });
     await engine.acknowledgeDecrypt(receipt);
     await this.commitTrust(trust);
-    return { text: payload.t };
+    return result;
   }
 
   private async serverIsAhead(): Promise<boolean> {
@@ -1288,8 +1322,9 @@ export function sendEncrypted(
   session: ConversationSession,
   text: string,
   parentIri?: string,
+  attachments: readonly UploadedEncryptedAttachment[] = [],
 ): Promise<Message> {
-  return session.send(text, parentIri);
+  return session.send(text, parentIri, attachments);
 }
 
 export function editEncrypted(

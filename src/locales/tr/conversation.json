@@ -83,5 +83,6 @@
   "e2ee_start_group_not_available": "Şifreli grup sohbetleri henüz kullanılamıyor.",
   "e2ee_start_unreachable": "{{names}} henüz şifreli mesaj alamıyor.",
   "e2ee_blocked_pinned_unreachable": "{{names}} ile şifreli doğrudan mesajlar kullandın, ancak sunucu şu anda bunun mümkün olmadığını söylüyor. Şifresiz hiçbir şey gönderilmedi.",
-  "e2ee_blocked_pinned_group": "{{names}} ile şifreli doğrudan mesajlar kullanıyorsun ve şifreli grup sohbetleri henüz kullanılamıyor."
+  "e2ee_blocked_pinned_group": "{{names}} ile şifreli doğrudan mesajlar kullanıyorsun ve şifreli grup sohbetleri henüz kullanılamıyor.",
+  "e2ee_attachment_unreadable": "Bu ek açılamadı. Değiştirilmiş veya kaldırılmış olabilir."
 }

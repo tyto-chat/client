@@ -7,7 +7,7 @@ import {
 } from "@/api/e2ee";
 import { ApiError } from "@/api/client";
 import type { E2eeTransport } from "@/e2ee/transport";
-import type { Conversation, Message } from "@/types/api";
+import type { Attachment, Conversation, Message } from "@/types/api";
 import { createFakeMlsEngine } from "./fakeMlsEngine";
 import { SERVER, ed25519Key, signedDevice, type TestKey } from "./e2eeKeys";
 import type { Credential, MlsEngine } from "@/e2ee/engine";
@@ -55,6 +55,27 @@ export class FakeDeliveryServer {
   readonly users = new Map<number, FakeUser>();
   readonly conversations = new Map<string, FakeConversation>();
   readonly messages = new Map<string, Message>();
+  readonly attachments = new Map<string, { attachment: Attachment; blob: Blob }>();
+
+  storeAttachment(blob: Blob): Attachment {
+    const n = this.attachments.size + 1;
+    const attachment = {
+      "@id": `/api/v1/attachments/${n}`,
+      "@type": "MediaObject",
+      type: "encrypted_attachment",
+      size: blob.size,
+      contentUrl: `${SERVER}/media/token/${n}.bin`,
+    } as unknown as Attachment;
+    this.attachments.set(attachment["@id"], { attachment, blob });
+    return attachment;
+  }
+
+  attachmentBlob(contentUrl: string): Blob {
+    for (const { attachment, blob } of this.attachments.values()) {
+      if (attachment.contentUrl === contentUrl) return blob;
+    }
+    throw new Error("no such attachment");
+  }
   readonly welcomes: FakeWelcome[] = [];
   readonly calls: { userId: number; method: string; args: unknown[] }[] = [];
   private readonly drops = new Map<string, number>();
@@ -208,14 +229,21 @@ export class FakeDeliveryServer {
           const welcome = this.welcomes.find((w) => w.id === id);
           if (welcome !== undefined) welcome.delivered = true;
         }),
-      sendMessage: (identifier, text, id) =>
-        call("sendMessage", [identifier, text, id], () =>
-          this.storeMessage(userId, identifier, text, id, null),
+      sendMessage: (identifier, text, id, attachmentIris = []) =>
+        call("sendMessage", [identifier, text, id, attachmentIris], () =>
+          this.storeMessage(userId, identifier, text, id, null, attachmentIris),
         ),
-      sendReply: (rootUuid, text, id) =>
-        call("sendReply", [rootUuid, text, id], () => {
+      sendReply: (rootUuid, text, id, attachmentIris = []) =>
+        call("sendReply", [rootUuid, text, id, attachmentIris], () => {
           const root = this.message(rootUuid);
-          return this.storeMessage(userId, root.conversationIdentifier as string, text, id, root);
+          return this.storeMessage(
+            userId,
+            root.conversationIdentifier as string,
+            text,
+            id,
+            root,
+            attachmentIris,
+          );
         }),
       editMessage: (iri, text, baseRevisionCount) =>
         call("editMessage", [iri, text, baseRevisionCount], () => {
@@ -324,6 +352,7 @@ export class FakeDeliveryServer {
     text: string,
     id: string,
     parent: Message | null,
+    attachmentIris: string[] = [],
   ): Message {
     const existing = this.messages.get(id);
     if (existing !== undefined) {
@@ -354,6 +383,11 @@ export class FakeDeliveryServer {
       pageNumber: 1,
       conversationIdentifier: conversation,
       parent,
+      attachments: attachmentIris.map((iri) => {
+        const stored = this.attachments.get(iri);
+        if (stored === undefined) throw new Error("unknown attachment");
+        return stored.attachment;
+      }),
     } as unknown as Message;
     this.messages.set(id, message);
     return message;

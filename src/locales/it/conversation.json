@@ -83,5 +83,6 @@
   "e2ee_start_group_not_available": "Le conversazioni di gruppo crittografate non sono ancora disponibili.",
   "e2ee_start_unreachable": "{{names}} non può ancora ricevere messaggi crittografati.",
   "e2ee_blocked_pinned_unreachable": "Hai usato messaggi diretti crittografati con {{names}}, ma il server dice che ora non è possibile. Non è stato inviato nulla senza crittografia.",
-  "e2ee_blocked_pinned_group": "Usi messaggi diretti crittografati con {{names}} e le conversazioni di gruppo crittografate non sono ancora disponibili."
+  "e2ee_blocked_pinned_group": "Usi messaggi diretti crittografati con {{names}} e le conversazioni di gruppo crittografate non sono ancora disponibili.",
+  "e2ee_attachment_unreadable": "Impossibile aprire questo allegato. Potrebbe essere stato modificato o rimosso."
 }

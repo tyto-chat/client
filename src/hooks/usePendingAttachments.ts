@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { PlainWriteRefusedError, assertPlainWriteAllowed } from "@/e2ee/admission";
+import {
+  PlainWriteRefusedError,
+  assertPlainWriteAllowed,
+  conversationFromCache,
+} from "@/e2ee/admission";
+import { forgetUploadedAttachments, uploadEncryptedAttachment } from "@/e2ee/attachments";
 import { useAttachmentValidation } from "@/hooks/useAttachmentValidation";
 import { useNotification } from "@/context/NotificationContext";
 import {
@@ -53,7 +58,10 @@ export function usePendingAttachments({
         return;
       }
     }
-    const { attachmentMaxPerMessage } = getLimits();
+    const encrypted =
+      isConversation &&
+      conversationFromCache(queryClient, conversationIdentifier!)?.encrypted === true;
+    const { attachmentMaxPerMessage, maxSize } = getLimits();
     const maxPerMessage = attachmentMaxPerMessage;
     const slots = maxPerMessage - pendingAttachmentsRef.current.length;
     const toAdd = Array.from(files).slice(0, slots);
@@ -79,13 +87,16 @@ export function usePendingAttachments({
             prev.map((a) => (a.id === id ? { ...a, progress: pct } : a)),
           );
         };
-        const attachment = isChannel
-          ? await uploadAttachment(communityId!, channelIdentifier!, file, onProgress)
-          : await uploadConversationAttachment(conversationIdentifier!, file, onProgress);
+        const iri = isChannel
+          ? (await uploadAttachment(communityId!, channelIdentifier!, file, onProgress))["@id"]
+          : encrypted
+            ? (await uploadEncryptedAttachment(conversationIdentifier!, file, maxSize, onProgress))
+                .iri
+            : (await uploadConversationAttachment(conversationIdentifier!, file, onProgress))[
+                "@id"
+              ];
         setPendingAttachments((prev) =>
-          prev.map((a) =>
-            a.id === id ? { ...a, iri: attachment["@id"], uploading: false, progress: 100 } : a,
-          ),
+          prev.map((a) => (a.id === id ? { ...a, iri, uploading: false, progress: 100 } : a)),
         );
       } catch (err) {
         if (isRateLimited(err)) {
@@ -108,6 +119,7 @@ export function usePendingAttachments({
   function removeAttachment(id: string) {
     const found = pendingAttachmentsRef.current.find((a) => a.id === id);
     if (found?.iri) {
+      forgetUploadedAttachments([found.iri]);
       void deleteAttachment(found.iri).catch(() => {});
     }
     if (found?.previewUrl) {
