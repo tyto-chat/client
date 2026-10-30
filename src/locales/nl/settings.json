@@ -260,5 +260,21 @@
   "refuse_plain_dms_required": "Deze server vereist dat alle privéberichten versleuteld zijn.",
   "refuse_plain_dms_save_failed": "Deze instelling kon niet worden opgeslagen.",
   "refuse_plain_dms_check_failed": "Kon niet controleren wat er is opgeslagen, dus de schakelaar blijft vergrendeld.",
-  "refuse_plain_dms_retry": "Opnieuw proberen"
+  "refuse_plain_dms_retry": "Opnieuw proberen",
+  "nav_encryption_devices": "Versleutelingsapparaten",
+  "devices_title": "Apparaten die je versleutelde berichten kunnen lezen",
+  "devices_intro": "Elk apparaat hier heeft eigen sleutels. Verwijder een apparaat dat je niet meer gebruikt of kwijt bent: het ontvangt je versleutelde berichten niet meer en wordt afgemeld.",
+  "devices_this_device": "Dit apparaat",
+  "devices_added": "Toegevoegd op {{date}}",
+  "devices_last_seen": "Laatst actief op {{date}}",
+  "devices_remove": "Verwijderen",
+  "devices_remove_this": "Dit apparaat verwijderen",
+  "devices_remove_confirm_title": "{{name}} verwijderen?",
+  "devices_remove_confirm_body": "{{name}} ontvangt je versleutelde berichten niet meer en wordt afgemeld. Dit kan niet ongedaan worden gemaakt.",
+  "devices_remove_this_confirm_title": "Dit apparaat verwijderen?",
+  "devices_remove_this_confirm_body": "Dit apparaat wist nu zijn versleutelingssleutels en wordt afgemeld. Je andere apparaten en je herstelzin hebben je berichten nog.",
+  "devices_manage_needs_setup": "Stel versleutelde berichten in op dit apparaat om je apparaten te beheren.",
+  "devices_none": "Nog geen apparaat kan versleutelde berichten lezen.",
+  "devices_load_failed": "De apparatenlijst kon niet worden geladen.",
+  "devices_remove_failed": "Het apparaat kon niet worden verwijderd. Probeer het opnieuw."
 }

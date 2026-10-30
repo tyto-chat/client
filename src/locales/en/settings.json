@@ -260,5 +260,21 @@
   "refuse_plain_dms_required": "This server requires all direct messages to be encrypted.",
   "refuse_plain_dms_save_failed": "Could not save this setting.",
   "refuse_plain_dms_check_failed": "Could not check what is stored, so the switch stays locked.",
-  "refuse_plain_dms_retry": "Try again"
+  "refuse_plain_dms_retry": "Try again",
+  "nav_encryption_devices": "Encryption devices",
+  "devices_title": "Devices that can read your encrypted messages",
+  "devices_intro": "Each device here has its own keys. Remove a device you no longer use or have lost: it stops receiving your encrypted messages and is signed out.",
+  "devices_this_device": "This device",
+  "devices_added": "Added {{date}}",
+  "devices_last_seen": "Last active {{date}}",
+  "devices_remove": "Remove",
+  "devices_remove_this": "Remove this device",
+  "devices_remove_confirm_title": "Remove {{name}}?",
+  "devices_remove_confirm_body": "{{name}} will stop receiving your encrypted messages and will be signed out. This cannot be undone.",
+  "devices_remove_this_confirm_title": "Remove this device?",
+  "devices_remove_this_confirm_body": "This device deletes its encryption keys now and is signed out. Your other devices and your recovery phrase still have your messages.",
+  "devices_manage_needs_setup": "Set up encrypted messages on this device to manage your devices.",
+  "devices_none": "No device can read encrypted messages yet.",
+  "devices_load_failed": "The device list could not be loaded.",
+  "devices_remove_failed": "The device could not be removed. Try again."
 }

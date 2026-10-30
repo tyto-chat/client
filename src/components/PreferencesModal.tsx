@@ -10,24 +10,36 @@ import { NotificationsPanel } from "@/components/preferences/NotificationsPanel"
 import { VoiceVideoPanel } from "@/components/preferences/VoiceVideoPanel";
 import { PrivacyPanel } from "@/components/preferences/PrivacyPanel";
 import { AccountSecurityPanel } from "@/components/preferences/AccountSecurityPanel";
+import { DevicesTab } from "@/components/settings/DevicesTab";
+import { isE2eeCapable } from "@/e2ee/isE2eeCapable";
 
 export function PreferencesModal({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("settings");
   const voiceEnabled = useVoiceEnabled();
+  const encryptionDevices = isE2eeCapable();
   const [active, setActive] = useState<PanelKey>("general");
-  const effective = active === "voice-video" && !voiceEnabled ? "general" : active;
+  const effective =
+    (active === "voice-video" && !voiceEnabled) || (active === "devices" && !encryptionDevices)
+      ? "general"
+      : active;
 
   return (
     <Modal title={t("preferences_title")} onClose={onClose} size="2xl">
       {() => (
         <div className="flex max-md:flex-col md:h-[min(37.5rem,70vh)] md:gap-6">
-          <PreferencesNav active={active} onChange={setActive} voiceEnabled={voiceEnabled} />
+          <PreferencesNav
+            active={active}
+            onChange={setActive}
+            voiceEnabled={voiceEnabled}
+            encryptionDevices={encryptionDevices}
+          />
           <div className="min-w-0 flex-1 md:h-full md:overflow-y-auto md:overflow-x-hidden">
             {effective === "general" && <GeneralPanel />}
             {effective === "chat" && <ChatPanel />}
             {effective === "notifications" && <NotificationsPanel />}
             {effective === "voice-video" && <VoiceVideoPanel />}
             {effective === "account" && <AccountSecurityPanel />}
+            {effective === "devices" && <DevicesTab />}
             {effective === "privacy" && <PrivacyPanel />}
             {effective === "apikeys" && <ApiKeysTab />}
           </div>

@@ -260,5 +260,21 @@
   "refuse_plain_dms_required": "Bu sunucu tüm doğrudan mesajların şifreli olmasını gerektiriyor.",
   "refuse_plain_dms_save_failed": "Bu ayar kaydedilemedi.",
   "refuse_plain_dms_check_failed": "Kayıtlı değer kontrol edilemedi, bu yüzden anahtar kilitli kalıyor.",
-  "refuse_plain_dms_retry": "Tekrar dene"
+  "refuse_plain_dms_retry": "Tekrar dene",
+  "nav_encryption_devices": "Şifreleme cihazları",
+  "devices_title": "Şifreli mesajlarını okuyabilen cihazlar",
+  "devices_intro": "Buradaki her cihazın kendi anahtarları var. Artık kullanmadığın veya kaybettiğin bir cihazı kaldır: şifreli mesajlarını almayı bırakır ve oturumu kapatılır.",
+  "devices_this_device": "Bu cihaz",
+  "devices_added": "Eklenme {{date}}",
+  "devices_last_seen": "Son etkinlik {{date}}",
+  "devices_remove": "Kaldır",
+  "devices_remove_this": "Bu cihazı kaldır",
+  "devices_remove_confirm_title": "{{name}} kaldırılsın mı?",
+  "devices_remove_confirm_body": "{{name}} şifreli mesajlarını almayı bırakacak ve oturumu kapatılacak. Bu geri alınamaz.",
+  "devices_remove_this_confirm_title": "Bu cihaz kaldırılsın mı?",
+  "devices_remove_this_confirm_body": "Bu cihaz şifreleme anahtarlarını şimdi siler ve oturumu kapatılır. Diğer cihazların ve kurtarma ifaden mesajlarını hâlâ tutar.",
+  "devices_manage_needs_setup": "Cihazlarını yönetmek için bu cihazda şifreli mesajları kur.",
+  "devices_none": "Henüz hiçbir cihaz şifreli mesaj okuyamıyor.",
+  "devices_load_failed": "Cihaz listesi yüklenemedi.",
+  "devices_remove_failed": "Cihaz kaldırılamadı. Tekrar dene."
 }

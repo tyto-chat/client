@@ -260,5 +260,21 @@
   "refuse_plain_dms_required": "Este servidor exige que todas as mensagens diretas sejam criptografadas.",
   "refuse_plain_dms_save_failed": "Não foi possível salvar esta configuração.",
   "refuse_plain_dms_check_failed": "Não foi possível verificar o que está salvo, então o botão continua bloqueado.",
-  "refuse_plain_dms_retry": "Tentar de novo"
+  "refuse_plain_dms_retry": "Tentar de novo",
+  "nav_encryption_devices": "Dispositivos de criptografia",
+  "devices_title": "Dispositivos que podem ler suas mensagens criptografadas",
+  "devices_intro": "Cada dispositivo desta lista tem as próprias chaves. Remova um dispositivo que você não usa mais ou perdeu: ele deixa de receber suas mensagens criptografadas e é desconectado.",
+  "devices_this_device": "Este dispositivo",
+  "devices_added": "Adicionado em {{date}}",
+  "devices_last_seen": "Última atividade em {{date}}",
+  "devices_remove": "Remover",
+  "devices_remove_this": "Remover este dispositivo",
+  "devices_remove_confirm_title": "Remover {{name}}?",
+  "devices_remove_confirm_body": "{{name}} deixará de receber suas mensagens criptografadas e será desconectado. Isso não pode ser desfeito.",
+  "devices_remove_this_confirm_title": "Remover este dispositivo?",
+  "devices_remove_this_confirm_body": "Este dispositivo apaga agora as chaves de criptografia e é desconectado. Seus outros dispositivos e sua frase de recuperação continuam com suas mensagens.",
+  "devices_manage_needs_setup": "Configure as mensagens criptografadas neste dispositivo para gerenciar seus dispositivos.",
+  "devices_none": "Nenhum dispositivo pode ler mensagens criptografadas ainda.",
+  "devices_load_failed": "Não foi possível carregar a lista de dispositivos.",
+  "devices_remove_failed": "Não foi possível remover o dispositivo. Tente novamente."
 }

@@ -2,6 +2,7 @@ import {
   createConversation,
   createConversationMessage,
   fetchConversation,
+  fetchConversations,
 } from "@/api/conversations";
 import {
   acknowledgeWelcome,
@@ -10,9 +11,17 @@ import {
   fetchGroupState,
   fetchUserDevices,
   fetchUserRevocations,
+  fetchLeaveRequests,
+  fetchOwnDevices,
   fetchWelcomes,
+  revokeDevice,
+  sendLeaveRequest,
   submitCommit,
   type ClaimedKeyPackage,
+  type DeviceRevocationInput,
+  type LeaveRequest,
+  type LeaveRequestInput,
+  type OwnDevice,
   type CommitResult,
   type CommitSubmission,
   type GroupCommit,
@@ -50,6 +59,11 @@ export interface E2eeTransport {
   ): Promise<Message>;
   editMessage(messageIri: string, text: string, baseRevisionCount: number): Promise<Message>;
   fetchMessage(uuid: string): Promise<Message>;
+  fetchEncryptedConversations(): Promise<Conversation[]>;
+  fetchOwnDevices(): Promise<OwnDevice[]>;
+  revokeDevice(deviceId: string, revocation: DeviceRevocationInput): Promise<void>;
+  sendLeaveRequest(deviceId: string, request: LeaveRequestInput): Promise<void>;
+  fetchLeaveRequests(conversation: string): Promise<LeaveRequest[]>;
 }
 
 export const httpE2eeTransport: E2eeTransport = {
@@ -70,4 +84,10 @@ export const httpE2eeTransport: E2eeTransport = {
     createThreadReply(rootUuid, text, attachmentIris, id),
   editMessage,
   fetchMessage,
+  fetchEncryptedConversations: async () =>
+    (await fetchConversations()).filter((c) => c.encrypted === true),
+  fetchOwnDevices,
+  revokeDevice,
+  sendLeaveRequest,
+  fetchLeaveRequests,
 };

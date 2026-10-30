@@ -44,5 +44,7 @@ export function createMlsEngine(
     acknowledgeDecrypt: (receipt) => mls.acknowledgeDecrypt(scope, receipt),
     signKeyPackageUpload: (upload) => mls.signKeyPackageUpload(scope, upload),
     signRevocation: (revocation) => mls.signRevocation(scope, revocation),
+    signLeaveRequest: (request) => mls.signLeaveRequest(scope, request),
+    deleteDeviceKey: () => mls.deleteDeviceKey(scope),
   };
 }

@@ -262,5 +262,21 @@
   "refuse_plain_dms_required": "Ten serwer wymaga szyfrowania wszystkich wiadomości prywatnych.",
   "refuse_plain_dms_save_failed": "Nie udało się zapisać tego ustawienia.",
   "refuse_plain_dms_check_failed": "Nie udało się sprawdzić, co jest zapisane, więc przełącznik pozostaje zablokowany.",
-  "refuse_plain_dms_retry": "Spróbuj ponownie"
+  "refuse_plain_dms_retry": "Spróbuj ponownie",
+  "nav_encryption_devices": "Urządzenia szyfrowania",
+  "devices_title": "Urządzenia, które mogą czytać Twoje zaszyfrowane wiadomości",
+  "devices_intro": "Każde z tych urządzeń ma własne klucze. Usuń urządzenie, którego już nie używasz albo które zgubiłeś: przestanie otrzymywać Twoje zaszyfrowane wiadomości i zostanie wylogowane.",
+  "devices_this_device": "To urządzenie",
+  "devices_added": "Dodano {{date}}",
+  "devices_last_seen": "Ostatnio aktywne {{date}}",
+  "devices_remove": "Usuń",
+  "devices_remove_this": "Usuń to urządzenie",
+  "devices_remove_confirm_title": "Usunąć {{name}}?",
+  "devices_remove_confirm_body": "{{name}} przestanie otrzymywać Twoje zaszyfrowane wiadomości i zostanie wylogowane. Tego nie można cofnąć.",
+  "devices_remove_this_confirm_title": "Usunąć to urządzenie?",
+  "devices_remove_this_confirm_body": "To urządzenie od razu usunie swoje klucze szyfrowania i zostanie wylogowane. Twoje pozostałe urządzenia i fraza odzyskiwania nadal mają Twoje wiadomości.",
+  "devices_manage_needs_setup": "Skonfiguruj zaszyfrowane wiadomości na tym urządzeniu, aby zarządzać urządzeniami.",
+  "devices_none": "Żadne urządzenie nie może jeszcze czytać zaszyfrowanych wiadomości.",
+  "devices_load_failed": "Nie udało się wczytać listy urządzeń.",
+  "devices_remove_failed": "Nie udało się usunąć urządzenia. Spróbuj ponownie."
 }

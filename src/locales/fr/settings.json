@@ -260,5 +260,21 @@
   "refuse_plain_dms_required": "Ce serveur exige que tous les messages privés soient chiffrés.",
   "refuse_plain_dms_save_failed": "Impossible d'enregistrer ce réglage.",
   "refuse_plain_dms_check_failed": "Impossible de vérifier ce qui est enregistré : l'interrupteur reste verrouillé.",
-  "refuse_plain_dms_retry": "Réessayer"
+  "refuse_plain_dms_retry": "Réessayer",
+  "nav_encryption_devices": "Appareils de chiffrement",
+  "devices_title": "Appareils qui peuvent lire tes messages chiffrés",
+  "devices_intro": "Chaque appareil de cette liste a ses propres clés. Retire un appareil que tu n'utilises plus ou que tu as perdu : il ne reçoit plus tes messages chiffrés et sa session est fermée.",
+  "devices_this_device": "Cet appareil",
+  "devices_added": "Ajouté le {{date}}",
+  "devices_last_seen": "Dernière activité le {{date}}",
+  "devices_remove": "Retirer",
+  "devices_remove_this": "Retirer cet appareil",
+  "devices_remove_confirm_title": "Retirer {{name}} ?",
+  "devices_remove_confirm_body": "{{name}} ne recevra plus tes messages chiffrés et sa session sera fermée. C'est irréversible.",
+  "devices_remove_this_confirm_title": "Retirer cet appareil ?",
+  "devices_remove_this_confirm_body": "Cet appareil supprime maintenant ses clés de chiffrement et sa session est fermée. Tes autres appareils et ta phrase de récupération ont toujours tes messages.",
+  "devices_manage_needs_setup": "Configure les messages chiffrés sur cet appareil pour gérer tes appareils.",
+  "devices_none": "Aucun appareil ne peut encore lire de messages chiffrés.",
+  "devices_load_failed": "La liste des appareils n'a pas pu être chargée.",
+  "devices_remove_failed": "L'appareil n'a pas pu être retiré. Réessaie."
 }

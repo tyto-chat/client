@@ -235,3 +235,74 @@ export async function fetchWelcomes(deviceId: string, after?: string): Promise<W
 export function acknowledgeWelcome(welcomeId: string): Promise<void> {
   return apiClient.post<void>(`/api/e2ee/welcomes/${welcomeId}/ack`, {});
 }
+
+export interface OwnDevice {
+  id: string;
+  name: string;
+  generation: number;
+  createdAt: string;
+  lastSeenAt: string;
+}
+
+export interface LeaveRequest {
+  leaveRequestId: string;
+  deviceId: string;
+  userId: number;
+  generation: number;
+  requestedAt: number;
+}
+
+export interface DeviceRevocationInput {
+  signerDeviceId: string;
+  revokedAt: number;
+  signature: Uint8Array;
+}
+
+export interface LeaveRequestInput {
+  leaveRequestId: string;
+  requestedAt: number;
+  signature: Uint8Array;
+}
+
+export async function fetchOwnDevices(): Promise<OwnDevice[]> {
+  const data = await apiClient.get<{ items: OwnDevice[] }>("/api/e2ee/devices");
+  return data.items.map((d) => ({
+    id: d.id,
+    name: d.name,
+    generation: d.generation,
+    createdAt: d.createdAt,
+    lastSeenAt: d.lastSeenAt,
+  }));
+}
+
+export function revokeDevice(deviceId: string, revocation: DeviceRevocationInput): Promise<void> {
+  return apiClient.deleteJson<void>(`/api/e2ee/devices/${encodeURIComponent(deviceId)}`, {
+    revocation: { ...revocation, signature: toBase64(revocation.signature) },
+  });
+}
+
+export function sendLeaveRequest(deviceId: string, request: LeaveRequestInput): Promise<void> {
+  return apiClient.postJson<void>(`/api/e2ee/devices/${encodeURIComponent(deviceId)}/leave`, {
+    ...request,
+    signature: toBase64(request.signature),
+  });
+}
+
+export async function fetchLeaveRequests(conversation: string): Promise<LeaveRequest[]> {
+  const data = await apiClient.get<{ items: LeaveRequest[] }>(
+    `/api/e2ee/leave-requests?conversation=${encodeURIComponent(conversation)}`,
+  );
+  return data.items.map((r) => ({
+    leaveRequestId: r.leaveRequestId,
+    deviceId: r.deviceId,
+    userId: r.userId,
+    generation: r.generation,
+    requestedAt: r.requestedAt,
+  }));
+}
+
+export function bindDeviceSession(deviceId: string, refreshToken: string): Promise<void> {
+  return apiClient.postJson<void>(`/api/e2ee/devices/${encodeURIComponent(deviceId)}/session`, {
+    refreshToken,
+  });
+}

@@ -3,6 +3,7 @@ import {
   type ClaimedKeyPackage,
   type CommitSubmission,
   type GroupCommit,
+  type LeaveRequest,
   type UserRevocation,
 } from "@/api/e2ee";
 import { ApiError } from "@/api/client";
@@ -15,7 +16,7 @@ import type { Credential, MlsEngine } from "@/e2ee/engine";
 export interface FakeDevice {
   credential: Credential;
   key: TestKey;
-  engine: MlsEngine & { latest: () => Uint8Array };
+  engine: MlsEngine & { latest: () => Uint8Array; keyDeleted: () => boolean };
   packages: Uint8Array[];
 }
 
@@ -77,6 +78,11 @@ export class FakeDeliveryServer {
     throw new Error("no such attachment");
   }
   readonly welcomes: FakeWelcome[] = [];
+  readonly leaveRequests: {
+    conversation: string;
+    request: LeaveRequest;
+    fulfilled: boolean;
+  }[] = [];
   readonly calls: { userId: number; method: string; args: unknown[] }[] = [];
   private readonly drops = new Map<string, number>();
   private clock = Date.parse("2026-10-29T10:00:00Z");
@@ -101,7 +107,7 @@ export class FakeDeliveryServer {
       accountId: userId,
       generation: options.generation ?? user.generation,
     });
-    const engine = createFakeMlsEngine(credential);
+    const engine = createFakeMlsEngine(credential, device);
     const generated = await engine.generateDevice(credential);
     const { packages } = await engine.createKeyPackages(
       generated.state,
@@ -262,6 +268,85 @@ export class FakeDeliveryServer {
           return message;
         }),
       fetchMessage: (uuid) => call("fetchMessage", [uuid], () => this.message(uuid)),
+      fetchEncryptedConversations: () =>
+        call("fetchEncryptedConversations", [], () =>
+          [...this.conversations.values()]
+            .map((c) => c.conversation)
+            .filter((c) => c.members.some((m) => m.userId === userId)),
+        ),
+      fetchOwnDevices: () =>
+        call("fetchOwnDevices", [], () =>
+          (this.users.get(userId)?.devices ?? []).map((d) => ({
+            id: d.credential.deviceId,
+            name: `Device ${d.credential.deviceId.slice(0, 4)}`,
+            generation: d.credential.generation,
+            createdAt: "2026-10-29T10:00:00+00:00",
+            lastSeenAt: "2026-10-30T10:00:00+00:00",
+          })),
+        ),
+      revokeDevice: (deviceId, revocation) =>
+        call("revokeDevice", [deviceId, revocation], () => {
+          const user = this.users.get(userId);
+          const signer = user?.devices.find(
+            (d) => d.credential.deviceId === revocation.signerDeviceId,
+          );
+          const target = user?.devices.find((d) => d.credential.deviceId === deviceId);
+          if (user === undefined || signer === undefined || target === undefined) {
+            throw new ApiError(404, { error: "Device not found." });
+          }
+          user.devices = user.devices.filter((d) => d !== target);
+          user.revocations.push({
+            deviceId,
+            generation: target.credential.generation,
+            revokedAt: revocation.revokedAt,
+            signerDeviceId: revocation.signerDeviceId,
+            signature: revocation.signature,
+            signerPublicKey: signer.credential.devicePublicKey,
+            signerCredential: signer.credential.signature,
+            signerServer: signer.credential.server,
+            leaveRequestId: null,
+          });
+        }),
+      sendLeaveRequest: (deviceId, request) =>
+        call("sendLeaveRequest", [deviceId, request], () => {
+          const user = this.users.get(userId);
+          const target = user?.devices.find((d) => d.credential.deviceId === deviceId);
+          if (user === undefined || target === undefined) {
+            throw new ApiError(404, { error: "Device not found." });
+          }
+          user.devices = user.devices.filter((d) => d !== target);
+          user.revocations.push({
+            deviceId,
+            generation: target.credential.generation,
+            revokedAt: request.requestedAt,
+            signerDeviceId: deviceId,
+            signature: request.signature,
+            signerPublicKey: target.credential.devicePublicKey,
+            signerCredential: target.credential.signature,
+            signerServer: target.credential.server,
+            leaveRequestId: request.leaveRequestId,
+          });
+          for (const { conversation } of this.conversations.values()) {
+            if (!conversation.members.some((m) => m.userId === userId)) continue;
+            this.leaveRequests.push({
+              conversation: conversation.identifier,
+              request: {
+                leaveRequestId: request.leaveRequestId,
+                deviceId,
+                userId,
+                generation: target.credential.generation,
+                requestedAt: request.requestedAt,
+              },
+              fulfilled: false,
+            });
+          }
+        }),
+      fetchLeaveRequests: (conversation) =>
+        call("fetchLeaveRequests", [conversation], () =>
+          this.leaveRequests
+            .filter((l) => l.conversation === conversation && !l.fulfilled)
+            .map((l) => l.request),
+        ),
     };
   }
 
@@ -314,6 +399,15 @@ export class FakeDeliveryServer {
     }
     const current = conversation.commits.at(-1)?.epoch ?? 0;
     if (submission.epoch !== current + 1) throw new StaleEpochError(current);
+    if (submission.leaveRequestId !== undefined) {
+      const pending = this.leaveRequests.find(
+        (l) =>
+          l.conversation === identifier && l.request.leaveRequestId === submission.leaveRequestId,
+      );
+      if (pending === undefined) throw new ApiError(404, { error: "leave request not found" });
+      if (pending.fulfilled) throw new StaleEpochError(current);
+      pending.fulfilled = true;
+    }
     if (submission.generation > conversation.generation && conversation.generation > 0) {
       conversation.frozen.push(conversation.generation);
     }

@@ -260,5 +260,21 @@
   "refuse_plain_dms_required": "Dieser Server verlangt, dass alle Direktnachrichten verschlüsselt sind.",
   "refuse_plain_dms_save_failed": "Diese Einstellung konnte nicht gespeichert werden.",
   "refuse_plain_dms_check_failed": "Der gespeicherte Wert konnte nicht geprüft werden, daher bleibt der Schalter gesperrt.",
-  "refuse_plain_dms_retry": "Erneut versuchen"
+  "refuse_plain_dms_retry": "Erneut versuchen",
+  "nav_encryption_devices": "Verschlüsselungsgeräte",
+  "devices_title": "Geräte, die deine verschlüsselten Nachrichten lesen können",
+  "devices_intro": "Jedes Gerät hier hat eigene Schlüssel. Entferne ein Gerät, das du nicht mehr nutzt oder verloren hast: Es erhält deine verschlüsselten Nachrichten nicht mehr und wird abgemeldet.",
+  "devices_this_device": "Dieses Gerät",
+  "devices_added": "Hinzugefügt am {{date}}",
+  "devices_last_seen": "Zuletzt aktiv am {{date}}",
+  "devices_remove": "Entfernen",
+  "devices_remove_this": "Dieses Gerät entfernen",
+  "devices_remove_confirm_title": "{{name}} entfernen?",
+  "devices_remove_confirm_body": "{{name}} erhält deine verschlüsselten Nachrichten nicht mehr und wird abgemeldet. Das kann nicht rückgängig gemacht werden.",
+  "devices_remove_this_confirm_title": "Dieses Gerät entfernen?",
+  "devices_remove_this_confirm_body": "Dieses Gerät löscht jetzt seine Verschlüsselungsschlüssel und wird abgemeldet. Deine anderen Geräte und deine Wiederherstellungsphrase haben deine Nachrichten weiterhin.",
+  "devices_manage_needs_setup": "Richte verschlüsselte Nachrichten auf diesem Gerät ein, um deine Geräte zu verwalten.",
+  "devices_none": "Noch kann kein Gerät verschlüsselte Nachrichten lesen.",
+  "devices_load_failed": "Die Geräteliste konnte nicht geladen werden.",
+  "devices_remove_failed": "Das Gerät konnte nicht entfernt werden. Versuche es erneut."
 }

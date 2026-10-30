@@ -1,5 +1,5 @@
 import { encodeCanonicalMap } from "./canonicalCbor";
-import type { Credential, CredentialValidator, Revocation } from "./engine";
+import type { Credential, CredentialValidator, LeaveRequestFields, Revocation } from "./engine";
 
 export type CredentialFields = Omit<Credential, "signature">;
 
@@ -31,6 +31,7 @@ export interface SignedRevocation extends Revocation {
   signerPublicKey: Uint8Array;
   signerCredential: Uint8Array;
   signerServer: string;
+  leaveRequestId?: string | null;
 }
 
 export function deviceCredentialPayload(fields: CredentialFields): Uint8Array {
@@ -49,6 +50,27 @@ export function revocationPayload(revocation: Revocation): Uint8Array {
     generation: revocation.generation,
     revokedAt: revocation.revokedAt,
     signerDeviceId: revocation.signerDeviceId,
+  });
+}
+
+export function leaveRequestPayload(request: LeaveRequestFields): Uint8Array {
+  return encodeCanonicalMap({
+    deviceId: request.deviceId,
+    generation: request.generation,
+    requestedAt: request.requestedAt,
+    leaveRequestId: request.leaveRequestId,
+  });
+}
+
+function signedPayload(revocation: SignedRevocation): Uint8Array {
+  const leaveRequestId = revocation.leaveRequestId ?? null;
+  if (leaveRequestId === null) return revocationPayload(revocation);
+  if (revocation.signerDeviceId !== revocation.deviceId) return new Uint8Array();
+  return leaveRequestPayload({
+    deviceId: revocation.deviceId,
+    generation: revocation.generation,
+    requestedAt: revocation.revokedAt,
+    leaveRequestId,
   });
 }
 
@@ -106,7 +128,7 @@ export async function verifyRevocation(
     (await verifyEd25519(
       revocation.signerPublicKey,
       revocation.signature,
-      revocationPayload(revocation),
+      signedPayload(revocation),
     ))
   );
 }

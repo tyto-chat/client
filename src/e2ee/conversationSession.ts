@@ -3,6 +3,7 @@ import {
   fromBase64,
   toBase64,
   type CommitSubmission,
+  type LeaveRequest,
   type Welcome,
 } from "@/api/e2ee";
 import { ApiError, isNetworkError } from "@/api/client";
@@ -381,7 +382,10 @@ export class E2eeIdentity {
 
   async syncAll(): Promise<void> {
     await this.processWelcomes();
-    for (const session of this.sessions.values()) await session.sync();
+    for (const session of this.sessions.values()) {
+      await session.sync();
+      await session.completeLeaveRequests();
+    }
   }
 
   async handleEvent(event: { type?: string; conversationIdentifier?: string }): Promise<void> {
@@ -389,12 +393,12 @@ export class E2eeIdentity {
       await this.processWelcomes();
       return;
     }
-    if (
-      (event.type === "mls.commit" || event.type === "mls.leave_request") &&
-      event.conversationIdentifier !== undefined
-    ) {
-      await this.sessions.get(event.conversationIdentifier)?.sync();
-    }
+    const session =
+      event.conversationIdentifier === undefined
+        ? undefined
+        : this.sessions.get(event.conversationIdentifier);
+    if (event.type === "mls.commit") await session?.sync();
+    if (event.type === "mls.leave_request") await session?.completeLeaveRequests();
   }
 
   startSync(intervalMs = 60_000): () => void {
@@ -509,6 +513,7 @@ export class ConversationSession {
       const epoch = await this.syncLocked();
       const progress = await this.loadProgress();
       if (progress.groupId === null && epoch === 0) await this.initialiseLocked();
+      await this.completeLeaveRequestsLocked();
     });
   }
 
@@ -517,6 +522,31 @@ export class ConversationSession {
       this.trust = null;
       await this.syncLocked();
     });
+  }
+
+  removeRevoked(): Promise<number> {
+    return this.identity.inGroup(this.identifier, async () => {
+      this.trust = null;
+      await this.syncLocked();
+      if ((await this.loadProgress()).groupId === null) return 0;
+      return this.removeRevokedLocked();
+    });
+  }
+
+  completeLeaveRequests(): Promise<number> {
+    return this.identity.inGroup(this.identifier, async () => {
+      await this.syncLocked();
+      return this.completeLeaveRequestsLocked();
+    });
+  }
+
+  private async completeLeaveRequestsLocked(): Promise<number> {
+    const progress = await this.loadProgress();
+    if (progress.groupId === null || progress.removed) return 0;
+    const requests = await this.identity.transport.fetchLeaveRequests(this.identifier);
+    if (!requests.some((r) => progress.roster.some((m) => m.deviceId === r.deviceId))) return 0;
+    this.trust = null;
+    return this.removeRevokedLocked(requests);
   }
 
   rotateKeys(): Promise<void> {
@@ -714,16 +744,22 @@ export class ConversationSession {
     }
   }
 
-  private async removeRevokedLocked(): Promise<void> {
+  private async removeRevokedLocked(known?: LeaveRequest[]): Promise<number> {
     const { engine } = this.identity;
     const trust = await this.trustOverlay();
     const attempted = new Set<string>();
+    let leaveRequests = known;
+    let removed = 0;
     for (;;) {
       const target = await this.revokedMember(trust, attempted);
-      if (target === null) return;
+      if (target === null) return removed;
       attempted.add(revokedKey(target));
       const progress = await this.readyProgress();
       const groupId = progress.groupId as string;
+      leaveRequests ??= await this.identity.transport.fetchLeaveRequests(this.identifier);
+      const leaveRequestId = leaveRequests.find(
+        (r) => r.deviceId === target.deviceId && r.generation === target.generation,
+      )?.leaveRequestId;
       try {
         await this.commitLocked(
           async () => {
@@ -741,8 +777,9 @@ export class ConversationSession {
             }
             return staged;
           },
-          { groupId, generation: progress.generation, create: false },
+          { groupId, generation: progress.generation, create: false, leaveRequestId },
         );
+        removed += 1;
       } catch (error) {
         if (!(error instanceof NothingToCommit)) throw error;
       }
@@ -989,6 +1026,11 @@ export class ConversationSession {
       const added = await this.validate(trust, member.credential);
       if (added !== "ok") return `added_${added}`;
     }
+    for (const member of staged.removed) {
+      if (!(await this.mayRemove(trust, staged.actor, member.credential))) {
+        return "removed_not_authorised";
+      }
+    }
     const participants = new Set(this.participantIds);
     const devices = new Set<string>();
     for (const member of staged.resultingRoster) {
@@ -997,6 +1039,17 @@ export class ConversationSession {
       devices.add(member.credential.deviceId);
     }
     return null;
+  }
+
+  private async mayRemove(
+    trust: TrustOverlay,
+    actor: Credential,
+    removed: Credential,
+  ): Promise<boolean> {
+    if (actor.accountId === removed.accountId) return true;
+    if (await trust.isRevoked(removed)) return true;
+    this.trust = null;
+    return (await this.trustOverlay()).isRevoked(removed);
   }
 
   private async checkJoinedRoster(trust: TrustOverlay, staged: Staged): Promise<string | null> {
@@ -1230,7 +1283,7 @@ export class ConversationSession {
 
   private async commitLocked(
     build: () => Promise<Staged>,
-    target: { groupId: string; generation: number; create: boolean },
+    target: { groupId: string; generation: number; create: boolean; leaveRequestId?: string },
   ): Promise<void> {
     const { engine } = this.identity;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -1253,6 +1306,7 @@ export class ConversationSession {
         commit: staged.commit as Uint8Array,
         groupInfo: staged.groupInfo as Uint8Array,
         welcomes: this.welcomesFor(staged),
+        ...(target.leaveRequestId !== undefined && { leaveRequestId: target.leaveRequestId }),
       };
       const pending: PendingStage = {
         kind: "own",

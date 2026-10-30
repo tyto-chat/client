@@ -260,5 +260,21 @@
   "refuse_plain_dms_required": "Questo server richiede che tutti i messaggi diretti siano crittografati.",
   "refuse_plain_dms_save_failed": "Impossibile salvare questa impostazione.",
   "refuse_plain_dms_check_failed": "Impossibile verificare cosa è salvato, quindi l'interruttore resta bloccato.",
-  "refuse_plain_dms_retry": "Riprova"
+  "refuse_plain_dms_retry": "Riprova",
+  "nav_encryption_devices": "Dispositivi di crittografia",
+  "devices_title": "Dispositivi che possono leggere i tuoi messaggi crittografati",
+  "devices_intro": "Ogni dispositivo in questo elenco ha le proprie chiavi. Rimuovi un dispositivo che non usi più o che hai perso: smette di ricevere i tuoi messaggi crittografati e viene disconnesso.",
+  "devices_this_device": "Questo dispositivo",
+  "devices_added": "Aggiunto il {{date}}",
+  "devices_last_seen": "Ultima attività il {{date}}",
+  "devices_remove": "Rimuovi",
+  "devices_remove_this": "Rimuovi questo dispositivo",
+  "devices_remove_confirm_title": "Rimuovere {{name}}?",
+  "devices_remove_confirm_body": "{{name}} smetterà di ricevere i tuoi messaggi crittografati e verrà disconnesso. L'operazione non può essere annullata.",
+  "devices_remove_this_confirm_title": "Rimuovere questo dispositivo?",
+  "devices_remove_this_confirm_body": "Questo dispositivo elimina ora le sue chiavi di crittografia e viene disconnesso. Gli altri tuoi dispositivi e la frase di recupero conservano i tuoi messaggi.",
+  "devices_manage_needs_setup": "Configura i messaggi crittografati su questo dispositivo per gestire i tuoi dispositivi.",
+  "devices_none": "Nessun dispositivo può ancora leggere messaggi crittografati.",
+  "devices_load_failed": "Impossibile caricare l'elenco dei dispositivi.",
+  "devices_remove_failed": "Impossibile rimuovere il dispositivo. Riprova."
 }

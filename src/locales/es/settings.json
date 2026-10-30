@@ -260,5 +260,21 @@
   "refuse_plain_dms_required": "Este servidor exige que todos los mensajes directos estén cifrados.",
   "refuse_plain_dms_save_failed": "No se pudo guardar este ajuste.",
   "refuse_plain_dms_check_failed": "No se pudo comprobar lo que está guardado, así que el interruptor sigue bloqueado.",
-  "refuse_plain_dms_retry": "Reintentar"
+  "refuse_plain_dms_retry": "Reintentar",
+  "nav_encryption_devices": "Dispositivos de cifrado",
+  "devices_title": "Dispositivos que pueden leer tus mensajes cifrados",
+  "devices_intro": "Cada dispositivo de esta lista tiene sus propias claves. Quita un dispositivo que ya no uses o hayas perdido: dejará de recibir tus mensajes cifrados y se cerrará su sesión.",
+  "devices_this_device": "Este dispositivo",
+  "devices_added": "Añadido el {{date}}",
+  "devices_last_seen": "Última actividad el {{date}}",
+  "devices_remove": "Quitar",
+  "devices_remove_this": "Quitar este dispositivo",
+  "devices_remove_confirm_title": "¿Quitar {{name}}?",
+  "devices_remove_confirm_body": "{{name}} dejará de recibir tus mensajes cifrados y se cerrará su sesión. No se puede deshacer.",
+  "devices_remove_this_confirm_title": "¿Quitar este dispositivo?",
+  "devices_remove_this_confirm_body": "Este dispositivo borra ahora sus claves de cifrado y se cierra su sesión. Tus otros dispositivos y tu frase de recuperación siguen teniendo tus mensajes.",
+  "devices_manage_needs_setup": "Configura los mensajes cifrados en este dispositivo para gestionar tus dispositivos.",
+  "devices_none": "Todavía ningún dispositivo puede leer mensajes cifrados.",
+  "devices_load_failed": "No se pudo cargar la lista de dispositivos.",
+  "devices_remove_failed": "No se pudo quitar el dispositivo. Inténtalo de nuevo."
 }

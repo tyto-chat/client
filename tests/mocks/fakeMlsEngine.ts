@@ -1,3 +1,5 @@
+import { leaveRequestPayload, revocationPayload } from "@/e2ee/credentials";
+import { sign, type TestKey } from "./e2eeKeys";
 import type { Credential, Member, MlsEngine, Staged } from "@/e2ee/engine";
 
 interface FakeGroup {
@@ -41,8 +43,16 @@ let tokens = 0;
 const wireGroup = (group: FakeGroup | undefined) =>
   group === undefined ? null : { epoch: group.epoch, members: wireMembers(group.members) };
 
-export function createFakeMlsEngine(self: Credential): MlsEngine & { latest: () => Uint8Array } {
+export function createFakeMlsEngine(
+  self: Credential,
+  signingKey?: TestKey,
+): MlsEngine & { latest: () => Uint8Array; keyDeleted: () => boolean } {
   let latest: FakeState | null = null;
+  let deleted = false;
+  const signWithDeviceKey = async (payload: Uint8Array) => {
+    if (deleted) throw new Error("the device key was deleted");
+    return signingKey === undefined ? new Uint8Array(64) : sign(signingKey, payload);
+  };
   const staged = new Map<string, { groupId: string; before: string; after: FakeGroup | null }>();
   const held = new Map<string, { data: Uint8Array; sender: Credential }>();
   const consumed = new Set<string>();
@@ -305,6 +315,11 @@ export function createFakeMlsEngine(self: Credential): MlsEngine & { latest: () 
     },
     acknowledgeDecrypt: async (receipt) => void held.delete(receipt),
     signKeyPackageUpload: async () => new Uint8Array(64),
-    signRevocation: async () => new Uint8Array(64),
+    signRevocation: (revocation) => signWithDeviceKey(revocationPayload(revocation)),
+    signLeaveRequest: (request) => signWithDeviceKey(leaveRequestPayload(request)),
+    deleteDeviceKey: async () => {
+      deleted = true;
+    },
+    keyDeleted: () => deleted,
   };
 }

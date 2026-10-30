@@ -3,6 +3,7 @@ import type {
   BridgeMlsCredential,
   BridgeMlsMember,
   BridgeMlsStaged,
+  BridgeLeaveRequest,
   BridgeRevocation,
 } from "@/platform/PlatformBridge";
 
@@ -11,6 +12,7 @@ export type Member = BridgeMlsMember;
 export type Staged = BridgeMlsStaged;
 export type KeyPackageUpload = BridgeKeyPackageUpload;
 export type Revocation = BridgeRevocation;
+export type LeaveRequestFields = BridgeLeaveRequest;
 
 export type CredentialCheck =
   | "ok"
@@ -61,4 +63,6 @@ export interface MlsEngine {
   acknowledgeDecrypt(receipt: string): Promise<void>;
   signKeyPackageUpload(upload: KeyPackageUpload): Promise<Uint8Array>;
   signRevocation(revocation: Revocation): Promise<Uint8Array>;
+  signLeaveRequest(request: LeaveRequestFields): Promise<Uint8Array>;
+  deleteDeviceKey(): Promise<void>;
 }
